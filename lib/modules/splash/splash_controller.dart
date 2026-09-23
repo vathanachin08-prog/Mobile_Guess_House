@@ -12,11 +12,15 @@ class SplashController extends GetxController {
 
   Future<void> _checkToken() async {
     isLoading.value = true;
-   await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 1500));
     if (TokenStoreLocal.getAccessToken().isNotEmpty) {
-      Get.offNamed(AppRouteName.home);
+      if (TokenStoreLocal.isOwner()) {
+        Get.offAllNamed(AppRouteName.ownerMain);
+      } else {
+        Get.offAllNamed(AppRouteName.studentMain);
+      }
     } else {
-      Get.offNamed(AppRouteName.login);
+      Get.offAllNamed(AppRouteName.login);
     }
     isLoading.value = false;
   }
