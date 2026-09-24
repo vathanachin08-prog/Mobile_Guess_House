@@ -7,10 +7,22 @@ import 'routes/app_route.dart';
 import 'routes/app_route_name.dart';
 import 'translations/messages.dart';
 import 'widgets/app_colors.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; 
+import 'core/services/firebase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Remote Config
+  await AppFirebaseService.initRemoteConfig();
+
   runApp(const MyApp());
 }
 
@@ -20,8 +32,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'E-Home KH - Rental Marketplace',
+      title: 'RoomFinder KH - Rental Marketplace',
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [
+        AppFirebaseService.observer,
+      ],
       translations: Messages(),
       locale: const Locale('km', 'KH'),
       fallbackLocale: const Locale('en', 'US'),

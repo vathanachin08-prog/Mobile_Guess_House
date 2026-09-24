@@ -56,7 +56,7 @@ class LoginView extends GetView<LoginController> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  "E-Home KH",
+                  "RoomFinder KH",
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,

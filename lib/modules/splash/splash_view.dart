@@ -37,7 +37,7 @@ class SplashView extends GetView<SplashController> {
               ),
               const SizedBox(height: 24),
               const Text(
-                "E-Home KH",
+                "RoomFinder KH",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 28,

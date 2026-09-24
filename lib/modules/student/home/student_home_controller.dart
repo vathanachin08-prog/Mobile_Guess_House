@@ -46,7 +46,7 @@ class StudentHomeController extends GetxController {
           properties.assignAll(list);
         }
       }
-      // If server returned 0 properties (fresh DB), provide demo properties matching E-Home KH reference
+      // If server returned 0 properties (fresh DB), provide demo properties matching RoomFinder KH reference
       if (properties.isEmpty) {
         properties.assignAll(_getDemoProperties());
       }

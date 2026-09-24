@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/button_custom_widget.dart';
@@ -16,12 +17,44 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
   final _electricityController = TextEditingController(text: "1000");
   final _waterController = TextEditingController(text: "1500");
   final _garbageController = TextEditingController(text: "2.00");
-  final _exchangeRateController = TextEditingController(text: "4100");
+  late final TextEditingController _exchangeRateController;
   final _accountNameController = TextEditingController(text: "CHIN VATHANA");
   final _accountNumberController = TextEditingController(text: "098765432");
 
   String _qrType = "DYNAMIC"; // DYNAMIC or STATIC
   bool _isLoading = false;
+  bool _isFetchingRemoteConfig = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. Initialize directly from Firebase Remote Config
+    _exchangeRateController = TextEditingController(
+      text: AppFirebaseService.exchangeRate.toString(),
+    );
+    // 2. Fetch fresh update from Firebase Remote Config server
+    _syncRemoteConfig();
+  }
+
+  Future<void> _syncRemoteConfig() async {
+    setState(() => _isFetchingRemoteConfig = true);
+    await AppFirebaseService.fetchRemoteConfig();
+    if (mounted) {
+      setState(() {
+        _isFetchingRemoteConfig = false;
+        _exchangeRateController.text = AppFirebaseService.exchangeRate.toString();
+      });
+      Get.snackbar(
+        "Firebase Remote Config",
+        "អត្រាប្តូរប្រាក់បច្ចុប្បន្នពី Firebase: ${AppFirebaseService.exchangeRate} ៛",
+        backgroundColor: AppColors.primarySoft,
+        colorText: AppColors.primary,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -37,6 +70,14 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
 
   void _saveSettings() {
     setState(() => _isLoading = true);
+    final rentPrice = double.tryParse(_rentPriceController.text.trim()) ?? 0.0;
+    AppFirebaseService.logPricingSettingsForm(
+      rentPrice: rentPrice,
+      electricity: _electricityController.text.trim(),
+      water: _waterController.text.trim(),
+      exchangeRate: _exchangeRateController.text.trim(),
+      success: true,
+    );
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -181,13 +222,79 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Exchange Rate
-                    _buildInputField(
-                      label: "អត្រាប្តូរប្រាក់ (1\$ = ៛)",
-                      hint: "4100",
-                      controller: _exchangeRateController,
-                      prefixIcon: Icons.currency_exchange,
-                      keyboardType: TextInputType.number,
+                    // Exchange Rate with Firebase Remote Config indicator
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "អត្រាប្តូរប្រាក់ (1\$ = ៛)",
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            ),
+                            InkWell(
+                              onTap: _syncRemoteConfig,
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _isFetchingRemoteConfig
+                                        ? const SizedBox(
+                                            width: 11,
+                                            height: 11,
+                                            child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
+                                          )
+                                        : const Icon(Icons.cloud_sync_outlined, size: 13, color: AppColors.primary),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "Firebase: ${AppFirebaseService.exchangeRate}៛",
+                                      style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _exchangeRateController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: "5000",
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            prefixIcon: const Icon(Icons.currency_exchange, color: AppColors.primary, size: 18),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.refresh, size: 18, color: AppColors.primary),
+                              tooltip: "ទាញយកពី Firebase Remote Config ឡើងវិញ",
+                              onPressed: _syncRemoteConfig,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.background,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -23,6 +23,7 @@ class AppRouteName {
   static const String ownerInvoices = "/owner/invoices";
   static const String ownerPricing = "/owner/pricing";
   static const String ownerMembership = "/owner/membership";
+  static const String ownerProfile = "/owner/profile";
 
   // Legacy demo
   static const String adminPost = "/admin/posts";

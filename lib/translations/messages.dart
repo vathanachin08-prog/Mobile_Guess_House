@@ -5,13 +5,13 @@ class Messages extends Translations {
   Map<String, Map<String, String>> get keys => {
     'en_US': {
       // Auth & Roles
-      'app_name': 'E-Home KH',
+      'app_name': 'RoomFinder KH',
       'login': 'Sign In',
       'login_title': 'Welcome Back',
       'login_subtitle': 'Sign in to find rental rooms or manage your properties',
       'register': 'Sign Up',
       'register_title': 'Create Account',
-      'register_subtitle': 'Join E-Home KH as a student or property owner',
+      'register_subtitle': 'Join RoomFinder KH as a student or property owner',
       'phone': 'Phone Number',
       'password': 'Password',
       'full_name': 'Full Name',
@@ -97,9 +97,9 @@ class Messages extends Translations {
     },
     'km_KH': {
       // Auth & Roles
-      'app_name': 'E-Home KH',
+      'app_name': 'RoomFinder KH',
       'login': 'ចូលគណនី',
-      'login_title': 'សូមស្វាគមន៍មកកាន់ E-Home KH',
+      'login_title': 'សូមស្វាគមន៍មកកាន់ RoomFinder KH',
       'login_subtitle': 'ចូលគណនីដើម្បីស្វែងរកបន្ទប់ជួល ឬគ្រប់គ្រងអគារផ្ទះជួលរបស់អ្នក',
       'register': 'ចុះឈ្មោះ',
       'register_title': 'បង្កើតគណនីថ្មី',

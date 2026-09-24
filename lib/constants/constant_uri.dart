@@ -1,6 +1,6 @@
 class ConstantUri {
   // Use localhost for Windows/Web, 10.0.2.2 for Android emulator, or LAN IP for physical device
-  static String baseUri = "http://localhost:30033";
+  static String baseUri = "http://10.10.0.179:30033";
 
   // Auth
   static String get login => "$baseUri/api/oauth/token";
@@ -22,6 +22,8 @@ class ConstantUri {
   static String propertyDetail(dynamic id) => "$baseUri/api/app/properties/$id";
   static String propertyRooms(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/rooms";
   static String roomDetail(dynamic id) => "$baseUri/api/app/rooms/$id";
+  static String propertyFloors(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/floors";
+  static String deleteFloor(dynamic id) => "$baseUri/api/app/floors/$id";
 
   // Student Favorites
   static String get favorites => "$baseUri/api/app/favorites";

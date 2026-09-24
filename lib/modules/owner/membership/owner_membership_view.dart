@@ -148,7 +148,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                       ),
                       const SizedBox(width: 10),
                       const Text(
-                        "កញ្ចប់សមាជិកភាព E-Home KH",
+                        "កញ្ចប់សមាជិកភាព RoomFinder KH",
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],

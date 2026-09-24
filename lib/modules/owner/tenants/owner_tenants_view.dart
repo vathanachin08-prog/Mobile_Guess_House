@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -120,19 +121,33 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("បោះបង់")),
           ElevatedButton(
             onPressed: () {
-              if (nameCtrl.text.isNotEmpty) {
+              final tenantName = nameCtrl.text.trim();
+              final roomNumber = roomCtrl.text.trim();
+              if (tenantName.isNotEmpty) {
+                AppFirebaseService.logAddTenantForm(
+                  tenantName: tenantName,
+                  roomNumber: roomNumber,
+                  success: true,
+                );
                 setState(() {
                   tenants.add(TenantModel(
                     id: tenants.length + 1,
-                    name: nameCtrl.text.trim(),
+                    name: tenantName,
                     phoneNumber: phoneCtrl.text.trim(),
-                    roomNumber: roomCtrl.text.trim(),
+                    roomNumber: roomNumber,
                     floor: "ជាន់ទី២",
                     email: "tenant@example.com",
                   ));
                 });
                 Navigator.pop(ctx);
                 Get.snackbar("Success", "បានបន្ថែមអ្នកជួលជោគជ័យ! Tenant added.", backgroundColor: Colors.green.shade50);
+              } else {
+                AppFirebaseService.logAddTenantForm(
+                  tenantName: '',
+                  roomNumber: roomNumber,
+                  success: false,
+                );
+                Get.snackbar("Error", "សូមបញ្ចូលឈ្មោះអ្នកជួល / Please enter tenant name");
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),

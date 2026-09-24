@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../student_main_controller.dart';
@@ -8,8 +12,161 @@ import 'student_profile_controller.dart';
 class StudentProfileView extends GetView<StudentProfileController> {
   const StudentProfileView({super.key});
 
+  void _showImageSourceSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                "ប្តូររូបភាពប្រវត្តិរូប / Change Avatar",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                ),
+                title: const Text("ថតរូបថ្មី / Take a Photo", style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text("ប្រើប្រាស់កាមេរ៉ាឧបករណ៍"),
+                onTap: () => controller.pickAndUploadImage(ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.photo_library_outlined, color: Colors.blue.shade700),
+                ),
+                title: const Text("ជ្រើសរើសពីរូបភាព / Choose from Gallery", style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text("ជ្រើសរើសរូបភាពពីទូរស័ព្ទ"),
+                onTap: () => controller.pickAndUploadImage(ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarWidget() {
+    return Obx(() {
+      final path = controller.profileImagePath.value;
+      return Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 74,
+            height: 74,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primarySoft,
+              border: Border.all(color: AppColors.primary, width: 2),
+            ),
+            child: ClipOval(
+              child: _buildAvatarImage(path),
+            ),
+          ),
+          if (controller.isUploading.value)
+            Container(
+              width: 74,
+              height: 74,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.4),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ),
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Icons.camera_alt, color: Colors.white, size: 13),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildAvatarImage(String path) {
+    if (path.isEmpty) {
+      return const Icon(Icons.person, size: 38, color: AppColors.primary);
+    }
+    if (path.startsWith('data:image')) {
+      try {
+        final base64Part = path.split(',').last;
+        return Image.memory(base64Decode(base64Part), fit: BoxFit.cover, width: 74, height: 74);
+      } catch (_) {
+        return const Icon(Icons.person, size: 38, color: AppColors.primary);
+      }
+    }
+    if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        width: 74,
+        height: 74,
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.person, size: 38, color: AppColors.primary),
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            ),
+          );
+        },
+      );
+    }
+    if (!kIsWeb) {
+      final file = File(path);
+      if (file.existsSync()) {
+        return Image.file(file, fit: BoxFit.cover, width: 74, height: 74);
+      }
+    }
+    return const Icon(Icons.person, size: 38, color: AppColors.primary);
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadUser();
+      controller.fetchProfileFromServer();
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(
@@ -37,10 +194,9 @@ class StudentProfileView extends GetView<StudentProfileController> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: AppColors.primarySoft,
-                    child: const Icon(Icons.person, size: 36, color: AppColors.primary),
+                  GestureDetector(
+                    onTap: () => _showImageSourceSheet(context),
+                    child: _buildAvatarWidget(),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -119,7 +275,7 @@ class StudentProfileView extends GetView<StudentProfileController> {
                   icon: Icons.help_outline,
                   title: "ជំនួយ និងការទាក់ទង / Help & Support",
                   onTap: () {
-                    Get.snackbar("Support", "Telegram support: @ehomekhapp", backgroundColor: Colors.white);
+                    Get.snackbar("Support", "Telegram support: @roomfinderkh", backgroundColor: Colors.white);
                   },
                 ),
               ],

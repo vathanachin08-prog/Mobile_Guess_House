@@ -32,7 +32,7 @@ class StudentHomeView extends GetView<StudentHomeController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "E-Home KH",
+                  "RoomFinder KH",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

@@ -255,7 +255,7 @@ class PropertyCard extends StatelessWidget {
           Icon(Icons.apartment_rounded, size: 48, color: AppColors.primary.withValues(alpha: 0.5)),
           const SizedBox(height: 4),
           Text(
-            "E-Home KH",
+            "RoomFinder KH",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,

@@ -14,7 +14,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const CustomAppBar({
     super.key,
-    this.title = "E-Home KH",
+    this.title = "RoomFinder KH",
     String? propertyName,
     this.subtitle,
     this.showBack = false,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../widgets/app_colors.dart';
 
 class RequestVisitDialog extends StatefulWidget {
@@ -38,27 +39,42 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
 
   void _submit() async {
     final phone = phoneController.text.trim();
+    final formattedDate = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+    final formattedTime = "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}:00";
+    final requestedDateTime = "${formattedDate}T$formattedTime";
+
     if (phone.isEmpty) {
+      AppFirebaseService.logVisitRequestForm(
+        propertyId: widget.propertyId,
+        roomId: widget.roomId,
+        requestedDate: requestedDateTime,
+        success: false,
+        errorMessage: "Validation: Empty phone number",
+      );
       Get.snackbar("Error", "Please provide a contact phone number");
       return;
     }
 
     setState(() => isLoading = true);
-    final formattedDate = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-    final formattedTime = "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}:00";
 
     try {
       final api = Get.find<ApiService>();
       final body = {
         "propertyId": widget.propertyId,
         "roomId": widget.roomId,
-        "requestedDate": "${formattedDate}T$formattedTime",
+        "requestedDate": requestedDateTime,
         "notes": noteController.text.trim().isNotEmpty ? noteController.text.trim() : "Interested in visiting",
         "contactPhone": phone,
       };
 
       final res = await api.postApi(ConstantUri.visitRequests, body: body);
       if (res != null) {
+        AppFirebaseService.logVisitRequestForm(
+          propertyId: widget.propertyId,
+          roomId: widget.roomId,
+          requestedDate: requestedDateTime,
+          success: true,
+        );
         Get.back();
         Get.snackbar(
           "Success",
@@ -67,9 +83,23 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
           colorText: Colors.green.shade900,
         );
       } else {
+        AppFirebaseService.logVisitRequestForm(
+          propertyId: widget.propertyId,
+          roomId: widget.roomId,
+          requestedDate: requestedDateTime,
+          success: false,
+          errorMessage: "API error: submission returned null",
+        );
         Get.snackbar("Error", "Could not submit visit request");
       }
     } catch (e) {
+      AppFirebaseService.logVisitRequestForm(
+        propertyId: widget.propertyId,
+        roomId: widget.roomId,
+        requestedDate: requestedDateTime,
+        success: false,
+        errorMessage: e.toString(),
+      );
       Get.snackbar("Error", "Error: $e");
     } finally {
       if (mounted) setState(() => isLoading = false);

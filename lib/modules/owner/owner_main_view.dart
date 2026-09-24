@@ -6,6 +6,7 @@ import 'floors/owner_floors_view.dart';
 import 'rooms/owner_rooms_view.dart';
 import 'tenants/owner_tenants_view.dart';
 import 'invoices/owner_invoices_view.dart';
+import 'profile/owner_profile_view.dart';
 import 'owner_main_controller.dart';
 
 class OwnerMainView extends GetView<OwnerMainController> {
@@ -19,6 +20,7 @@ class OwnerMainView extends GetView<OwnerMainController> {
       OwnerRoomsView(),
       OwnerTenantsView(),
       OwnerInvoicesView(),
+      OwnerProfileView(),
     ];
 
     return Obx(
@@ -39,14 +41,14 @@ class OwnerMainView extends GetView<OwnerMainController> {
             type: BottomNavigationBarType.fixed,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textSecondary,
-            selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 10),
             elevation: 0,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.grid_view_outlined),
                 activeIcon: Icon(Icons.grid_view_rounded),
-                label: "ផ្ទាំងគ្រប់គ្រង",
+                label: "គ្រប់គ្រង",
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.layers_outlined),
@@ -67,6 +69,11 @@ class OwnerMainView extends GetView<OwnerMainController> {
                 icon: Icon(Icons.receipt_long_outlined),
                 activeIcon: Icon(Icons.receipt_long_rounded),
                 label: "វិក្កយបត្រ",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline_rounded),
+                activeIcon: Icon(Icons.person_rounded),
+                label: "គណនី",
               ),
             ],
           ),

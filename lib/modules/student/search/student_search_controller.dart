@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../home/student_home_controller.dart';
 
@@ -80,6 +81,13 @@ class StudentSearchController extends GetxController {
           final home = Get.find<StudentHomeController>();
           searchResults.assignAll(home.properties);
         }
+      }
+
+      if (keyword.isNotEmpty) {
+        AppFirebaseService.logSearchForm(
+          keyword: keyword,
+          resultCount: searchResults.length,
+        );
       }
     } catch (_) {
       if (searchResults.isEmpty && Get.isRegistered<StudentHomeController>()) {

@@ -18,10 +18,17 @@ class OwnerDashboardView extends GetView<OwnerDashboardController> {
         propertyDropdownText: "My Home",
         onPropertyDropdownTap: () => _showPropertyPicker(context),
         actions: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primarySoft,
-            child: const Icon(Icons.person, size: 18, color: AppColors.primary),
+          GestureDetector(
+            onTap: () {
+              if (Get.isRegistered<OwnerMainController>()) {
+                Get.find<OwnerMainController>().changeTab(5);
+              }
+            },
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.primarySoft,
+              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -59,7 +66,7 @@ class OwnerDashboardView extends GetView<OwnerDashboardController> {
                     ),
                     const SizedBox(height: 4),
                     Obx(() => Text(
-                      controller.ownerName,
+                      controller.ownerNameRx.value,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -300,36 +307,42 @@ class OwnerDashboardView extends GetView<OwnerDashboardController> {
                     const SizedBox(height: 14),
 
                     // Legend: ប្រមូលបាន vs រំពឹងទុក
-                    Row(
+                    // Legend: ប្រមូលបាន vs រំពឹងទុក
+                    Obx(() => Row(
                       children: [
                         _buildLegendItem("ប្រមូលបាន (Collected)", "\$${controller.totalRevenue.value.toStringAsFixed(0)}", AppColors.primary),
                         const SizedBox(width: 24),
                         _buildLegendItem("រំពឹងទុក (Expected)", "\$${controller.expectedRevenue.value.toStringAsFixed(2)}", AppColors.textMuted),
                       ],
-                    ),
+                    )),
 
                     const SizedBox(height: 16),
 
                     // Simple mock visual chart line bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        height: 10,
-                        color: AppColors.border,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: (controller.totalRevenue.value).toInt(),
-                              child: Container(color: AppColors.primary),
-                            ),
-                            Expanded(
-                              flex: (controller.expectedRevenue.value - controller.totalRevenue.value).toInt(),
-                              child: Container(color: AppColors.accentOrangeLight),
-                            ),
-                          ],
+                    Obx(() {
+                      final collected = controller.totalRevenue.value.toInt().clamp(1, 9999);
+                      final diff = (controller.expectedRevenue.value - controller.totalRevenue.value).toInt();
+                      final remaining = diff > 0 ? diff : 1;
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          height: 10,
+                          color: AppColors.border,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: collected,
+                                child: Container(color: AppColors.primary),
+                              ),
+                              Expanded(
+                                flex: remaining,
+                                child: Container(color: AppColors.accentOrangeLight),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
                   ],
                 ),
               ),

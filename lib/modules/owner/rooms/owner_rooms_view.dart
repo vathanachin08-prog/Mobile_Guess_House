@@ -1,18 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../floors/owner_floors_controller.dart';
 import 'owner_rooms_controller.dart';
 
 class OwnerRoomsView extends GetView<OwnerRoomsController> {
   const OwnerRoomsView({super.key});
 
+  String _getFloorDisplayName(int? floorNum) {
+    if (floorNum == null) return "ជាន់ទី ១";
+    if (Get.isRegistered<OwnerFloorsController>()) {
+      final floors = Get.find<OwnerFloorsController>().floors;
+      final match = floors.firstWhereOrNull((f) => f.floorNumber == floorNum);
+      if (match != null && match.name.isNotEmpty) {
+        return match.name;
+      }
+    }
+    return "ជាន់ទី $floorNum";
+  }
+
   void _showAddRoomDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController(text: "50");
     final descCtrl = TextEditingController();
-    int selectedFloor = 1;
+
+    // Dynamically retrieve list of available floors from OwnerFloorsController
+    final floorsCtrl = Get.isRegistered<OwnerFloorsController>()
+        ? Get.find<OwnerFloorsController>()
+        : null;
+    final availableFloors = floorsCtrl?.floors.toList() ?? [];
+
+    List<DropdownMenuItem<int>> floorDropdownItems = [];
+    final seen = <int>{};
+    for (var f in availableFloors) {
+      final fNum = f.floorNumber;
+      if (!seen.contains(fNum)) {
+        seen.add(fNum);
+        floorDropdownItems.add(DropdownMenuItem(
+          value: fNum,
+          child: Text(f.name.isNotEmpty ? f.name : "ជាន់ទី $fNum"),
+        ));
+      }
+    }
+
+    if (floorDropdownItems.isEmpty) {
+      floorDropdownItems = const [
+        DropdownMenuItem(value: 1, child: Text("ជាន់ទី ១")),
+        DropdownMenuItem(value: 2, child: Text("ជាន់ទី ២")),
+        DropdownMenuItem(value: 3, child: Text("ជាន់ទី ៣")),
+      ];
+    }
+
+    int selectedFloor = seen.contains(1) ? 1 : (floorDropdownItems.first.value ?? 1);
 
     showDialog(
       context: context,
@@ -61,11 +103,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 1, child: Text("ជាន់ទី ១")),
-                    DropdownMenuItem(value: 2, child: Text("ជាន់ទី ២")),
-                    DropdownMenuItem(value: 3, child: Text("ជាន់ទី ៣")),
-                  ],
+                  items: floorDropdownItems,
                   onChanged: (val) => setState(() => selectedFloor = val ?? 1),
                 ),
                 const SizedBox(height: 14),
@@ -111,6 +149,15 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                           desc: descCtrl.text.trim(),
                         );
                         Navigator.pop(ctx);
+                      } else {
+                        AppFirebaseService.logAddRoomForm(
+                          roomNumber: '',
+                          floor: selectedFloor,
+                          price: price,
+                          success: false,
+                          errorMessage: "Validation: Empty room number",
+                        );
+                        Get.snackbar("Error", "សូមបញ្ចូលឈ្មោះបន្ទប់ / Please enter room number");
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -118,14 +165,16 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
                     ),
-                    child: const Text("បង្កើត", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text("បង្កើត", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ),
+                const SizedBox(height: 8),
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text("បោះបង់", style: TextStyle(color: AppColors.textSecondary)),
+                    child: const Text("បោះបង់", style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                   ),
                 ),
               ],
@@ -239,10 +288,14 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: isAvail ? AppColors.primarySoft : AppColors.primarySoft.withValues(alpha: 0.5),
+                            color: isAvail ? AppColors.primarySoft : Colors.amber.shade50,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 22),
+                          child: Icon(
+                            Icons.meeting_room_outlined,
+                            color: isAvail ? AppColors.primary : Colors.amber.shade800,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -255,7 +308,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "ជាន់ទី ${room.floor ?? 1} • \$${room.price?.toStringAsFixed(0) ?? 50}/mo",
+                                "${_getFloorDisplayName(room.floor)} • \$${room.price?.toStringAsFixed(0) ?? 50}/mo",
                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                               ),
                             ],
@@ -264,7 +317,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isAvail ? AppColors.primarySoft : AppColors.primarySoft,
+                            color: isAvail ? AppColors.primarySoft : Colors.amber.shade50,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -272,7 +325,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: isAvail ? AppColors.primary : AppColors.primary,
+                              color: isAvail ? AppColors.primary : Colors.amber.shade800,
                             ),
                           ),
                         ),

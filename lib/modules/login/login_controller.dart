@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/firebase_service.dart';
 import '../../data/local/token_store_local.dart';
 import '../../models/login/LoginRequest.dart';
 import '../../routes/app_route_name.dart';
@@ -32,10 +33,12 @@ class LoginController extends GetxController {
     String password = passwordController.text.trim();
     if (username.isEmpty) {
       Get.snackbar("Error", "Phone number is required", backgroundColor: Colors.red.shade50);
+      AppFirebaseService.logLoginForm(success: false, errorMessage: "Missing phone number");
       return;
     }
     if (password.isEmpty) {
       Get.snackbar("Error", "Password is required", backgroundColor: Colors.red.shade50);
+      AppFirebaseService.logLoginForm(success: false, errorMessage: "Missing password");
       return;
     }
     isLoading.value = true;
@@ -50,6 +53,15 @@ class LoginController extends GetxController {
           TokenStoreLocal.setUser(loginResponse.user!.toJson());
         }
 
+        final role = TokenStoreLocal.getUserRole();
+        final userId = loginResponse.user?.id?.toString();
+        // Track Login Form Success in Firebase Analytics
+        AppFirebaseService.logLoginForm(
+          success: true,
+          role: role,
+          userId: userId,
+        );
+
         Get.snackbar("Success", "Login Successfully", backgroundColor: Colors.green.shade50);
 
         if (TokenStoreLocal.isOwner()) {
@@ -58,6 +70,10 @@ class LoginController extends GetxController {
           Get.offAllNamed(AppRouteName.studentMain);
         }
       } else {
+        AppFirebaseService.logLoginForm(
+          success: false,
+          errorMessage: "Invalid phone number or password",
+        );
         Get.snackbar(
           "Error",
           "Invalid phone number or password",
@@ -66,6 +82,10 @@ class LoginController extends GetxController {
         );
       }
     } catch (e) {
+      AppFirebaseService.logLoginForm(
+        success: false,
+        errorMessage: e.toString(),
+      );
       Get.snackbar("Error", "Connection failed: $e", backgroundColor: Colors.red.shade50);
     } finally {
       isLoading.value = false;

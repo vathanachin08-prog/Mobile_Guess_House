@@ -23,22 +23,36 @@ class OwnerDashboardController extends GetxController {
   final totalRevenue = 100.0.obs;
   final expectedRevenue = 151.62.obs;
 
+  final user = Rxn<Map<String, dynamic>>();
+  final ownerNameRx = "Veasna".obs;
+
   @override
   void onInit() {
     super.onInit();
+    _loadUserInfo();
     loadDashboard();
   }
 
-  String get ownerName {
+  void _loadUserInfo() {
     final u = TokenStoreLocal.getUser();
+    user.value = u;
     if (u != null) {
       final first = u['firstName'] ?? '';
       final last = u['lastName'] ?? '';
-      if (first.isNotEmpty) return "$first $last".trim();
-      return u['username'] ?? 'Veasna';
+      if (first.isNotEmpty) {
+        ownerNameRx.value = "$first $last".trim();
+        return;
+      }
+      final un = u['username'];
+      if (un != null && un.toString().isNotEmpty) {
+        ownerNameRx.value = un.toString();
+        return;
+      }
     }
-    return 'Veasna';
+    ownerNameRx.value = 'Veasna';
   }
+
+  String get ownerName => ownerNameRx.value;
 
   double get occupancyRate {
     if (totalRooms.value == 0) return 0.0;

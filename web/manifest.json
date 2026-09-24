@@ -1,6 +1,6 @@
 {
-    "name": "demo_access_refresh_token_app",
-    "short_name": "demo_access_refresh_token_app",
+    "name": "RoomFinder KH",
+    "short_name": "RoomFinder KH",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

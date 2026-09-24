@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386149399864",
+    "project_id": "roomfinder-kh",
+    "storage_bucket": "roomfinder-kh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386149399864:android:cc8f2ff76aec1b84bd55cd",
+        "android_client_info": {
+          "package_name": "com.dinsarenkh.demo_access_refresh_token_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEW5ujSPaOPgvqVQQmJ5rUed943z0bnGU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

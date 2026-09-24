@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/review_model.dart';
@@ -89,6 +90,11 @@ class PropertyDetailController extends GetxController {
         body: {"rating": rating, "comment": comment},
       );
       if (res != null) {
+        AppFirebaseService.logReviewForm(
+          propertyId: pId,
+          rating: rating,
+          success: true,
+        );
         Get.snackbar("Success", "Review submitted! Thank you.", backgroundColor: Colors.green.shade50);
         reviews.insert(0, ReviewModel(
           studentName: "You",
@@ -97,8 +103,21 @@ class PropertyDetailController extends GetxController {
           createdAt: DateTime.now().toIso8601String(),
         ));
         return true;
+      } else {
+        AppFirebaseService.logReviewForm(
+          propertyId: pId,
+          rating: rating,
+          success: false,
+          errorMessage: "API returned null",
+        );
       }
     } catch (e) {
+      AppFirebaseService.logReviewForm(
+        propertyId: pId,
+        rating: rating,
+        success: false,
+        errorMessage: e.toString(),
+      );
       Get.snackbar("Error", "Could not submit review: $e");
     }
     return false;

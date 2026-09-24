@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary brand palette (Emerald / Mint Green from E-Home KH reference)
+  // Primary brand palette (Emerald / Mint Green from RoomFinder KH reference)
   static const Color primary = Color(0xFF00A86B);
   static const Color primaryDark = Color(0xFF065F46);
   static const Color darkEmerald = Color(0xFF065F46);
