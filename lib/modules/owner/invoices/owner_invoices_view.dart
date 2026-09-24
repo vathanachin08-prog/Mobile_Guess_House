@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../models/rental/invoice_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import 'owner_invoices_controller.dart';
 
 class OwnerInvoicesView extends StatefulWidget {
   const OwnerInvoicesView({super.key});
@@ -12,43 +13,15 @@ class OwnerInvoicesView extends StatefulWidget {
 }
 
 class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
-  String selectedFilter = "ALL";
-  final List<InvoiceModel> invoices = [
-    InvoiceModel(
-      id: 1,
-      invoiceNo: "INV-CF043A",
-      propertyName: "My Home",
-      tenantName: "តុលា សុខ",
-      roomNumber: "00001",
-      floor: "ជាន់ទី១",
-      issueDate: "Apr 8, 2026",
-      dueDate: "Apr 9, 2026",
-      rentAmount: 50.00,
-      electricityUnits: 1.0,
-      electricityRate: 0.12,
-      waterUnits: 1.0,
-      waterRate: 1.50,
-      totalAmount: 51.62,
-      status: "UNPAID",
-    ),
-    InvoiceModel(
-      id: 2,
-      invoiceNo: "INV-CF042B",
-      propertyName: "My Home",
-      tenantName: "តុលា សុខ",
-      roomNumber: "00001",
-      floor: "ជាន់ទី១",
-      issueDate: "Apr 7, 2026",
-      dueDate: "Apr 8, 2026",
-      rentAmount: 50.00,
-      electricityUnits: 0.0,
-      electricityRate: 0.12,
-      waterUnits: 0.0,
-      waterRate: 1.50,
-      totalAmount: 50.00,
-      status: "PAID",
-    ),
-  ];
+  late final OwnerInvoicesController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<OwnerInvoicesController>()
+        ? Get.find<OwnerInvoicesController>()
+        : Get.put(OwnerInvoicesController());
+  }
 
   void _showInvoiceDetailModal(InvoiceModel inv) {
     showModalBottomSheet(
@@ -66,115 +39,102 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Modal Header
+              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(6)),
-                            child: const Icon(Icons.home_outlined, size: 16, color: AppColors.primary),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(inv.propertyName ?? "My Home", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        ],
+                      Text(
+                        inv.invoiceNo ?? "INV-000",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary),
                       ),
-                      const SizedBox(height: 2),
-                      const Text("Phnom Penh", style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                      Text("កាលបរិច្ឆេទចេញ: ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text("វិក្កយបត្រ (Invoice)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text(inv.invoiceNo ?? "INV-001", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: 14),
-
-              // Tenant & Dates
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("វិក្កយបត្រជូន / Billed To", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      const SizedBox(height: 2),
-                      Text(inv.tenantName ?? "Tenant", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text("បន្ទប់: ${inv.roomNumber ?? ''} • ${inv.floor ?? ''}", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text("កាលបរិច្ឆេទចេញ / Issued", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      Text(inv.issueDate ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                      const SizedBox(height: 4),
-                      const Text("កាលបរិច្ឆេទផុតកំណត់ / Due", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      Text(inv.dueDate ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.danger)),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Breakdown Table (Photo 5)
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: const BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Expanded(flex: 3, child: Text("ការពិពណ៌នា", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
-                          Expanded(flex: 2, child: Text("ការប្រើប្រាស់", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
-                          Expanded(flex: 2, child: Text("ចំនួនទឹកប្រាក់", textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary))),
-                        ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: inv.isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      inv.isPaid ? "បានបង់រួចរាល់" : "មិនទាន់បង់",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: inv.isPaid ? AppColors.primary : AppColors.accentOrange,
                       ),
                     ),
-                    _buildInvoiceRow("ថ្លៃឈ្នួលបន្ទប់ (Room Rent)", "—", "\$${inv.rentAmount?.toStringAsFixed(2) ?? '50.00'}", Icons.meeting_room_outlined),
-                    _buildInvoiceRow("អគ្គិសនី (@ \$0.12/kWh)", "1 unit", "\$0.12", Icons.bolt_outlined),
-                    _buildInvoiceRow("ទឹក (@ \$1.50/m³)", "1 unit", "\$1.50", Icons.water_drop_outlined),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.border),
               const SizedBox(height: 16),
 
-              // Total box (Photo 5)
+              // Property & Tenant info card
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    const Text("សរុបត្រូវបង់ (Total Due)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(
-                      "\$${inv.totalAmount?.toStringAsFixed(2) ?? '51.62'}",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primary),
+                    Row(
+                      children: [
+                        const Icon(Icons.home_work_outlined, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(inv.propertyName ?? "My Home", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                        Text("បន្ទប់ ${inv.roomNumber ?? ''}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text("អ្នកជួល: ${inv.tenantName ?? 'N/A'}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+                        Text(inv.floor ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              const Text("ព័ត៌មានលម្អិតការគិតថ្លៃ (Bill Breakdown)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 10),
+
+              // Breakdown Table
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    _buildInvoiceRow("ថ្លៃជួលបន្ទប់ (Room Rent)", "-", "\$${inv.rentAmount?.toStringAsFixed(2) ?? '0.00'}", Icons.meeting_room_outlined),
+                    const Divider(height: 1, color: AppColors.border),
+                    _buildInvoiceRow("ថ្លៃអគ្គិសនី (Electricity)", "${inv.electricityUnits ?? 0} kWh", "\$${((inv.electricityUnits ?? 0) * (inv.electricityRate ?? 0.12)).toStringAsFixed(2)}", Icons.bolt_outlined),
+                    const Divider(height: 1, color: AppColors.border),
+                    _buildInvoiceRow("ថ្លៃទឹក (Water)", "${inv.waterUnits ?? 0} m³", "\$${((inv.waterUnits ?? 0) * (inv.waterRate ?? 1.50)).toStringAsFixed(2)}", Icons.water_drop_outlined),
+                    const Divider(height: 1, color: AppColors.border),
+                    _buildInvoiceRow("ថ្លៃសំរាម (Garbage)", "1 ខែ", "\$2.00", Icons.delete_outline),
+                    const Divider(height: 1, color: AppColors.border),
+                    Container(
+                      color: AppColors.primarySoft.withValues(alpha: 0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("សរុបត្រូវបង់ (Total Due)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                          Text("\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -182,43 +142,32 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 
               const SizedBox(height: 20),
 
-              // KHQR Card Preview (Photo 5)
-              Center(
-                child: Container(
-                  width: 220,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.red.shade700, borderRadius: BorderRadius.circular(4)),
-                        child: const Text("ABA' QR", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: 130,
-                        height: 130,
-                        color: AppColors.background,
-                        child: const Center(
-                          child: Icon(Icons.qr_code_2_rounded, size: 100, color: AppColors.textPrimary),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text("ស្កេនដើម្បីបង់ប្រាក់ / Scan to Pay", style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                    ],
+              // Status Toggle Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (inv.isPaid) {
+                      controller.markAsUnpaid(inv.id);
+                      Get.snackbar("Notice", "បានសម្គាល់វិក្កយបត្រជា 'មិនទាន់បង់'", backgroundColor: Colors.white);
+                    } else {
+                      controller.markAsPaid(inv.id);
+                      Get.snackbar("Success", "បានកត់ត្រាការបង់ប្រាក់ជោគជ័យ!", backgroundColor: Colors.green.shade50);
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  icon: Icon(inv.isPaid ? Icons.undo_rounded : Icons.check_circle_outline, size: 18),
+                  label: Text(inv.isPaid ? "សម្គាល់ថាមិនទាន់បង់ (Mark as Unpaid)" : "កត់ត្រាការបង់ប្រាក់ (Mark as Paid)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: inv.isPaid ? AppColors.accentOrange : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Action buttons (Photo 5)
               Row(
@@ -294,6 +243,68 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
     );
   }
 
+  void _showCreateInvoiceDialog() {
+    final tenantCtrl = TextEditingController(text: "តុលា សុខ");
+    final roomCtrl = TextEditingController(text: "00001");
+    final rentCtrl = TextEditingController(text: "50.00");
+    final elecCtrl = TextEditingController(text: "1.0");
+    final waterCtrl = TextEditingController(text: "1.0");
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("បង្កើតវិក្កយបត្រថ្មី / Create Invoice", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: tenantCtrl, decoration: const InputDecoration(labelText: "ឈ្មោះអ្នកជួល / Tenant")),
+              TextField(controller: roomCtrl, decoration: const InputDecoration(labelText: "លេខបន្ទប់ / Room")),
+              TextField(controller: rentCtrl, decoration: const InputDecoration(labelText: "ថ្លៃបន្ទប់ (\$ / Rent)"), keyboardType: TextInputType.number),
+              TextField(controller: elecCtrl, decoration: const InputDecoration(labelText: "គីឡូភ្លើង (kWh / Electricity)"), keyboardType: TextInputType.number),
+              TextField(controller: waterCtrl, decoration: const InputDecoration(labelText: "គីឡូទឹក (m³ / Water)"), keyboardType: TextInputType.number),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("បោះបង់")),
+          ElevatedButton(
+            onPressed: () {
+              final rent = double.tryParse(rentCtrl.text.trim()) ?? 50.0;
+              final elec = double.tryParse(elecCtrl.text.trim()) ?? 0.0;
+              final water = double.tryParse(waterCtrl.text.trim()) ?? 0.0;
+              final total = rent + (elec * 0.12) + (water * 1.50);
+
+              final newInv = InvoiceModel(
+                id: DateTime.now().millisecondsSinceEpoch,
+                invoiceNo: "INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}",
+                propertyName: "My Home",
+                tenantName: tenantCtrl.text.trim(),
+                roomNumber: roomCtrl.text.trim(),
+                floor: "ជាន់ទី១",
+                issueDate: "Apr 9, 2026",
+                dueDate: "Apr 15, 2026",
+                rentAmount: rent,
+                electricityUnits: elec,
+                electricityRate: 0.12,
+                waterUnits: water,
+                waterRate: 1.50,
+                totalAmount: total,
+                status: "UNPAID",
+              );
+              controller.createInvoice(newInv);
+              Navigator.pop(ctx);
+              Get.snackbar("Success", "បានបង្កើតវិក្កយបត្រ ${newInv.invoiceNo} ជោគជ័យ!", backgroundColor: Colors.green.shade50);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            child: const Text("បង្កើត (Create)"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -306,122 +317,176 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 2x2 Metric Cards Grid (Photo 4)
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.4,
-              children: const [
-                _InvoiceMetricCard(title: "រំពឹងទុក (Expected)", value: "\$151.62", icon: Icons.attach_money, color: AppColors.accentBlue),
-                _InvoiceMetricCard(title: "ប្រមូលបាន (Collected)", value: "\$100.00", icon: Icons.check_circle_outline, color: AppColors.primary),
-                _InvoiceMetricCard(title: "មិនទាន់បង់ (Unpaid)", value: "1", icon: Icons.access_time, color: AppColors.accentOrange),
-                _InvoiceMetricCard(title: "ហួសកាលកំណត់ (Overdue)", value: "0", icon: Icons.warning_amber_rounded, color: AppColors.danger),
-              ],
-            ),
+            // 2x2 Dynamic Metric Cards Grid (Photo 4)
+            Obx(() {
+              return GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.4,
+                children: [
+                  _InvoiceMetricCard(
+                    title: "រំពឹងទុក (Expected)",
+                    value: "\$${controller.totalExpectedRevenue.toStringAsFixed(2)}",
+                    icon: Icons.attach_money,
+                    color: AppColors.accentBlue,
+                  ),
+                  _InvoiceMetricCard(
+                    title: "ប្រមូលបាន (Collected)",
+                    value: "\$${controller.totalCollectedRevenue.toStringAsFixed(2)}",
+                    icon: Icons.check_circle_outline,
+                    color: AppColors.primary,
+                  ),
+                  _InvoiceMetricCard(
+                    title: "មិនទាន់បង់ (Unpaid)",
+                    value: "${controller.unpaidCount}",
+                    icon: Icons.access_time,
+                    color: AppColors.accentOrange,
+                  ),
+                  _InvoiceMetricCard(
+                    title: "ហួសកាលកំណត់ (Overdue)",
+                    value: "${controller.overdueCount}",
+                    icon: Icons.warning_amber_rounded,
+                    color: AppColors.danger,
+                  ),
+                ],
+              );
+            }),
 
             const SizedBox(height: 16),
 
             // Filter Tabs (Photo 4)
-            Row(
-              children: [
-                _buildFilterTab("ALL", "ទាំងអស់ (All)"),
-                const SizedBox(width: 6),
-                _buildFilterTab("UNPAID", "មិនទាន់បង់"),
-                const SizedBox(width: 6),
-                _buildFilterTab("PAID", "បានបង់"),
-              ],
-            ),
+            Obx(() {
+              final selected = controller.selectedFilter.value;
+              return Row(
+                children: [
+                  _buildFilterTab("ALL", "ទាំងអស់ (All)", selected),
+                  const SizedBox(width: 6),
+                  _buildFilterTab("UNPAID", "មិនទាន់បង់", selected),
+                  const SizedBox(width: 6),
+                  _buildFilterTab("PAID", "បានបង់", selected),
+                ],
+              );
+            }),
 
             const SizedBox(height: 14),
 
             // Invoices List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: invoices.length,
-              itemBuilder: (ctx, i) {
-                final inv = invoices[i];
-                final isPaid = inv.isPaid;
-                return InkWell(
-                  onTap: () => _showInvoiceDetailModal(inv),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            isPaid ? Icons.check_circle_outline : Icons.receipt_long,
-                            color: isPaid ? AppColors.primary : AppColors.accentOrange,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(inv.tenantName ?? "Tenant", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              const SizedBox(height: 2),
-                              Text("បន្ទប់: ${inv.roomNumber ?? ''} • ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              "\$${inv.totalAmount?.toStringAsFixed(2) ?? '50.00'}",
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                isPaid ? "បានបង់" : "មិនទាន់បង់",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: isPaid ? AppColors.primary : AppColors.accentOrange,
-                                ),
-                              ),
-                            ),
-                          ],
+            Obx(() {
+              final list = controller.filteredInvoices;
+              if (list.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
+                        SizedBox(height: 12),
+                        Text(
+                          "មិនមានវិក្កយបត្រទេ / No Invoices Found",
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         ),
                       ],
                     ),
                   ),
                 );
-              },
-            ),
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: list.length,
+                itemBuilder: (ctx, i) {
+                  final inv = list[i];
+                  final isPaid = inv.isPaid;
+                  return InkWell(
+                    onTap: () => _showInvoiceDetailModal(inv),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              isPaid ? Icons.check_circle_outline : Icons.receipt_long,
+                              color: isPaid ? AppColors.primary : AppColors.accentOrange,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(inv.invoiceNo ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                                const SizedBox(height: 2),
+                                Text(inv.tenantName ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                const SizedBox(height: 2),
+                                Text("បន្ទប់: ${inv.roomNumber ?? ''} • ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  isPaid ? "បានបង់" : "មិនទាន់បង់",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: isPaid ? AppColors.primary : AppColors.accentOrange,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateInvoiceDialog,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white, size: 26),
       ),
     );
   }
 
-  Widget _buildFilterTab(String code, String label) {
-    final isSelected = selectedFilter == code;
+  Widget _buildFilterTab(String code, String label, String currentSelected) {
+    final isSelected = currentSelected == code;
     return InkWell(
-      onTap: () => setState(() => selectedFilter = code),
+      onTap: () => controller.selectedFilter.value = code,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

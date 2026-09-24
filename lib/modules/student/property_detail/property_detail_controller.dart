@@ -7,6 +7,9 @@ import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/review_model.dart';
+import '../../../models/rental/favorite_model.dart';
+import '../home/student_home_controller.dart';
+import '../favorites/favorites_controller.dart';
 
 class PropertyDetailController extends GetxController {
   final ApiService apiService;
@@ -32,6 +35,14 @@ class PropertyDetailController extends GetxController {
       property = PropertyModel(id: args).obs;
       loadDetails(args);
     }
+    _syncInitialFavorite();
+  }
+
+  void _syncInitialFavorite() {
+    final targetId = property.value.id;
+    if (targetId != null && Get.isRegistered<StudentHomeController>()) {
+      isFavorite.value = Get.find<StudentHomeController>().favoriteIds.contains(targetId);
+    }
   }
 
   Future<void> loadDetails(int? id) async {
@@ -48,6 +59,7 @@ class PropertyDetailController extends GetxController {
           if (p.rooms != null && p.rooms!.isNotEmpty) {
             rooms.assignAll(p.rooms!);
           }
+          _syncInitialFavorite();
         }
       }
 
@@ -70,14 +82,69 @@ class PropertyDetailController extends GetxController {
   void toggleFavorite() async {
     final pId = property.value.id;
     if (pId == null) return;
-    isFavorite.value = !isFavorite.value;
+
+    StudentHomeController? homeCtrl;
+    if (Get.isRegistered<StudentHomeController>()) {
+      homeCtrl = Get.find<StudentHomeController>();
+    }
+
     if (isFavorite.value) {
-      Get.snackbar("Favorite", "Saved to favorites", backgroundColor: Colors.green.shade50);
+      // Un-favorite
+      isFavorite.value = false;
+      final favId = homeCtrl?.propertyFavoriteMap[pId];
+      homeCtrl?.favoriteIds.remove(pId);
+      homeCtrl?.propertyFavoriteMap.remove(pId);
+
+      if (Get.isRegistered<FavoritesController>()) {
+        Get.find<FavoritesController>().favorites.removeWhere((f) => f.property?.id == pId);
+      }
+
+      Get.snackbar("Favorite", "Removed from favorites", backgroundColor: Colors.white, duration: const Duration(seconds: 1));
+
       try {
-        await apiService.postApi(ConstantUri.favorites, body: {"propertyId": pId});
-      } catch (_) {}
+        if (favId != null) {
+          await apiService.deleteApi(ConstantUri.deleteFavorite(favId));
+        } else {
+          await apiService.deleteApi(ConstantUri.deleteFavoriteByProperty(pId));
+        }
+      } catch (_) {
+        try {
+          await apiService.deleteApi(ConstantUri.deleteFavoriteByProperty(pId));
+        } catch (_) {}
+      }
     } else {
-      Get.snackbar("Favorite", "Removed from favorites");
+      // Add favorite
+      isFavorite.value = true;
+      homeCtrl?.favoriteIds.add(pId);
+
+      if (Get.isRegistered<FavoritesController>()) {
+        final favCtrl = Get.find<FavoritesController>();
+        if (!favCtrl.favorites.any((f) => f.property?.id == pId)) {
+          favCtrl.favorites.insert(0, FavoriteModel(
+            property: property.value,
+            createdAt: DateTime.now().toIso8601String(),
+          ));
+        }
+      }
+
+      Get.snackbar("Favorite", "Saved to favorites", backgroundColor: Colors.green.shade50, duration: const Duration(seconds: 1));
+
+      try {
+        final res = await apiService.postApi(ConstantUri.favorites, body: {"propertyId": pId});
+        if (res != null) {
+          final decoded = jsonDecode(res);
+          if (decoded['data'] != null && decoded['data']['id'] != null) {
+            final int favId = decoded['data']['id'];
+            homeCtrl?.propertyFavoriteMap[pId] = favId;
+          }
+        }
+        if (Get.isRegistered<FavoritesController>()) {
+          Get.find<FavoritesController>().loadFavorites();
+        }
+      } catch (_) {
+        isFavorite.value = true;
+        homeCtrl?.favoriteIds.add(pId);
+      }
     }
   }
 

@@ -30,13 +30,16 @@ class VisitRequestsController extends GetxController {
       final res = await apiService.getApi(ConstantUri.myVisitRequests);
       if (res != null) {
         final decoded = jsonDecode(res);
-        if (decoded['data'] != null && decoded['data'] is List) {
-          final List list = decoded['data'];
-          requests.assignAll(list.map((e) => VisitRequestModel.fromJson(e)).toList());
+        final data = decoded['data'];
+        List items = [];
+        if (data != null) {
+          if (data is Map && data['content'] is List) {
+            items = data['content'];
+          } else if (data is List) {
+            items = data;
+          }
         }
-      }
-      if (requests.isEmpty) {
-        requests.assignAll(_getDemoRequests());
+        requests.assignAll(items.map((e) => VisitRequestModel.fromJson(e)).toList());
       }
     } catch (_) {
       if (requests.isEmpty) {

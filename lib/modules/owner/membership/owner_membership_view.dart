@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../../../widgets/owner_app_bar_helper.dart';
 
 class OwnerMembershipView extends StatefulWidget {
   const OwnerMembershipView({super.key});
@@ -11,7 +13,14 @@ class OwnerMembershipView extends StatefulWidget {
 }
 
 class _OwnerMembershipViewState extends State<OwnerMembershipView> {
-  String _selectedPlan = "STANDARD";
+  final _storage = GetStorage();
+  late String _selectedPlan;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPlan = _storage.read("OWNER_MEMBERSHIP_PLAN") ?? "BASIC";
+  }
 
   void _upgradePlan(String planName) {
     showDialog(
@@ -68,6 +77,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
+              _storage.write("OWNER_MEMBERSHIP_PLAN", planName);
               setState(() => _selectedPlan = planName);
               Get.snackbar(
                 "ជោគជ័យ",
@@ -97,17 +107,8 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
       appBar: CustomAppBar(
         propertyName: "My Home",
         subtitle: "membership".tr,
-        onPropertyTap: () {},
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-        ],
+        onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+        actions: OwnerAppBarHelper.buildStandardActions(context),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -168,7 +169,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               title: "Basic (ឥតគិតថ្លៃ)",
               price: "\$0.00",
               period: "/ ជារៀងរហូត",
-              isCurrent: _selectedPlan == "BASIC",
+              isCurrent: _selectedPlan.toUpperCase() == "BASIC",
               isPopular: false,
               badgeText: null,
               features: [
@@ -178,6 +179,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                 "ការគាំទ្រតាមអ៊ីមែល",
               ],
               onTap: () {
+                _storage.write("OWNER_MEMBERSHIP_PLAN", "BASIC");
                 setState(() => _selectedPlan = "BASIC");
               },
             ),
@@ -188,7 +190,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               title: "Standard",
               price: "\$9.99",
               period: "/ ខែ",
-              isCurrent: _selectedPlan == "STANDARD",
+              isCurrent: _selectedPlan.toUpperCase() == "STANDARD",
               isPopular: true,
               badgeText: "ពេញនិយមបំផុត",
               features: [
@@ -207,7 +209,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               title: "Premium (គ្មានដែនកំណត់)",
               price: "\$19.99",
               period: "/ ខែ",
-              isCurrent: _selectedPlan == "PREMIUM",
+              isCurrent: _selectedPlan.toUpperCase() == "PREMIUM",
               isPopular: false,
               badgeText: "គ្មានដែនកំណត់",
               features: [

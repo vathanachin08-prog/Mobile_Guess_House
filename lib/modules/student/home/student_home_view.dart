@@ -210,12 +210,12 @@ class StudentHomeView extends GetView<StudentHomeController> {
                           return Container(
                             width: 260,
                             margin: const EdgeInsets.only(right: 14),
-                            child: PropertyCard(
+                            child: Obx(() => PropertyCard(
                               property: item,
                               isFavorite: controller.favoriteIds.contains(item.id),
                               onFavoriteTap: () => controller.toggleFavorite(item),
                               onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: item),
-                            ),
+                            )),
                           );
                         },
                       ),
@@ -276,12 +276,12 @@ class StudentHomeView extends GetView<StudentHomeController> {
                     final item = list[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: PropertyCard(
+                      child: Obx(() => PropertyCard(
                         property: item,
                         isFavorite: controller.favoriteIds.contains(item.id),
                         onFavoriteTap: () => controller.toggleFavorite(item),
                         onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: item),
-                      ),
+                      )),
                     );
                   },
                 );

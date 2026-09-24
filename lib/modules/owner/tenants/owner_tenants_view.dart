@@ -4,6 +4,7 @@ import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import 'owner_tenants_controller.dart';
 
 class OwnerTenantsView extends StatefulWidget {
   const OwnerTenantsView({super.key});
@@ -14,26 +15,18 @@ class OwnerTenantsView extends StatefulWidget {
 
 class _OwnerTenantsViewState extends State<OwnerTenantsView> {
   final searchController = TextEditingController();
-  final List<TenantModel> tenants = [
-    TenantModel(
-      id: 1,
-      name: "តុលា សុខ",
-      roomNumber: "00001",
-      floor: "ជាន់ទី១",
-      email: "myhome+1@gmail.com",
-      phoneNumber: "03423423423",
-      status: "ACTIVE",
-    ),
-    TenantModel(
-      id: 2,
-      name: "សុខ រដ្ឋា",
-      roomNumber: "00002",
-      floor: "ជាន់ទី១",
-      email: "rothasok@gmail.com",
-      phoneNumber: "012889900",
-      status: "ACTIVE",
-    ),
-  ];
+  late final OwnerTenantsController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<OwnerTenantsController>()
+        ? Get.find<OwnerTenantsController>()
+        : Get.put(OwnerTenantsController());
+    searchController.addListener(() {
+      controller.searchQuery.value = searchController.text;
+    });
+  }
 
   @override
   void dispose() {
@@ -57,8 +50,14 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
               leading: const Icon(Icons.person_remove_outlined, color: AppColors.accentOrange),
               title: const Text("ដកចេញពីបន្ទប់ / Remove from room"),
               onTap: () {
+                controller.removeTenant(tenant.id);
                 Navigator.pop(ctx);
-                Get.snackbar("Notice", "ដកអ្នកជួល ${tenant.name} ចេញពីបន្ទប់ ${tenant.roomNumber} រួចរាល់");
+                Get.snackbar(
+                  "Notice",
+                  "ដកអ្នកជួល ${tenant.name} ចេញពីបន្ទប់ ${tenant.roomNumber} រួចរាល់",
+                  backgroundColor: Colors.white,
+                  margin: const EdgeInsets.all(16),
+                );
               },
             ),
             ListTile(
@@ -78,9 +77,9 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
               leading: const Icon(Icons.delete_outline, color: AppColors.danger),
               title: const Text("លុប / Delete", style: TextStyle(color: AppColors.danger)),
               onTap: () {
-                setState(() => tenants.removeWhere((t) => t.id == tenant.id));
+                controller.removeTenant(tenant.id);
                 Navigator.pop(ctx);
-                Get.snackbar("Deleted", "បានលុបអ្នកជួលរួចរាល់");
+                Get.snackbar("Deleted", "បានលុបអ្នកជួលរួចរាល់", backgroundColor: Colors.white, margin: const EdgeInsets.all(16));
               },
             ),
           ],
@@ -93,29 +92,36 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final roomCtrl = TextEditingController(text: "00003");
+    final floorCtrl = TextEditingController(text: "ជាន់ទី២");
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("បន្ថែមអ្នកជួលថ្មី / Add Tenant", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: "ឈ្មោះអ្នកជួល / Tenant Name"),
-            ),
-            TextField(
-              controller: phoneCtrl,
-              decoration: const InputDecoration(labelText: "លេខទូរស័ព្ទ / Phone Number"),
-              keyboardType: TextInputType.phone,
-            ),
-            TextField(
-              controller: roomCtrl,
-              decoration: const InputDecoration(labelText: "លេខបន្ទប់ / Room Number"),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: "ឈ្មោះអ្នកជួល / Tenant Name"),
+              ),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: "លេខទូរស័ព្ទ / Phone Number"),
+                keyboardType: TextInputType.phone,
+              ),
+              TextField(
+                controller: roomCtrl,
+                decoration: const InputDecoration(labelText: "លេខបន្ទប់ / Room Number"),
+              ),
+              TextField(
+                controller: floorCtrl,
+                decoration: const InputDecoration(labelText: "ជាន់ / Floor"),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("បោះបង់")),
@@ -123,24 +129,27 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
             onPressed: () {
               final tenantName = nameCtrl.text.trim();
               final roomNumber = roomCtrl.text.trim();
+              final phone = phoneCtrl.text.trim();
+              final floor = floorCtrl.text.trim();
               if (tenantName.isNotEmpty) {
                 AppFirebaseService.logAddTenantForm(
                   tenantName: tenantName,
                   roomNumber: roomNumber,
                   success: true,
                 );
-                setState(() {
-                  tenants.add(TenantModel(
-                    id: tenants.length + 1,
-                    name: tenantName,
-                    phoneNumber: phoneCtrl.text.trim(),
-                    roomNumber: roomNumber,
-                    floor: "ជាន់ទី២",
-                    email: "tenant@example.com",
-                  ));
-                });
+                controller.addTenant(
+                  name: tenantName,
+                  roomNumber: roomNumber.isNotEmpty ? roomNumber : "00001",
+                  floor: floor.isNotEmpty ? floor : "ជាន់ទី១",
+                  phone: phone.isNotEmpty ? phone : "012345678",
+                );
                 Navigator.pop(ctx);
-                Get.snackbar("Success", "បានបន្ថែមអ្នកជួលជោគជ័យ! Tenant added.", backgroundColor: Colors.green.shade50);
+                Get.snackbar(
+                  "Success",
+                  "បានបន្ថែមអ្នកជួលជោគជ័យ! Tenant added.",
+                  backgroundColor: Colors.green.shade50,
+                  margin: const EdgeInsets.all(16),
+                );
               } else {
                 AppFirebaseService.logAddTenantForm(
                   tenantName: '',
@@ -210,73 +219,95 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
 
           // Tenants List (Photo 6)
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: tenants.length,
-              itemBuilder: (ctx, i) {
-                final t = tenants[i];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: AppColors.primarySoft,
-                            child: Text(
-                              t.name?.substring(0, 1) ?? "T",
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t.name ?? "Tenant",
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "${t.floor ?? ''} • ${t.roomNumber ?? ''}",
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
-                            onPressed: () => _showActionSheet(t),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const Divider(height: 1, color: AppColors.border),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(Icons.email_outlined, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(t.email ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          const Spacer(),
-                          const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(t.phoneNumber ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ],
+            child: Obx(() {
+              final list = controller.filteredTenants;
+              if (list.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.people_outline_rounded, size: 48, color: AppColors.textMuted),
+                        SizedBox(height: 12),
+                        Text(
+                          "មិនមានអ្នកជួលទេ / No Tenants Found",
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                      ],
+                    ),
                   ),
                 );
-              },
-            ),
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: list.length,
+                itemBuilder: (ctx, i) {
+                  final t = list[i];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.primarySoft,
+                              child: Text(
+                                (t.name != null && t.name!.isNotEmpty) ? t.name!.substring(0, 1) : "T",
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    t.name ?? "Tenant",
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "${t.floor ?? ''} • ${t.roomNumber ?? ''}",
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
+                              onPressed: () => _showActionSheet(t),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(height: 1, color: AppColors.border),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.email_outlined, size: 14, color: AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(t.email ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            const Spacer(),
+                            const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(t.phoneNumber ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),

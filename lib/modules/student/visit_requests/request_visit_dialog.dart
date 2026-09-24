@@ -5,6 +5,8 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../widgets/app_colors.dart';
 
+import 'visit_requests_controller.dart';
+
 class RequestVisitDialog extends StatefulWidget {
   final int propertyId;
   final int? roomId;
@@ -40,14 +42,13 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
   void _submit() async {
     final phone = phoneController.text.trim();
     final formattedDate = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-    final formattedTime = "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}:00";
-    final requestedDateTime = "${formattedDate}T$formattedTime";
+    final formattedTime = "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}";
 
     if (phone.isEmpty) {
       AppFirebaseService.logVisitRequestForm(
         propertyId: widget.propertyId,
         roomId: widget.roomId,
-        requestedDate: requestedDateTime,
+        requestedDate: formattedDate,
         success: false,
         errorMessage: "Validation: Empty phone number",
       );
@@ -59,12 +60,17 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
 
     try {
       final api = Get.find<ApiService>();
+      final notes = noteController.text.trim();
+      final fullMessage = notes.isNotEmpty
+          ? "$notes (Phone: $phone)"
+          : "Interested in visiting (Phone: $phone)";
+
       final body = {
         "propertyId": widget.propertyId,
-        "roomId": widget.roomId,
-        "requestedDate": requestedDateTime,
-        "notes": noteController.text.trim().isNotEmpty ? noteController.text.trim() : "Interested in visiting",
-        "contactPhone": phone,
+        if (widget.roomId != null) "roomId": widget.roomId,
+        "requestedDate": formattedDate,
+        "requestedTime": formattedTime,
+        "message": fullMessage,
       };
 
       final res = await api.postApi(ConstantUri.visitRequests, body: body);
@@ -72,9 +78,14 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
         AppFirebaseService.logVisitRequestForm(
           propertyId: widget.propertyId,
           roomId: widget.roomId,
-          requestedDate: requestedDateTime,
+          requestedDate: formattedDate,
           success: true,
         );
+
+        if (Get.isRegistered<VisitRequestsController>()) {
+          Get.find<VisitRequestsController>().loadRequests();
+        }
+
         Get.back();
         Get.snackbar(
           "Success",
@@ -86,7 +97,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
         AppFirebaseService.logVisitRequestForm(
           propertyId: widget.propertyId,
           roomId: widget.roomId,
-          requestedDate: requestedDateTime,
+          requestedDate: formattedDate,
           success: false,
           errorMessage: "API error: submission returned null",
         );
@@ -96,7 +107,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
       AppFirebaseService.logVisitRequestForm(
         propertyId: widget.propertyId,
         roomId: widget.roomId,
-        requestedDate: requestedDateTime,
+        requestedDate: formattedDate,
         success: false,
         errorMessage: e.toString(),
       );

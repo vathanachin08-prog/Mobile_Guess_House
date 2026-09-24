@@ -6,6 +6,8 @@ import '../../../core/services/api_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/facility_model.dart';
+import '../../../models/rental/favorite_model.dart';
+import '../favorites/favorites_controller.dart';
 
 class StudentHomeController extends GetxController {
   final ApiService apiService;
@@ -16,11 +18,13 @@ class StudentHomeController extends GetxController {
   final errorMessage = RxnString();
   final selectedCategory = "ALL".obs;
   final favoriteIds = <int>{}.obs;
+  final propertyFavoriteMap = <int, int>{}.obs; // propertyId -> favoriteId
 
   @override
   void onInit() {
     super.onInit();
     loadProperties();
+    loadFavorites();
   }
 
   List<PropertyModel> get filteredProperties {
@@ -30,6 +34,35 @@ class StudentHomeController extends GetxController {
 
   List<PropertyModel> get verifiedProperties {
     return properties.where((p) => p.isVerified).toList();
+  }
+
+  Future<void> loadFavorites() async {
+    try {
+      final res = await apiService.getApi(ConstantUri.favorites);
+      if (res != null) {
+        final decoded = jsonDecode(res);
+        final data = decoded['data'];
+        List items = [];
+        if (data != null) {
+          if (data is Map && data['content'] is List) {
+            items = data['content'];
+          } else if (data is List) {
+            items = data;
+          }
+        }
+        for (var item in items) {
+          final favId = item['id'];
+          final prop = item['property'];
+          if (prop != null && prop['id'] != null) {
+            final propId = prop['id'] as int;
+            favoriteIds.add(propId);
+            if (favId != null) {
+              propertyFavoriteMap[propId] = favId as int;
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> loadProperties() async {
@@ -66,15 +99,59 @@ class StudentHomeController extends GetxController {
 
   void toggleFavorite(PropertyModel p) async {
     if (p.id == null) return;
-    if (favoriteIds.contains(p.id)) {
-      favoriteIds.remove(p.id);
-      Get.snackbar("Favorite", "Removed from favorites", duration: const Duration(seconds: 1));
-    } else {
-      favoriteIds.add(p.id!);
-      Get.snackbar("Favorite", "Added to favorites", duration: const Duration(seconds: 1), backgroundColor: Colors.green.shade50);
+    final propId = p.id!;
+
+    if (favoriteIds.contains(propId)) {
+      // 1. Un-favorite
+      final favId = propertyFavoriteMap[propId];
+      favoriteIds.remove(propId);
+      propertyFavoriteMap.remove(propId);
+      Get.snackbar("Favorite", "Removed from favorites", duration: const Duration(seconds: 1), backgroundColor: Colors.white);
+
+      if (Get.isRegistered<FavoritesController>()) {
+        Get.find<FavoritesController>().favorites.removeWhere((f) => f.property?.id == propId);
+      }
+
       try {
-        await apiService.postApi(ConstantUri.favorites, body: {"propertyId": p.id});
-      } catch (_) {}
+        if (favId != null) {
+          await apiService.deleteApi(ConstantUri.deleteFavorite(favId));
+        } else {
+          await apiService.deleteApi(ConstantUri.deleteFavoriteByProperty(propId));
+        }
+      } catch (_) {
+        try {
+          await apiService.deleteApi(ConstantUri.deleteFavoriteByProperty(propId));
+        } catch (_) {}
+      }
+    } else {
+      // 2. Add favorite
+      favoriteIds.add(propId);
+      Get.snackbar("Favorite", "Added to favorites", duration: const Duration(seconds: 1), backgroundColor: Colors.green.shade50);
+
+      if (Get.isRegistered<FavoritesController>()) {
+        final favCtrl = Get.find<FavoritesController>();
+        if (!favCtrl.favorites.any((f) => f.property?.id == propId)) {
+          favCtrl.favorites.insert(0, FavoriteModel(
+            property: p,
+            createdAt: DateTime.now().toIso8601String(),
+          ));
+        }
+      }
+
+      try {
+        final res = await apiService.postApi(ConstantUri.favorites, body: {"propertyId": propId});
+        if (res != null) {
+          final decoded = jsonDecode(res);
+          if (decoded['data'] != null && decoded['data']['id'] != null) {
+            propertyFavoriteMap[propId] = decoded['data']['id'];
+          }
+        }
+        if (Get.isRegistered<FavoritesController>()) {
+          Get.find<FavoritesController>().loadFavorites();
+        }
+      } catch (_) {
+        favoriteIds.add(propId);
+      }
     }
   }
 

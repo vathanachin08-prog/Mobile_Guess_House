@@ -11,6 +11,12 @@ class StudentMainController extends GetxController {
 
   void changeTab(int index) {
     currentIndex.value = index;
+    if (index == 2 && Get.isRegistered<FavoritesController>()) {
+      Get.find<FavoritesController>().loadFavorites();
+    }
+    if (index == 3 && Get.isRegistered<VisitRequestsController>()) {
+      Get.find<VisitRequestsController>().loadRequests();
+    }
     if (index == 4 && Get.isRegistered<StudentProfileController>()) {
       final ctrl = Get.find<StudentProfileController>();
       ctrl.loadUser();

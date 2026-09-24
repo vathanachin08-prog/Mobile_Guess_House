@@ -37,8 +37,8 @@ class OwnerRoomsController extends GetxController {
       isLoading.value = true;
       try {
         final res = await apiService!.getApi(ConstantUri.propertyRooms(selectedPropertyId.value));
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
           final data = decoded['data'];
           if (data is List && data.isNotEmpty) {
             rooms.value = data
@@ -176,8 +176,8 @@ class OwnerRoomsController extends GetxController {
             'available': true,
           },
         );
-        if (res.statusCode == 200 || res.statusCode == 201) {
-          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
           final data = decoded['data'];
           if (data != null) {
             final serverRoom = RoomModel.fromJson(Map<String, dynamic>.from(data));

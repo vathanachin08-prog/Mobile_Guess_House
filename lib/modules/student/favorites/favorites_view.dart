@@ -46,7 +46,7 @@ class FavoritesView extends GetView<FavoritesController> {
                   child: PropertyCard(
                     property: fav.property!,
                     isFavorite: true,
-                    onFavoriteTap: () => controller.removeFavorite(fav.id),
+                    onFavoriteTap: () => controller.removeFavorite(fav.id, propertyId: fav.property?.id),
                     onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: fav.property),
                   ),
                 );

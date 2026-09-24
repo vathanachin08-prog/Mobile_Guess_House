@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/metric_card.dart';
+import '../../../widgets/owner_app_bar_helper.dart';
 import '../owner_main_controller.dart';
 import 'owner_dashboard_controller.dart';
 
@@ -16,22 +17,8 @@ class OwnerDashboardView extends GetView<OwnerDashboardController> {
       appBar: CustomAppBar(
         title: "ផ្ទាំងគ្រប់គ្រង",
         propertyDropdownText: "My Home",
-        onPropertyDropdownTap: () => _showPropertyPicker(context),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              if (Get.isRegistered<OwnerMainController>()) {
-                Get.find<OwnerMainController>().changeTab(5);
-              }
-            },
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primarySoft,
-              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
+        onPropertyDropdownTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+        actions: OwnerAppBarHelper.buildStandardActions(context),
       ),
       body: RefreshIndicator(
         onRefresh: controller.loadDashboard,
@@ -382,38 +369,6 @@ class OwnerDashboardView extends GetView<OwnerDashboardController> {
           ],
         ),
       ],
-    );
-  }
-
-  void _showPropertyPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "ជ្រើសរើសអចលនទ្រព្យ / Select Property",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.apartment_rounded, color: AppColors.primary),
-              title: const Text("My Home (Phnom Penh)", style: TextStyle(fontWeight: FontWeight.bold)),
-              trailing: const Icon(Icons.check, color: AppColors.primary),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              leading: const Icon(Icons.apartment_rounded, color: AppColors.textSecondary),
-              title: const Text("Sunrise Student Dormitory"),
-              onTap: () => Navigator.pop(ctx),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

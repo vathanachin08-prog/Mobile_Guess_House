@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../data/local/token_store_local.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/button_custom_widget.dart';
+import '../../../widgets/owner_app_bar_helper.dart';
 
 class OwnerPricingView extends StatefulWidget {
   const OwnerPricingView({super.key});
@@ -13,13 +16,15 @@ class OwnerPricingView extends StatefulWidget {
 }
 
 class _OwnerPricingViewState extends State<OwnerPricingView> {
-  final _rentPriceController = TextEditingController(text: "120.00");
-  final _electricityController = TextEditingController(text: "1000");
-  final _waterController = TextEditingController(text: "1500");
-  final _garbageController = TextEditingController(text: "2.00");
+  final _storage = GetStorage();
+
+  late final TextEditingController _rentPriceController;
+  late final TextEditingController _electricityController;
+  late final TextEditingController _waterController;
+  late final TextEditingController _garbageController;
   late final TextEditingController _exchangeRateController;
-  final _accountNameController = TextEditingController(text: "CHIN VATHANA");
-  final _accountNumberController = TextEditingController(text: "098765432");
+  late final TextEditingController _accountNameController;
+  late final TextEditingController _accountNumberController;
 
   String _qrType = "DYNAMIC"; // DYNAMIC or STATIC
   bool _isLoading = false;
@@ -28,6 +33,22 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
   @override
   void initState() {
     super.initState();
+    final user = TokenStoreLocal.getUser();
+    final defaultOwnerName = user != null
+        ? "${user['firstName'] ?? ''} ${user['lastName'] ?? ''}".trim()
+        : "CHIN VATHANA";
+    final defaultPhone = user != null ? (user['phoneNumber'] ?? '098765432') : "098765432";
+
+    _rentPriceController = TextEditingController(text: _storage.read("PRICING_RENT") ?? "120.00");
+    _electricityController = TextEditingController(text: _storage.read("PRICING_ELEC") ?? "1000");
+    _waterController = TextEditingController(text: _storage.read("PRICING_WATER") ?? "1500");
+    _garbageController = TextEditingController(text: _storage.read("PRICING_GARBAGE") ?? "2.00");
+    _accountNameController = TextEditingController(
+      text: _storage.read("PRICING_ACC_NAME") ?? (defaultOwnerName.isNotEmpty ? defaultOwnerName : "CHIN VATHANA"),
+    );
+    _accountNumberController = TextEditingController(text: _storage.read("PRICING_ACC_NUM") ?? defaultPhone);
+    _qrType = _storage.read("PRICING_QR_TYPE") ?? "DYNAMIC";
+
     // 1. Initialize directly from Firebase Remote Config
     _exchangeRateController = TextEditingController(
       text: AppFirebaseService.exchangeRate.toString(),
@@ -71,6 +92,16 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
   void _saveSettings() {
     setState(() => _isLoading = true);
     final rentPrice = double.tryParse(_rentPriceController.text.trim()) ?? 0.0;
+
+    // Persist to local storage
+    _storage.write("PRICING_RENT", _rentPriceController.text.trim());
+    _storage.write("PRICING_ELEC", _electricityController.text.trim());
+    _storage.write("PRICING_WATER", _waterController.text.trim());
+    _storage.write("PRICING_GARBAGE", _garbageController.text.trim());
+    _storage.write("PRICING_ACC_NAME", _accountNameController.text.trim());
+    _storage.write("PRICING_ACC_NUM", _accountNumberController.text.trim());
+    _storage.write("PRICING_QR_TYPE", _qrType);
+
     AppFirebaseService.logPricingSettingsForm(
       rentPrice: rentPrice,
       electricity: _electricityController.text.trim(),
@@ -78,7 +109,7 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
       exchangeRate: _exchangeRateController.text.trim(),
       success: true,
     );
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) {
         setState(() => _isLoading = false);
         Get.snackbar(
@@ -101,17 +132,8 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
       appBar: CustomAppBar(
         propertyName: "My Home",
         subtitle: "settings".tr,
-        onPropertyTap: () {},
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-        ],
+        onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+        actions: OwnerAppBarHelper.buildStandardActions(context),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

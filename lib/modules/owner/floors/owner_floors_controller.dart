@@ -73,10 +73,10 @@ class OwnerFloorsController extends GetxController {
     isLoading.value = true;
     try {
       final res = await apiService.getApi(ConstantUri.propertyFloors(selectedPropertyId.value));
-      if (res.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+      if (res != null) {
+        final decoded = res is Map ? res : jsonDecode(res.toString());
         final data = decoded['data'];
-        if (data is List) {
+        if (data is List && data.isNotEmpty) {
           floors.value = data.map((item) => FloorItem.fromJson(Map<String, dynamic>.from(item))).toList();
           _saveFloors();
         }
@@ -135,8 +135,8 @@ class OwnerFloorsController extends GetxController {
         ConstantUri.propertyFloors(selectedPropertyId.value),
         body: {'name': trimmedName, 'floorOrder': floors.length},
       );
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+      if (res != null) {
+        final decoded = res is Map ? res : jsonDecode(res.toString());
         final data = decoded['data'];
         if (data != null) {
           // Replace with real database entity including generated ID

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../modules/owner/owner_main_controller.dart';
 import 'app_colors.dart';
+import 'owner_app_bar_helper.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -32,6 +34,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If actions are not provided on an owner screen (indicated by propertyDropdownText != null),
+    // default to the standard interactive owner actions (Notification + Acc).
+    final effectiveActions = actions ??
+        (propertyDropdownText != null ? OwnerAppBarHelper.buildStandardActions(context) : null);
+
+    final effectiveOnPropertyTap = onPropertyDropdownTap ??
+        () => OwnerAppBarHelper.showPropertyPicker(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -51,16 +61,23 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               else if (leading != null)
                 leading!
               else
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.home_work_rounded,
-                    color: AppColors.primary,
-                    size: 20,
+                GestureDetector(
+                  onTap: () {
+                    if (Navigator.canPop(context)) {
+                      Get.back();
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.home_work_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                   ),
                 ),
               const SizedBox(width: 12),
@@ -96,7 +113,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               if (propertyDropdownText != null)
                 InkWell(
-                  onTap: onPropertyDropdownTap,
+                  onTap: effectiveOnPropertyTap,
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -110,24 +127,45 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       children: [
                         const Icon(Icons.home_outlined, size: 16, color: AppColors.primary),
                         const SizedBox(width: 6),
-                        Text(
-                          propertyDropdownText!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
+                        _buildPropertyDropdownLabel(),
                         const SizedBox(width: 4),
                         const Icon(Icons.unfold_more, size: 14, color: AppColors.textSecondary),
                       ],
                     ),
                   ),
                 ),
-              ...?actions,
+              ...?effectiveActions,
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPropertyDropdownLabel() {
+    if (Get.isRegistered<OwnerMainController>()) {
+      final ctrl = Get.find<OwnerMainController>();
+      return Obx(() {
+        final text = ctrl.selectedPropertyShortName.value.isNotEmpty
+            ? ctrl.selectedPropertyShortName.value
+            : (propertyDropdownText ?? "My Home");
+        return Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        );
+      });
+    }
+
+    return Text(
+      propertyDropdownText ?? "My Home",
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
       ),
     );
   }

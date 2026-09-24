@@ -1,6 +1,6 @@
 class ConstantUri {
   // Use localhost for Windows/Web, 10.0.2.2 for Android emulator, or LAN IP for physical device
-  static String baseUri = "http://10.10.0.179:30033";
+  static String baseUri = "http://192.168.110.45:30033";
 
   // Auth
   static String get login => "$baseUri/api/oauth/token";
@@ -28,6 +28,7 @@ class ConstantUri {
   // Student Favorites
   static String get favorites => "$baseUri/api/app/favorites";
   static String deleteFavorite(dynamic id) => "$baseUri/api/app/favorites/$id";
+  static String deleteFavoriteByProperty(dynamic propertyId) => "$baseUri/api/app/favorites/property/$propertyId";
 
   // Visit Requests
   static String get visitRequests => "$baseUri/api/app/visit-requests";
