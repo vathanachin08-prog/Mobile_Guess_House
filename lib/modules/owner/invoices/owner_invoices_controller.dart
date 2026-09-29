@@ -2,11 +2,12 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../models/rental/invoice_model.dart';
 import '../../../core/services/api_service.dart';
+import '../../../data/local/token_store_local.dart';
 
 class OwnerInvoicesController extends GetxController {
   final ApiService? apiService;
   final _storage = GetStorage();
-  static const String _storageKey = "OWNER_INVOICES_PERSIST_KEY";
+  String get _storageKey => TokenStoreLocal.getUserScopedKey("OWNER_INVOICES_PERSIST_KEY");
 
   OwnerInvoicesController({this.apiService});
 
@@ -29,45 +30,11 @@ class OwnerInvoicesController extends GetxController {
             .map((item) => InvoiceModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       } else {
-        invoices.value = [
-          InvoiceModel(
-            id: 1,
-            invoiceNo: "INV-CF043A",
-            propertyName: "My Home",
-            tenantName: "តុលា សុខ",
-            roomNumber: "00001",
-            floor: "ជាន់ទី១",
-            issueDate: "Apr 8, 2026",
-            dueDate: "Apr 9, 2026",
-            rentAmount: 50.00,
-            electricityUnits: 1.0,
-            electricityRate: 0.12,
-            waterUnits: 1.0,
-            waterRate: 1.50,
-            totalAmount: 51.62,
-            status: "UNPAID",
-          ),
-          InvoiceModel(
-            id: 2,
-            invoiceNo: "INV-CF042B",
-            propertyName: "My Home",
-            tenantName: "តុលា សុខ",
-            roomNumber: "00001",
-            floor: "ជាន់ទី១",
-            issueDate: "Apr 7, 2026",
-            dueDate: "Apr 8, 2026",
-            rentAmount: 50.00,
-            electricityUnits: 0.0,
-            electricityRate: 0.12,
-            waterUnits: 0.0,
-            waterRate: 1.50,
-            totalAmount: 50.00,
-            status: "PAID",
-          ),
-        ];
-        _save();
+        // Keep clean for new accounts
+        invoices.clear();
       }
     } catch (_) {
+      invoices.clear();
     } finally {
       isLoading.value = false;
     }

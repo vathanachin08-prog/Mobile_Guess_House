@@ -7,17 +7,29 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/facility_model.dart';
+import '../../../data/local/token_store_local.dart';
 import '../floors/owner_floors_controller.dart';
+import '../owner_main_controller.dart';
 
 class OwnerRoomsController extends GetxController {
   final ApiService? apiService;
   final _storage = GetStorage();
-  static const String _storageKey = "OWNER_ROOMS_PERSIST_KEY";
+
+  int? get activePropertyId {
+    if (Get.isRegistered<OwnerMainController>()) {
+      return Get.find<OwnerMainController>().selectedPropertyId.value;
+    }
+    return null;
+  }
+
+  String get _storageKey {
+    final propId = activePropertyId;
+    return TokenStoreLocal.getUserScopedKey("OWNER_ROOMS_${propId ?? 'none'}");
+  }
 
   final rooms = <RoomModel>[].obs;
   final selectedFilter = "ALL".obs; // ALL, AVAILABLE, OCCUPIED
   final searchQuery = "".obs;
-  final selectedPropertyId = 1.obs;
   final isLoading = false.obs;
 
   OwnerRoomsController({this.apiService});
@@ -29,18 +41,24 @@ class OwnerRoomsController extends GetxController {
   }
 
   Future<void> loadRooms() async {
-    // 1. Instant load from local storage
+    final propId = activePropertyId;
+    if (propId == null) {
+      rooms.clear();
+      return;
+    }
+
+    // 1. Instant load from local user-scoped storage
     _loadFromCache();
 
     // 2. Fetch fresh rooms from backend API if available
     if (apiService != null) {
       isLoading.value = true;
       try {
-        final res = await apiService!.getApi(ConstantUri.propertyRooms(selectedPropertyId.value));
+        final res = await apiService!.getApi(ConstantUri.propertyRooms(propId));
         if (res != null) {
           final decoded = res is Map ? res : jsonDecode(res.toString());
           final data = decoded['data'];
-          if (data is List && data.isNotEmpty) {
+          if (data is List) {
             rooms.value = data
                 .map((item) => RoomModel.fromJson(Map<String, dynamic>.from(item)))
                 .toList();
@@ -64,64 +82,12 @@ class OwnerRoomsController extends GetxController {
             .toList();
         return;
       } catch (e) {
-        // Fallback to defaults
+        // Fallback
       }
     }
 
-    // Default initial rooms from reference UI
-    rooms.value = [
-      RoomModel(
-        id: 1,
-        roomNumber: "00001",
-        floor: 1,
-        price: 50.0,
-        roomType: "SINGLE",
-        available: false,
-        title: "បន្ទប់ជួលជាន់ទី១",
-        facilities: [FacilityModel(name: "WIFI"), FacilityModel(name: "AIR_CONDITIONER")],
-      ),
-      RoomModel(
-        id: 2,
-        roomNumber: "00002",
-        floor: 1,
-        price: 50.0,
-        roomType: "SINGLE",
-        available: true,
-        title: "បន្ទប់ទំនេរជាន់ទី១",
-        facilities: [FacilityModel(name: "WIFI")],
-      ),
-      RoomModel(
-        id: 3,
-        roomNumber: "00003",
-        floor: 2,
-        price: 65.0,
-        roomType: "DOUBLE",
-        available: true,
-        title: "បន្ទប់ធំជាន់ទី២",
-        facilities: [FacilityModel(name: "WIFI"), FacilityModel(name: "PRIVATE_BATHROOM")],
-      ),
-      RoomModel(
-        id: 4,
-        roomNumber: "00004",
-        floor: 2,
-        price: 65.0,
-        roomType: "DOUBLE",
-        available: true,
-        title: "បន្ទប់មានយ៉ជាន់ទី២",
-        facilities: [FacilityModel(name: "WIFI"), FacilityModel(name: "AIR_CONDITIONER")],
-      ),
-      RoomModel(
-        id: 5,
-        roomNumber: "00005",
-        floor: 2,
-        price: 65.0,
-        roomType: "DOUBLE",
-        available: true,
-        title: "បន្ទប់ជាន់ទី២",
-        facilities: [FacilityModel(name: "WIFI")],
-      ),
-    ];
-    _saveRooms();
+    // For a clean / new account with no rooms yet, keep empty list
+    rooms.clear();
   }
 
   void _saveRooms() {
@@ -162,10 +128,15 @@ class OwnerRoomsController extends GetxController {
     Get.snackbar("Success", "បានបន្ថែមបន្ទប់ $number ជោគជ័យ! Room added.", backgroundColor: Colors.green.shade50);
 
     // Save to PostgreSQL Backend API
-    if (apiService != null) {
+    int? propId = activePropertyId;
+    if (propId == null && Get.isRegistered<OwnerMainController>()) {
+      propId = await Get.find<OwnerMainController>().ensureActivePropertyId();
+    }
+
+    if (apiService != null && propId != null) {
       try {
         final res = await apiService!.postApi(
-          ConstantUri.propertyRooms(selectedPropertyId.value),
+          ConstantUri.propertyRooms(propId),
           body: {
             'roomNumber': number,
             'title': 'បន្ទប់ $number',

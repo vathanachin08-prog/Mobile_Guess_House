@@ -42,9 +42,7 @@ class VisitRequestsController extends GetxController {
         requests.assignAll(items.map((e) => VisitRequestModel.fromJson(e)).toList());
       }
     } catch (_) {
-      if (requests.isEmpty) {
-        requests.assignAll(_getDemoRequests());
-      }
+      // Keep real data empty if none exists
     } finally {
       isLoading.value = false;
     }
@@ -61,28 +59,5 @@ class VisitRequestsController extends GetxController {
     } catch (e) {
       Get.snackbar("Error", "Could not cancel request: $e");
     }
-  }
-
-  List<VisitRequestModel> _getDemoRequests() {
-    return [
-      VisitRequestModel(
-        id: 1,
-        propertyName: "Sunrise Student Dormitory",
-        roomNumber: "A101",
-        requestedDate: "2026-09-25",
-        requestedTime: "14:30:00",
-        message: "Looking for room starting next semester",
-        status: "PENDING",
-      ),
-      VisitRequestModel(
-        id: 2,
-        propertyName: "Campus View Apartment",
-        roomNumber: "C301",
-        requestedDate: "2026-09-20",
-        requestedTime: "10:00:00",
-        message: "Need to check WiFi stability",
-        status: "ACCEPTED",
-      ),
-    ];
   }
 }

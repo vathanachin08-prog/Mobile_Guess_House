@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../widgets/app_colors.dart';
@@ -30,7 +31,9 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
     // Dynamically retrieve list of available floors from OwnerFloorsController
     final floorsCtrl = Get.isRegistered<OwnerFloorsController>()
         ? Get.find<OwnerFloorsController>()
-        : null;
+        : (Get.isRegistered<ApiService>()
+            ? Get.put(OwnerFloorsController(apiService: Get.find<ApiService>()))
+            : null);
     final availableFloors = floorsCtrl?.floors.toList() ?? [];
 
     List<DropdownMenuItem<int>> floorDropdownItems = [];
@@ -46,15 +49,9 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
       }
     }
 
-    if (floorDropdownItems.isEmpty) {
-      floorDropdownItems = const [
-        DropdownMenuItem(value: 1, child: Text("ជាន់ទី ១")),
-        DropdownMenuItem(value: 2, child: Text("ជាន់ទី ២")),
-        DropdownMenuItem(value: 3, child: Text("ជាន់ទី ៣")),
-      ];
-    }
-
-    int selectedFloor = seen.contains(1) ? 1 : (floorDropdownItems.first.value ?? 1);
+    bool isCreatingNewFloor = availableFloors.isEmpty;
+    final floorNameCtrl = TextEditingController(text: availableFloors.isEmpty ? "ជាន់ទី ១" : "");
+    int? selectedFloor = availableFloors.isNotEmpty ? availableFloors.first.floorNumber : null;
 
     showDialog(
       context: context,
@@ -95,17 +92,68 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                 ),
                 const SizedBox(height: 14),
 
-                const Text("ជាន់ / Floor", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<int>(
-                  initialValue: selectedFloor,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  items: floorDropdownItems,
-                  onChanged: (val) => setState(() => selectedFloor = val ?? 1),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("ជាន់ / Floor", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    if (availableFloors.isNotEmpty)
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            isCreatingNewFloor = !isCreatingNewFloor;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                          child: Text(
+                            isCreatingNewFloor ? "ជ្រើសពីបញ្ជីជាន់" : "+ បន្ថែមជាន់ថ្មី",
+                            style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: const Text("ជាន់ដំបូង (First Floor)", style: TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 6),
+                if (!isCreatingNewFloor) ...[
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedFloor,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.layers_outlined, size: 20, color: AppColors.primary),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: floorDropdownItems,
+                    onChanged: (val) => setState(() => selectedFloor = val),
+                  ),
+                ] else ...[
+                  TextField(
+                    controller: floorNameCtrl,
+                    decoration: InputDecoration(
+                      hintText: availableFloors.isEmpty ? "ឧ. ជាន់ទី ១ ឬ ជាន់ផ្ទាល់ដី" : "ឧ. ជាន់ទី ${availableFloors.length + 1}",
+                      hintStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.layers_outlined, size: 20, color: AppColors.primary),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    availableFloors.isEmpty
+                        ? "ℹ️ ដោយសារមិនទាន់មានជាន់ ប្រព័ន្ធនឹងបង្កើតជាន់នេះជូនលោកអ្នកដោយស្វ័យប្រវត្តិ។"
+                        : "ℹ️ ជាន់ថ្មីនេះនឹងត្រូវបានបង្កើតចូលក្នុងប្រព័ន្ធដោយស្វ័យប្រវត្តិ។",
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
                 const SizedBox(height: 14),
 
                 const Text("តម្លៃ (\$ / ខែ) / Rent Price", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
@@ -142,9 +190,27 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       final number = nameCtrl.text.trim();
                       final price = double.tryParse(priceCtrl.text.trim()) ?? 50.0;
                       if (number.isNotEmpty) {
+                        int floorToAssign = 1;
+                        if (isCreatingNewFloor) {
+                          final enteredName = floorNameCtrl.text.trim().isNotEmpty
+                              ? floorNameCtrl.text.trim()
+                              : "ជាន់ទី ១";
+                          // Auto-create floor in OwnerFloorsController
+                          floorsCtrl?.addFloor(enteredName);
+
+                          // Parse floor number from name
+                          final khmerDigits = {'១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9', '០': '0'};
+                          String s = enteredName;
+                          khmerDigits.forEach((k, v) => s = s.replaceAll(k, v));
+                          final match = RegExp(r'\d+').firstMatch(s);
+                          floorToAssign = match != null ? (int.tryParse(match.group(0) ?? '') ?? 1) : 1;
+                        } else {
+                          floorToAssign = selectedFloor ?? 1;
+                        }
+
                         controller.addRoom(
                           number: number,
-                          floor: selectedFloor,
+                          floor: floorToAssign,
                           price: price,
                           desc: descCtrl.text.trim(),
                         );
@@ -152,7 +218,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       } else {
                         AppFirebaseService.logAddRoomForm(
                           roomNumber: '',
-                          floor: selectedFloor,
+                          floor: selectedFloor ?? 1,
                           price: price,
                           success: false,
                           errorMessage: "Validation: Empty room number",
@@ -269,6 +335,31 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
           Expanded(
             child: Obx(() {
               final list = controller.filteredRooms;
+              if (list.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.meeting_room_outlined, size: 56, color: AppColors.textMuted.withOpacity(0.5)),
+                        const SizedBox(height: 14),
+                        const Text(
+                          "មិនទាន់មានបន្ទប់នៅឡើយទេ",
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "No rooms yet. សូមចុចប៊ូតុង + ខាងក្រោមដើម្បីបន្ថែមបន្ទប់ដំបូង",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: list.length,

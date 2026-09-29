@@ -97,11 +97,23 @@ class RegisterController extends GetxController {
           body: LoginRequest(phoneNumber: phone, password: password),
         );
         if (loginRes.accessToken != null && loginRes.accessToken!.isNotEmpty) {
+          // Clear any previous session so new registered account is completely clean
+          TokenStoreLocal.removeToken();
           TokenStoreLocal.setAccessToken(loginRes.accessToken ?? "");
           TokenStoreLocal.setRefreshToken(loginRes.refreshToken ?? "");
-          if (loginRes.user != null) {
-            TokenStoreLocal.setUser(loginRes.user!.toJson());
-          }
+          final registeredUser = (response is Map && response['data'] is Map)
+              ? Map<String, dynamic>.from(response['data'])
+              : <String, dynamic>{};
+          final userData = loginRes.user?.toJson() ?? {
+            "id": registeredUser['id'],
+            "username": username,
+            "phoneNumber": phone,
+            "firstName": firstName,
+            "lastName": lastName,
+            "email": email,
+            "roles": [{"name": selectedRole.value}],
+          };
+          TokenStoreLocal.setUser(userData);
           if (TokenStoreLocal.isOwner()) {
             Get.offAllNamed(AppRouteName.ownerMain);
           } else {

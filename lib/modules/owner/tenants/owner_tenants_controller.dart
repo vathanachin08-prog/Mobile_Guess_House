@@ -2,11 +2,12 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../core/services/api_service.dart';
+import '../../../data/local/token_store_local.dart';
 
 class OwnerTenantsController extends GetxController {
   final ApiService? apiService;
   final _storage = GetStorage();
-  static const String _storageKey = "OWNER_TENANTS_PERSIST_KEY";
+  String get _storageKey => TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_PERSIST_KEY");
 
   OwnerTenantsController({this.apiService});
 
@@ -29,30 +30,11 @@ class OwnerTenantsController extends GetxController {
             .map((item) => TenantModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       } else {
-        // Initial real-like dataset matching reference
-        tenants.value = [
-          TenantModel(
-            id: 1,
-            name: "តុលា សុខ",
-            roomNumber: "00001",
-            floor: "ជាន់ទី១",
-            email: "myhome+1@gmail.com",
-            phoneNumber: "03423423423",
-            status: "ACTIVE",
-          ),
-          TenantModel(
-            id: 2,
-            name: "សុខ រដ្ឋា",
-            roomNumber: "00002",
-            floor: "ជាន់ទី១",
-            email: "rothasok@gmail.com",
-            phoneNumber: "012889900",
-            status: "ACTIVE",
-          ),
-        ];
-        _save();
+        // Clean empty state for new / clean account
+        tenants.clear();
       }
     } catch (_) {
+      tenants.clear();
     } finally {
       isLoading.value = false;
     }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../models/rental/invoice_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../tenants/owner_tenants_controller.dart';
 import 'owner_invoices_controller.dart';
 
 class OwnerInvoicesView extends StatefulWidget {
@@ -244,11 +245,20 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
   }
 
   void _showCreateInvoiceDialog() {
-    final tenantCtrl = TextEditingController(text: "តុលា សុខ");
-    final roomCtrl = TextEditingController(text: "00001");
+    String defaultTenant = "";
+    String defaultRoom = "";
+    if (Get.isRegistered<OwnerTenantsController>()) {
+      final tList = Get.find<OwnerTenantsController>().tenants;
+      if (tList.isNotEmpty) {
+        defaultTenant = tList.first.name ?? "";
+        defaultRoom = tList.first.roomNumber ?? "";
+      }
+    }
+    final tenantCtrl = TextEditingController(text: defaultTenant);
+    final roomCtrl = TextEditingController(text: defaultRoom);
     final rentCtrl = TextEditingController(text: "50.00");
-    final elecCtrl = TextEditingController(text: "1.0");
-    final waterCtrl = TextEditingController(text: "1.0");
+    final elecCtrl = TextEditingController(text: "0.0");
+    final waterCtrl = TextEditingController(text: "0.0");
 
     showDialog(
       context: context,

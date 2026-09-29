@@ -17,18 +17,18 @@ class OwnerDashboardController extends GetxController {
   final currentProperty = Rxn<PropertyModel>();
   final isLoading = false.obs;
 
-  // Stats dynamically computed or synced
-  final totalFloors = 3.obs;
-  final totalRooms = 5.obs;
-  final availableRooms = 4.obs;
-  final occupiedRooms = 1.obs;
-  final totalTenants = 2.obs;
-  final unpaidInvoices = 1.obs;
-  final totalRevenue = 50.0.obs;
-  final expectedRevenue = 101.62.obs;
+  // Stats dynamically computed or synced from actual data
+  final totalFloors = 0.obs;
+  final totalRooms = 0.obs;
+  final availableRooms = 0.obs;
+  final occupiedRooms = 0.obs;
+  final totalTenants = 0.obs;
+  final unpaidInvoices = 0.obs;
+  final totalRevenue = 0.0.obs;
+  final expectedRevenue = 0.0.obs;
 
   final user = Rxn<Map<String, dynamic>>();
-  final ownerNameRx = "Veasna".obs;
+  final ownerNameRx = "Owner".obs;
 
   @override
   void onInit() {
@@ -43,7 +43,7 @@ class OwnerDashboardController extends GetxController {
     if (u != null) {
       final first = u['firstName'] ?? '';
       final last = u['lastName'] ?? '';
-      if (first.isNotEmpty) {
+      if (first.toString().isNotEmpty || last.toString().isNotEmpty) {
         ownerNameRx.value = "$first $last".trim();
         return;
       }
@@ -53,7 +53,7 @@ class OwnerDashboardController extends GetxController {
         return;
       }
     }
-    ownerNameRx.value = 'Veasna';
+    ownerNameRx.value = 'Owner';
   }
 
   String get ownerName => ownerNameRx.value;
@@ -95,17 +95,13 @@ class OwnerDashboardController extends GetxController {
   void _syncDynamicStats() {
     if (Get.isRegistered<OwnerFloorsController>()) {
       final fCtrl = Get.find<OwnerFloorsController>();
-      if (fCtrl.floors.isNotEmpty) {
-        totalFloors.value = fCtrl.floors.length;
-      }
+      totalFloors.value = fCtrl.floors.length;
     }
     if (Get.isRegistered<OwnerRoomsController>()) {
       final rCtrl = Get.find<OwnerRoomsController>();
-      if (rCtrl.rooms.isNotEmpty) {
-        totalRooms.value = rCtrl.rooms.length;
-        availableRooms.value = rCtrl.rooms.where((r) => r.available == true).length;
-        occupiedRooms.value = rCtrl.rooms.where((r) => r.available == false).length;
-      }
+      totalRooms.value = rCtrl.rooms.length;
+      availableRooms.value = rCtrl.rooms.where((r) => r.available == true).length;
+      occupiedRooms.value = rCtrl.rooms.where((r) => r.available == false).length;
     }
     if (Get.isRegistered<OwnerTenantsController>()) {
       final tCtrl = Get.find<OwnerTenantsController>();

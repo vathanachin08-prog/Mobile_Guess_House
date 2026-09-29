@@ -34,20 +34,34 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
   void initState() {
     super.initState();
     final user = TokenStoreLocal.getUser();
-    final defaultOwnerName = user != null
-        ? "${user['firstName'] ?? ''} ${user['lastName'] ?? ''}".trim()
-        : "CHIN VATHANA";
-    final defaultPhone = user != null ? (user['phoneNumber'] ?? '098765432') : "098765432";
+    String defaultOwnerName = "";
+    if (user != null) {
+      final name = "${user['firstName'] ?? ''} ${user['lastName'] ?? ''}".trim();
+      defaultOwnerName = name.isNotEmpty ? name : (user['username']?.toString() ?? "Room Owner");
+    } else {
+      defaultOwnerName = "Room Owner";
+    }
+    final defaultPhone = user != null ? (user['phoneNumber'] ?? '') : "";
 
-    _rentPriceController = TextEditingController(text: _storage.read("PRICING_RENT") ?? "120.00");
-    _electricityController = TextEditingController(text: _storage.read("PRICING_ELEC") ?? "1000");
-    _waterController = TextEditingController(text: _storage.read("PRICING_WATER") ?? "1500");
-    _garbageController = TextEditingController(text: _storage.read("PRICING_GARBAGE") ?? "2.00");
-    _accountNameController = TextEditingController(
-      text: _storage.read("PRICING_ACC_NAME") ?? (defaultOwnerName.isNotEmpty ? defaultOwnerName : "CHIN VATHANA"),
+    _rentPriceController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_RENT")) ?? "120.00",
     );
-    _accountNumberController = TextEditingController(text: _storage.read("PRICING_ACC_NUM") ?? defaultPhone);
-    _qrType = _storage.read("PRICING_QR_TYPE") ?? "DYNAMIC";
+    _electricityController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_ELEC")) ?? "1000",
+    );
+    _waterController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_WATER")) ?? "1500",
+    );
+    _garbageController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_GARBAGE")) ?? "2.00",
+    );
+    _accountNameController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_ACC_NAME")) ?? defaultOwnerName,
+    );
+    _accountNumberController = TextEditingController(
+      text: _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_ACC_NUM")) ?? defaultPhone,
+    );
+    _qrType = _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_QR_TYPE")) ?? "DYNAMIC";
 
     // 1. Initialize directly from Firebase Remote Config
     _exchangeRateController = TextEditingController(
@@ -93,14 +107,14 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
     setState(() => _isLoading = true);
     final rentPrice = double.tryParse(_rentPriceController.text.trim()) ?? 0.0;
 
-    // Persist to local storage
-    _storage.write("PRICING_RENT", _rentPriceController.text.trim());
-    _storage.write("PRICING_ELEC", _electricityController.text.trim());
-    _storage.write("PRICING_WATER", _waterController.text.trim());
-    _storage.write("PRICING_GARBAGE", _garbageController.text.trim());
-    _storage.write("PRICING_ACC_NAME", _accountNameController.text.trim());
-    _storage.write("PRICING_ACC_NUM", _accountNumberController.text.trim());
-    _storage.write("PRICING_QR_TYPE", _qrType);
+    // Persist to user-scoped local storage
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_RENT"), _rentPriceController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_ELEC"), _electricityController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_WATER"), _waterController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_GARBAGE"), _garbageController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_ACC_NAME"), _accountNameController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_ACC_NUM"), _accountNumberController.text.trim());
+    _storage.write(TokenStoreLocal.getUserScopedKey("PRICING_QR_TYPE"), _qrType);
 
     AppFirebaseService.logPricingSettingsForm(
       rentPrice: rentPrice,

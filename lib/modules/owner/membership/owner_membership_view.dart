@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/owner_app_bar_helper.dart';
+import '../../../data/local/token_store_local.dart';
 
 class OwnerMembershipView extends StatefulWidget {
   const OwnerMembershipView({super.key});
@@ -19,7 +20,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
   @override
   void initState() {
     super.initState();
-    _selectedPlan = _storage.read("OWNER_MEMBERSHIP_PLAN") ?? "BASIC";
+    _selectedPlan = _storage.read(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN")) ?? "BASIC";
   }
 
   void _upgradePlan(String planName) {
@@ -77,7 +78,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _storage.write("OWNER_MEMBERSHIP_PLAN", planName);
+              _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), planName);
               setState(() => _selectedPlan = planName);
               Get.snackbar(
                 "ជោគជ័យ",
@@ -179,7 +180,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                 "ការគាំទ្រតាមអ៊ីមែល",
               ],
               onTap: () {
-                _storage.write("OWNER_MEMBERSHIP_PLAN", "BASIC");
+                _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), "BASIC");
                 setState(() => _selectedPlan = "BASIC");
               },
             ),

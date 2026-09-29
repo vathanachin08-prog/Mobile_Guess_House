@@ -51,6 +51,11 @@ class LoginController extends GetxController {
         TokenStoreLocal.setRefreshToken(loginResponse.refreshToken ?? "");
         if (loginResponse.user != null) {
           TokenStoreLocal.setUser(loginResponse.user!.toJson());
+        } else {
+          final currentUser = TokenStoreLocal.getUser() ?? <String, dynamic>{};
+          currentUser['phoneNumber'] = username;
+          currentUser['username'] = currentUser['username'] ?? username;
+          TokenStoreLocal.setUser(currentUser);
         }
 
         final role = TokenStoreLocal.getUserRole();

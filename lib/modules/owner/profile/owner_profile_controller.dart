@@ -12,7 +12,7 @@ import '../../../routes/app_route_name.dart';
 
 class OwnerProfileController extends GetxController {
   final _storage = GetStorage();
-  static const String _avatarStorageKey = "OWNER_PROFILE_AVATAR_KEY";
+  String get _avatarStorageKey => TokenStoreLocal.getUserScopedKey("OWNER_PROFILE_AVATAR_KEY");
 
   final user = Rxn<Map<String, dynamic>>();
   final profileImagePath = "".obs;
@@ -27,6 +27,7 @@ class OwnerProfileController extends GetxController {
   }
 
   void loadUser() {
+    profileImagePath.value = "";
     user.value = TokenStoreLocal.getUser();
     final p = user.value?['profile']?.toString() ?? '';
     if (p.isNotEmpty) {

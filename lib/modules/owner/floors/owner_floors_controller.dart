@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../data/local/token_store_local.dart';
+import '../owner_main_controller.dart';
 
 class FloorItem {
   final int? id;
@@ -51,14 +53,24 @@ class FloorItem {
 class OwnerFloorsController extends GetxController {
   final ApiService apiService;
   final _storage = GetStorage();
-  static const String _storageKey = "OWNER_FLOORS_PERSIST_KEY";
+
+  int? get activePropertyId {
+    if (Get.isRegistered<OwnerMainController>()) {
+      return Get.find<OwnerMainController>().selectedPropertyId.value;
+    }
+    return null;
+  }
+
+  String get _storageKey {
+    final propId = activePropertyId;
+    return TokenStoreLocal.getUserScopedKey("OWNER_FLOORS_${propId ?? 'none'}");
+  }
 
   OwnerFloorsController({required this.apiService});
 
   final floors = <FloorItem>[].obs;
   final searchQuery = "".obs;
   final isLoading = false.obs;
-  final selectedPropertyId = 1.obs;
 
   @override
   void onInit() {
@@ -67,16 +79,22 @@ class OwnerFloorsController extends GetxController {
   }
 
   Future<void> loadFloors() async {
+    final propId = activePropertyId;
+    if (propId == null) {
+      floors.clear();
+      return;
+    }
+
     // First load from local storage cache for instant UI rendering
     _loadFromCache();
 
     isLoading.value = true;
     try {
-      final res = await apiService.getApi(ConstantUri.propertyFloors(selectedPropertyId.value));
+      final res = await apiService.getApi(ConstantUri.propertyFloors(propId));
       if (res != null) {
         final decoded = res is Map ? res : jsonDecode(res.toString());
         final data = decoded['data'];
-        if (data is List && data.isNotEmpty) {
+        if (data is List) {
           floors.value = data.map((item) => FloorItem.fromJson(Map<String, dynamic>.from(item))).toList();
           _saveFloors();
         }
@@ -99,14 +117,8 @@ class OwnerFloorsController extends GetxController {
       } catch (_) {}
     }
 
-    if (floors.isEmpty) {
-      floors.value = [
-        FloorItem(name: "ជាន់ទី ៣", totalRooms: 0, occupiedRooms: 0),
-        FloorItem(name: "ជាន់ទី ១", totalRooms: 2, occupiedRooms: 1),
-        FloorItem(name: "ជាន់ទី ២", totalRooms: 3, occupiedRooms: 0),
-      ];
-      _saveFloors();
-    }
+    // Keep clean for new accounts
+    floors.clear();
   }
 
   void _saveFloors() {
@@ -129,26 +141,33 @@ class OwnerFloorsController extends GetxController {
     floors.insert(0, optimisticFloor);
     _saveFloors();
 
+    int? propId = activePropertyId;
+    if (propId == null && Get.isRegistered<OwnerMainController>()) {
+      propId = await Get.find<OwnerMainController>().ensureActivePropertyId();
+    }
+
     // Persist directly to Spring Boot PostgreSQL database
-    try {
-      final res = await apiService.postApi(
-        ConstantUri.propertyFloors(selectedPropertyId.value),
-        body: {'name': trimmedName, 'floorOrder': floors.length},
-      );
-      if (res != null) {
-        final decoded = res is Map ? res : jsonDecode(res.toString());
-        final data = decoded['data'];
-        if (data != null) {
-          // Replace with real database entity including generated ID
-          final idx = floors.indexOf(optimisticFloor);
-          if (idx != -1) {
-            floors[idx] = FloorItem.fromJson(Map<String, dynamic>.from(data));
-            _saveFloors();
+    if (propId != null) {
+      try {
+        final res = await apiService.postApi(
+          ConstantUri.propertyFloors(propId),
+          body: {'name': trimmedName, 'floorOrder': floors.length},
+        );
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
+          final data = decoded['data'];
+          if (data != null) {
+            // Replace with real database entity including generated ID
+            final idx = floors.indexOf(optimisticFloor);
+            if (idx != -1) {
+              floors[idx] = FloorItem.fromJson(Map<String, dynamic>.from(data));
+              _saveFloors();
+            }
           }
         }
+      } catch (e) {
+        // Retained in cache even if network error
       }
-    } catch (e) {
-      // Retained in cache even if network error
     }
   }
 
