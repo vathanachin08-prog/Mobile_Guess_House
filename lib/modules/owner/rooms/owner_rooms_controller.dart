@@ -10,6 +10,7 @@ import '../../../models/rental/facility_model.dart';
 import '../../../data/local/token_store_local.dart';
 import '../floors/owner_floors_controller.dart';
 import '../owner_main_controller.dart';
+import '../dashboard/owner_dashboard_controller.dart';
 
 class OwnerRoomsController extends GetxController {
   final ApiService? apiService;
@@ -44,11 +45,13 @@ class OwnerRoomsController extends GetxController {
     final propId = activePropertyId;
     if (propId == null) {
       rooms.clear();
+      syncToDashboard();
       return;
     }
 
     // 1. Instant load from local user-scoped storage
     _loadFromCache();
+    syncToDashboard();
 
     // 2. Fetch fresh rooms from backend API if available
     if (apiService != null) {
@@ -58,17 +61,35 @@ class OwnerRoomsController extends GetxController {
         if (res != null) {
           final decoded = res is Map ? res : jsonDecode(res.toString());
           final data = decoded['data'];
-          if (data is List) {
-            rooms.value = data
+          List items = [];
+          if (data != null) {
+            if (data is Map && data['content'] is List) {
+              items = data['content'];
+            } else if (data is List) {
+              items = data;
+            }
+            rooms.value = items
                 .map((item) => RoomModel.fromJson(Map<String, dynamic>.from(item)))
                 .toList();
             _saveRooms();
+            syncToDashboard();
           }
         }
       } catch (e) {
         // Retain cached data on network error
       } finally {
         isLoading.value = false;
+      }
+    }
+  }
+
+  void syncToDashboard() {
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dashCtrl = Get.find<OwnerDashboardController>();
+      if (dashCtrl.currentProperty.value?.id == activePropertyId) {
+        dashCtrl.totalRooms.value = rooms.length;
+        dashCtrl.availableRooms.value = rooms.where((r) => r.available == true).length;
+        dashCtrl.occupiedRooms.value = rooms.where((r) => r.available == false).length;
       }
     }
   }
@@ -125,6 +146,7 @@ class OwnerRoomsController extends GetxController {
 
     rooms.add(optimisticRoom);
     _saveRooms();
+    syncToDashboard();
     Get.snackbar("Success", "បានបន្ថែមបន្ទប់ $number ជោគជ័យ! Room added.", backgroundColor: Colors.green.shade50);
 
     // Save to PostgreSQL Backend API
@@ -156,6 +178,7 @@ class OwnerRoomsController extends GetxController {
             if (idx != -1) {
               rooms[idx] = serverRoom;
               _saveRooms();
+              syncToDashboard();
             }
           }
         }
@@ -183,6 +206,7 @@ class OwnerRoomsController extends GetxController {
         facilities: room.facilities,
       );
       _saveRooms();
+      syncToDashboard();
       Get.snackbar("Updated", "បន្ទប់ ${room.roomNumber} ត្រូវបានផ្លាស់ប្តូរស្ថានភាព", backgroundColor: Colors.white);
 
       if (Get.isRegistered<OwnerFloorsController>()) {
@@ -194,6 +218,7 @@ class OwnerRoomsController extends GetxController {
   Future<void> deleteRoom(RoomModel room) async {
     rooms.removeWhere((r) => r.id == room.id);
     _saveRooms();
+    syncToDashboard();
     Get.snackbar("Deleted", "បន្ទប់ ${room.roomNumber} ត្រូវបានលុប", backgroundColor: Colors.white);
 
     if (apiService != null && room.id != null) {

@@ -8,8 +8,9 @@ import 'routes/app_route_name.dart';
 import 'translations/messages.dart';
 import 'widgets/app_colors.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; 
+import 'firebase_options.dart';
 import 'core/services/firebase_service.dart';
+import 'core/services/language_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,8 +39,8 @@ class MyApp extends StatelessWidget {
         AppFirebaseService.observer,
       ],
       translations: Messages(),
-      locale: const Locale('km', 'KH'),
-      fallbackLocale: const Locale('en', 'US'),
+      locale: LanguageService.getInitialLocale(),
+      fallbackLocale: LanguageService.englishLocale,
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: AppColors.primary,

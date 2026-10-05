@@ -1,14 +1,67 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../constants/constant_uri.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/facility_chip.dart';
 import '../../../widgets/room_card.dart';
+import '../../../core/services/language_service.dart';
 import '../visit_requests/request_visit_dialog.dart';
 import 'property_detail_controller.dart';
 
 class PropertyDetailView extends GetView<PropertyDetailController> {
   const PropertyDetailView({super.key});
+
+  Widget _buildPropertyDetailImage(String? img) {
+    if (img == null || img.trim().isEmpty) {
+      return Center(
+        child: Icon(
+          Icons.apartment_rounded,
+          size: 80,
+          color: AppColors.primary.withValues(alpha: 0.4),
+        ),
+      );
+    }
+    if (img.startsWith('data:image')) {
+      try {
+        final base64Str = img.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => Center(
+            child: Icon(
+              Icons.apartment_rounded,
+              size: 80,
+              color: AppColors.primary.withValues(alpha: 0.4),
+            ),
+          ),
+        );
+      } catch (_) {
+        return Center(
+          child: Icon(
+            Icons.apartment_rounded,
+            size: 80,
+            color: AppColors.primary.withValues(alpha: 0.4),
+          ),
+        );
+      }
+    }
+    final fullUrl = img.startsWith('http')
+        ? img
+        : "${ConstantUri.baseUri}/api/public/view/image?filename=$img";
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, stack) => Center(
+        child: Icon(
+          Icons.apartment_rounded,
+          size: 80,
+          color: AppColors.primary.withValues(alpha: 0.4),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,15 +112,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                   children: [
                     Container(
                       color: AppColors.primarySoft,
-                      child: p.mainImage != null && p.mainImage!.isNotEmpty
-                          ? Image.network(p.mainImage!, fit: BoxFit.cover)
-                          : Center(
-                              child: Icon(
-                                Icons.apartment_rounded,
-                                size: 80,
-                                color: AppColors.primary.withValues(alpha: 0.4),
-                              ),
-                            ),
+                      child: _buildPropertyDetailImage(p.mainImage),
                     ),
                     // Gradient overlay
                     Positioned(
@@ -98,13 +143,13 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.verified, color: Colors.white, size: 14),
-                              SizedBox(width: 4),
+                              const Icon(Icons.verified, color: Colors.white, size: 14),
+                              const SizedBox(width: 4),
                               Text(
-                                "Verified Property",
-                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                'verified_property'.tr,
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -195,7 +240,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("តម្លៃចាប់ពី / Starting Price", style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              Text('starting_from'.tr, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                               const SizedBox(height: 4),
                               Text(
                                 "\$${(p.minRoomPrice ?? 0).toStringAsFixed(0)} / month",
@@ -210,7 +255,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              "${p.availableRoomCount ?? 0} បន្ទប់ទំនេរ",
+                              "${p.availableRoomCount ?? 0} ${'available_rooms_count'.tr}",
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                             ),
                           ),
@@ -221,7 +266,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     const SizedBox(height: 20),
 
                     // Description
-                    const Text("ការពិពណ៌នា / Description", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text('description'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
                       p.description ?? "No description available for this property.",
@@ -231,7 +276,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     const SizedBox(height: 20),
 
                     // Facilities
-                    const Text("ឧបករណ៍ប្រើប្រាស់ / Facilities", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text('facilities'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -248,7 +293,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     const SizedBox(height: 24),
 
                     // Owner Card
-                    const Text("ម្ចាស់អចលនទ្រព្យ / Owner Information", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text('owner_information'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -289,7 +334,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                               Get.snackbar("Contact", "Call owner at: ${p.owner?.phoneNumber ?? '098765432'}");
                             },
                             icon: const Icon(Icons.phone, size: 16),
-                            label: const Text("ទាក់ទង"),
+                            label: Text('call_owner'.tr),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
@@ -307,8 +352,8 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("បន្ទប់ជួលក្នុងអគារ / Available Rooms", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                        Obx(() => Text("${controller.rooms.length} rooms", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+                        Text('available_rooms_in_building'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        Obx(() => Text("${controller.rooms.length} ${'rooms'.tr}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -322,8 +367,8 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: const Center(
-                            child: Text("មិនទាន់មានបន្ទប់ទំនេរ / No available rooms at the moment", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          child: Center(
+                            child: Text('no_available_rooms'.tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                           ),
                         );
                       }
@@ -348,10 +393,10 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("ការវាយតម្លៃ / Reviews", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        Text('reviews_section'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                         TextButton(
                           onPressed: () => _showReviewDialog(context),
-                          child: const Text("+ សរសេរការវាយតម្លៃ", style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                          child: Text('write_review'.tr, style: const TextStyle(color: AppColors.primary, fontSize: 12)),
                         ),
                       ],
                     ),
@@ -366,8 +411,8 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: const Center(
-                            child: Text("មិនទាន់មានការវាយតម្លៃ / Be the first to review this property!", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          child: Center(
+                            child: Text('be_first_to_review'.tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                           ),
                         );
                       }
@@ -455,14 +500,14 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.calendar_month_outlined, size: 18),
-                        SizedBox(width: 8),
+                        const Icon(Icons.calendar_month_outlined, size: 18),
+                        const SizedBox(width: 8),
                         Text(
-                          "ស្នើសុំមើលបន្ទប់ / Book Visit",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          'book_visit'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ],
                     ),
@@ -485,7 +530,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text("សរសេរការវាយតម្លៃ / Write Review", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          title: Text('write_review'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -507,7 +552,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 controller: commentCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: "មតិយោបល់របស់អ្នកអំពីបន្ទប់នេះ...",
+                  hintText: LanguageService.isKhmer ? "មតិយោបល់របស់អ្នកអំពីបន្ទប់នេះ..." : "Your review about this property...",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
@@ -516,7 +561,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("បោះបង់"),
+              child: Text('cancel'.tr),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -524,7 +569,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 if (success) Get.back();
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-              child: const Text("ដាក់ស្នើ"),
+              child: Text('post'.tr),
             ),
           ],
         ),

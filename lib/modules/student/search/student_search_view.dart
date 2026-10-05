@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/language_service.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -12,172 +13,172 @@ class StudentSearchView extends GetView<StudentSearchController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        title: const Text(
-          "ស្វែងរកបន្ទប់ជួល / Search",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded, color: AppColors.primary),
-            onPressed: () => _showFilterBottomSheet(context),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Input
-          Container(
-            color: AppColors.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller.searchController,
-                    onSubmitted: (_) => controller.search(),
-                    decoration: InputDecoration(
-                      hintText: "ស្វែងរកឈ្មោះ សកលវិទ្យាល័យ ខណ្ឌ...",
-                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.clear, size: 18, color: AppColors.textSecondary),
-                        onPressed: () {
-                          controller.searchController.clear();
-                          controller.search();
-                        },
-                      ),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: controller.search,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                  child: const Text("ស្វែងរក"),
-                ),
-              ],
+    return Obx(() {
+      LanguageService.currentLocale.value;
+
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          title: Text(
+            'search'.tr,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
           ),
-
-          // Active filter indicator
-          Obx(() {
-            final activeFilters = <Widget>[];
-            if (controller.selectedRoomType.value != "ALL") {
-              activeFilters.add(_buildFilterTag("Type: ${controller.selectedRoomType.value}"));
-            }
-            if (controller.minPrice.value > 0 || controller.maxPrice.value < 300) {
-              activeFilters.add(_buildFilterTag("\$${controller.minPrice.value.toInt()} - \$${controller.maxPrice.value.toInt()}"));
-            }
-            if (controller.onlyAvailable.value) {
-              activeFilters.add(_buildFilterTag("Available only"));
-            }
-
-            if (activeFilters.isEmpty) return const SizedBox.shrink();
-
-            return Container(
-              width: double.infinity,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.tune_rounded, color: AppColors.primary),
+              onPressed: () => _showFilterBottomSheet(context),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Search Input
+            Container(
               color: AppColors.surface,
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-              child: Wrap(
-                spacing: 8,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
                 children: [
-                  ...activeFilters,
-                  InkWell(
-                    onTap: controller.resetFilters,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        "សម្អាតតម្រង / Reset",
-                        style: TextStyle(fontSize: 11, color: AppColors.danger, fontWeight: FontWeight.w600),
+                  Expanded(
+                    child: TextField(
+                      controller: controller.searchController,
+                      onSubmitted: (_) => controller.search(),
+                      decoration: InputDecoration(
+                        hintText: 'search_properties_hint'.tr,
+                        hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                        prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.clear, size: 18, color: AppColors.textSecondary),
+                          onPressed: () {
+                            controller.searchController.clear();
+                            controller.search();
+                          },
+                        ),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: controller.search,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    child: Text('search'.tr),
                   ),
                 ],
               ),
-            );
-          }),
+            ),
 
-          const Divider(height: 1, color: AppColors.border),
-
-          // Search Results
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                );
+            // Active filter indicator
+            Obx(() {
+              final activeFilters = <Widget>[];
+              if (controller.selectedRoomType.value != "ALL") {
+                activeFilters.add(_buildFilterTag("Type: ${controller.selectedRoomType.value}"));
+              }
+              if (controller.minPrice.value > 0 || controller.maxPrice.value < 300) {
+                activeFilters.add(_buildFilterTag("\$${controller.minPrice.value.toInt()} - \$${controller.maxPrice.value.toInt()}"));
+              }
+              if (controller.onlyAvailable.value) {
+                activeFilters.add(_buildFilterTag('only_available'.tr));
+              }
+              for (var f in controller.selectedFacilities) {
+                activeFilters.add(_buildFilterTag(f));
               }
 
-              final results = controller.searchResults;
-              if (results.isEmpty) {
-                return EmptyStateWidget(
-                  title: "រកមិនឃើញលទ្ធផល / No Results Found",
-                  message: "សូមសាកល្បងស្វែងរកដោយប្រើពាក្យផ្សេង ឬផ្លាស់ប្តូរតម្រង",
-                  buttonText: "កំណត់តម្រងឡើងវិញ / Reset Filters",
-                  onButtonTap: controller.resetFilters,
-                );
-              }
+              if (activeFilters.isEmpty) return const SizedBox.shrink();
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final item = results[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: PropertyCard(
-                      property: item,
-                      onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: item),
-                    ),
-                  );
-                },
+              return Container(
+                color: AppColors.surface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: SizedBox(
+                  height: 32,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      ...activeFilters,
+                      TextButton(
+                        onPressed: controller.resetFilters,
+                        child: Text(
+                          'reset'.tr,
+                          style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }),
-          ),
-        ],
-      ),
-    );
+            const Divider(height: 1, color: AppColors.border),
+
+            // Search Results List
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                }
+
+                if (controller.searchResults.isEmpty) {
+                  return EmptyStateWidget(
+                    title: 'no_data'.tr,
+                    message: LanguageService.isKhmer ? "សូមព្យាយាមផ្លាស់ប្តូរពាក្យស្វែងរក ឬកែសម្រួលតម្រង" : "Try changing search keywords or adjusting filters",
+                    icon: Icons.search_off_rounded,
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.searchResults.length,
+                  itemBuilder: (ctx, i) {
+                    final p = controller.searchResults[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: PropertyCard(
+                        property: p,
+                        onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: p),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildFilterTag(String text) {
+  Widget _buildFilterTag(String label) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        text,
-        style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+        label,
+        style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -188,22 +189,22 @@ class StudentSearchView extends GetView<StudentSearchController> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
+        height: MediaQuery.of(context).size.height * 0.75,
         decoration: const BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
+        padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "តម្រងស្វែងរក (Filters)",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  Text(
+                    'filters'.tr,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: AppColors.textSecondary),
@@ -215,22 +216,22 @@ class StudentSearchView extends GetView<StudentSearchController> {
               const SizedBox(height: 12),
 
               // Room Type
-              const Text("ប្រភេទបន្ទប់ / Room Type", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('room_type'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               Obx(() => Wrap(
                 spacing: 8,
                 children: [
-                  _buildTypeChoice("ALL", "ទាំងអស់ (All)"),
-                  _buildTypeChoice("SINGLE", "បន្ទប់ទោល (Single)"),
-                  _buildTypeChoice("DOUBLE", "បន្ទប់គូ (Double)"),
-                  _buildTypeChoice("SHARED", "បន្ទប់រួម (Shared)"),
+                  _buildTypeChoice("ALL", 'all'.tr),
+                  _buildTypeChoice("SINGLE", 'single_room'.tr),
+                  _buildTypeChoice("DOUBLE", 'double_room'.tr),
+                  _buildTypeChoice("SHARED", 'shared_room'.tr),
                 ],
               )),
 
               const SizedBox(height: 18),
 
               // Price Range
-              const Text("កម្រិតតម្លៃ (\$ / ខែ) / Price Range", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('price_range'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               Obx(() => Column(
                 children: [
@@ -262,7 +263,7 @@ class StudentSearchView extends GetView<StudentSearchController> {
               Obx(() => SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeThumbColor: AppColors.primary,
-                title: const Text("បន្ទប់ទំនេរតែប៉ុណ្ណោះ (Only Available)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                title: Text('only_available'.tr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 value: controller.onlyAvailable.value,
                 onChanged: (v) => controller.onlyAvailable.value = v,
               )),
@@ -270,7 +271,7 @@ class StudentSearchView extends GetView<StudentSearchController> {
               const SizedBox(height: 12),
 
               // Facilities
-              const Text("ឧបករណ៍ប្រើប្រាស់ / Facilities", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('facilities'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               Obx(() => Wrap(
                 spacing: 8,
@@ -314,7 +315,7 @@ class StudentSearchView extends GetView<StudentSearchController> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text("កំណត់ឡើងវិញ / Reset"),
+                      child: Text('reset'.tr),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -330,7 +331,7 @@ class StudentSearchView extends GetView<StudentSearchController> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text("អនុវត្ត / Apply"),
+                      child: Text('apply'.tr),
                     ),
                   ),
                 ],

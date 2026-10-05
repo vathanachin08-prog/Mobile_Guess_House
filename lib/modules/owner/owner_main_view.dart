@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../core/services/language_service.dart';
 import '../../widgets/app_colors.dart';
 import 'dashboard/owner_dashboard_view.dart';
 import 'floors/owner_floors_view.dart';
@@ -14,17 +15,20 @@ class OwnerMainView extends GetView<OwnerMainController> {
 
   @override
   Widget build(BuildContext context) {
-    const pages = [
-      OwnerDashboardView(),
-      OwnerFloorsView(),
-      OwnerRoomsView(),
-      OwnerTenantsView(),
-      OwnerInvoicesView(),
-      OwnerProfileView(),
-    ];
+    return Obx(() {
+      // Rebuild when locale or tab changes
+      LanguageService.currentLocale.value;
 
-    return Obx(
-      () => Scaffold(
+      final pages = [
+        const OwnerDashboardView(),
+        const OwnerFloorsView(),
+        const OwnerRoomsView(),
+        const OwnerTenantsView(),
+        const OwnerInvoicesView(),
+        const OwnerProfileView(),
+      ];
+
+      return Scaffold(
         body: IndexedStack(
           index: controller.currentIndex.value,
           children: pages,
@@ -44,41 +48,41 @@ class OwnerMainView extends GetView<OwnerMainController> {
             selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
             unselectedLabelStyle: const TextStyle(fontSize: 10),
             elevation: 0,
-            items: const [
+            items: [
               BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view_outlined),
-                activeIcon: Icon(Icons.grid_view_rounded),
-                label: "គ្រប់គ្រង",
+                icon: const Icon(Icons.grid_view_outlined),
+                activeIcon: const Icon(Icons.grid_view_rounded),
+                label: 'dashboard'.tr,
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.layers_outlined),
-                activeIcon: Icon(Icons.layers_rounded),
-                label: "ជាន់",
+                icon: const Icon(Icons.layers_outlined),
+                activeIcon: const Icon(Icons.layers_rounded),
+                label: 'floors'.tr,
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.meeting_room_outlined),
-                activeIcon: Icon(Icons.meeting_room_rounded),
-                label: "បន្ទប់",
+                icon: const Icon(Icons.meeting_room_outlined),
+                activeIcon: const Icon(Icons.meeting_room_rounded),
+                label: 'rooms'.tr,
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.people_outline_rounded),
-                activeIcon: Icon(Icons.people_rounded),
-                label: "អ្នកជួល",
+                icon: const Icon(Icons.people_outline_rounded),
+                activeIcon: const Icon(Icons.people_rounded),
+                label: 'tenants'.tr,
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long_rounded),
-                label: "វិក្កយបត្រ",
+                icon: const Icon(Icons.receipt_long_outlined),
+                activeIcon: const Icon(Icons.receipt_long_rounded),
+                label: 'invoices'.tr,
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                activeIcon: Icon(Icons.person_rounded),
-                label: "គណនី",
+                icon: const Icon(Icons.person_outline_rounded),
+                activeIcon: const Icon(Icons.person_rounded),
+                label: 'profile'.tr,
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

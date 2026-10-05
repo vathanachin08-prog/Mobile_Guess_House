@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../../../routes/app_route_name.dart';
 
@@ -214,8 +215,8 @@ class StudentProfileController extends GetxController {
         } catch (_) {}
 
         Get.snackbar(
-          "ជោគជ័យ / Success",
-          "រូបភាពប្រវត្តិរូបត្រូវបានរក្សាទុកជោគជ័យ!",
+          'success'.tr,
+          'avatar_saved_success'.tr,
           backgroundColor: Colors.green.shade50,
           colorText: Colors.green.shade900,
         );
@@ -277,11 +278,7 @@ class StudentProfileController extends GetxController {
   }
 
   void toggleLanguage() {
-    if (Get.locale?.languageCode == 'km') {
-      Get.updateLocale(const Locale('en', 'US'));
-    } else {
-      Get.updateLocale(const Locale('km', 'KH'));
-    }
+    LanguageService.toggleLanguage();
   }
 
   void logout() {

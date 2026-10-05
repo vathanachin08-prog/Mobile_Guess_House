@@ -30,6 +30,8 @@ import '../modules/owner/invoices/owner_invoices_view.dart';
 import '../modules/owner/pricing/owner_pricing_view.dart';
 import '../modules/owner/membership/owner_membership_view.dart';
 import '../modules/owner/profile/owner_profile_view.dart';
+import '../modules/owner/visit_requests/owner_visit_requests_view.dart';
+import '../modules/owner/visit_requests/owner_visit_requests_binding.dart';
 
 // Legacy Demo
 import '../modules/post/post_binding.dart';
@@ -129,6 +131,11 @@ class AppRoute {
       GetPage(
         name: AppRouteName.ownerProfile,
         page: () => const OwnerProfileView(),
+      ),
+      GetPage(
+        name: AppRouteName.ownerVisitRequests,
+        page: () => const OwnerVisitRequestsView(),
+        binding: OwnerVisitRequestsBinding(),
       ),
 
       // Legacy Demo

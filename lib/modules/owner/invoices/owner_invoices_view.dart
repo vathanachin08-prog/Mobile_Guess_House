@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/language_service.dart';
 import '../../../models/rental/invoice_model.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -51,7 +52,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                         inv.invoiceNo ?? "INV-000",
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary),
                       ),
-                      Text("កាលបរិច្ឆេទចេញ: ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text("${'invoice_date'.tr}: ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                   Container(
@@ -61,7 +62,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      inv.isPaid ? "បានបង់រួចរាល់" : "មិនទាន់បង់",
+                      inv.isPaid ? 'paid_status'.tr : 'unpaid_status'.tr,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -90,7 +91,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                         const Icon(Icons.home_work_outlined, size: 18, color: AppColors.primary),
                         const SizedBox(width: 8),
                         Expanded(child: Text(inv.propertyName ?? "My Home", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                        Text("បន្ទប់ ${inv.roomNumber ?? ''}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        Text("${'room_label_prefix'.tr} ${inv.roomNumber ?? ''}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -98,7 +99,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                       children: [
                         const Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
                         const SizedBox(width: 8),
-                        Expanded(child: Text("អ្នកជួល: ${inv.tenantName ?? 'N/A'}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+                        Expanded(child: Text("${'tenant_label'.tr}: ${inv.tenantName ?? 'N/A'}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))),
                         Text(inv.floor ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                       ],
                     ),
@@ -107,7 +108,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
               ),
 
               const SizedBox(height: 20),
-              const Text("ព័ត៌មានលម្អិតការគិតថ្លៃ (Bill Breakdown)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('bill_breakdown'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 10),
 
               // Breakdown Table
@@ -118,13 +119,13 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                 ),
                 child: Column(
                   children: [
-                    _buildInvoiceRow("ថ្លៃជួលបន្ទប់ (Room Rent)", "-", "\$${inv.rentAmount?.toStringAsFixed(2) ?? '0.00'}", Icons.meeting_room_outlined),
+                    _buildInvoiceRow('room_rent_fee'.tr, "-", "\$${inv.rentAmount?.toStringAsFixed(2) ?? '0.00'}", Icons.meeting_room_outlined),
                     const Divider(height: 1, color: AppColors.border),
-                    _buildInvoiceRow("ថ្លៃអគ្គិសនី (Electricity)", "${inv.electricityUnits ?? 0} kWh", "\$${((inv.electricityUnits ?? 0) * (inv.electricityRate ?? 0.12)).toStringAsFixed(2)}", Icons.bolt_outlined),
+                    _buildInvoiceRow('electricity_fee_item'.tr, "${inv.electricityUnits ?? 0} kWh", "\$${((inv.electricityUnits ?? 0) * (inv.electricityRate ?? 0.12)).toStringAsFixed(2)}", Icons.bolt_outlined),
                     const Divider(height: 1, color: AppColors.border),
-                    _buildInvoiceRow("ថ្លៃទឹក (Water)", "${inv.waterUnits ?? 0} m³", "\$${((inv.waterUnits ?? 0) * (inv.waterRate ?? 1.50)).toStringAsFixed(2)}", Icons.water_drop_outlined),
+                    _buildInvoiceRow('water_fee_item'.tr, "${inv.waterUnits ?? 0} m³", "\$${((inv.waterUnits ?? 0) * (inv.waterRate ?? 1.50)).toStringAsFixed(2)}", Icons.water_drop_outlined),
                     const Divider(height: 1, color: AppColors.border),
-                    _buildInvoiceRow("ថ្លៃសំរាម (Garbage)", "1 ខែ", "\$2.00", Icons.delete_outline),
+                    _buildInvoiceRow('garbage_fee_item'.tr, LanguageService.isKhmer ? "1 ខែ" : "1 mo", "\$2.00", Icons.delete_outline),
                     const Divider(height: 1, color: AppColors.border),
                     Container(
                       color: AppColors.primarySoft.withValues(alpha: 0.3),
@@ -132,7 +133,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text("សរុបត្រូវបង់ (Total Due)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                          Text('total_due'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
                           Text("\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
                         ],
                       ),
@@ -150,15 +151,15 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                   onPressed: () {
                     if (inv.isPaid) {
                       controller.markAsUnpaid(inv.id);
-                      Get.snackbar("Notice", "បានសម្គាល់វិក្កយបត្រជា 'មិនទាន់បង់'", backgroundColor: Colors.white);
+                      Get.snackbar('settings'.tr, 'marked_as_unpaid_msg'.tr, backgroundColor: Colors.white);
                     } else {
                       controller.markAsPaid(inv.id);
-                      Get.snackbar("Success", "បានកត់ត្រាការបង់ប្រាក់ជោគជ័យ!", backgroundColor: Colors.green.shade50);
+                      Get.snackbar('success'.tr, 'payment_recorded_msg'.tr, backgroundColor: Colors.green.shade50);
                     }
                     Navigator.pop(ctx);
                   },
                   icon: Icon(inv.isPaid ? Icons.undo_rounded : Icons.check_circle_outline, size: 18),
-                  label: Text(inv.isPaid ? "សម្គាល់ថាមិនទាន់បង់ (Mark as Unpaid)" : "កត់ត្រាការបង់ប្រាក់ (Mark as Paid)"),
+                  label: Text(inv.isPaid ? 'mark_as_unpaid'.tr : 'mark_as_paid'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: inv.isPaid ? AppColors.accentOrange : AppColors.primary,
                     foregroundColor: Colors.white,
@@ -170,14 +171,14 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 
               const SizedBox(height: 12),
 
-              // Action buttons (Photo 5)
+              // Action buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        Get.snackbar("Telegram", "ផ្ញើវិក្កយបត្រតាម Telegram រួចរាល់", backgroundColor: Colors.white);
+                        Get.snackbar("Telegram", 'telegram_sent_msg'.tr, backgroundColor: Colors.white);
                       },
                       icon: const Icon(Icons.send_rounded, size: 16, color: AppColors.primary),
                       label: const Text("Telegram", style: TextStyle(fontSize: 11)),
@@ -189,10 +190,10 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        Get.snackbar("Shared", "បានចែករំលែក Link វិក្កយបត្រ", backgroundColor: Colors.white);
+                        Get.snackbar("Shared", 'link_shared_msg'.tr, backgroundColor: Colors.white);
                       },
                       icon: const Icon(Icons.share_outlined, size: 16),
-                      label: const Text("ចែករំលែក", style: TextStyle(fontSize: 11)),
+                      label: Text('share'.tr, style: const TextStyle(fontSize: 11)),
                       style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
                     ),
                   ),
@@ -201,10 +202,10 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        Get.snackbar("Download", "ទាញយកវិក្កយបត្រជា PDF រួចរាល់", backgroundColor: Colors.green.shade50);
+                        Get.snackbar("Download", 'pdf_downloaded_msg'.tr, backgroundColor: Colors.green.shade50);
                       },
                       icon: const Icon(Icons.download_rounded, size: 16),
-                      label: const Text("ទាញយក", style: TextStyle(fontSize: 11)),
+                      label: Text('download'.tr, style: const TextStyle(fontSize: 11)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -264,21 +265,21 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("បង្កើតវិក្កយបត្រថ្មី / Create Invoice", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(LanguageService.isKhmer ? "បង្កើតវិក្កយបត្រថ្មី" : "Create New Invoice", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: tenantCtrl, decoration: const InputDecoration(labelText: "ឈ្មោះអ្នកជួល / Tenant")),
-              TextField(controller: roomCtrl, decoration: const InputDecoration(labelText: "លេខបន្ទប់ / Room")),
-              TextField(controller: rentCtrl, decoration: const InputDecoration(labelText: "ថ្លៃបន្ទប់ (\$ / Rent)"), keyboardType: TextInputType.number),
-              TextField(controller: elecCtrl, decoration: const InputDecoration(labelText: "គីឡូភ្លើង (kWh / Electricity)"), keyboardType: TextInputType.number),
-              TextField(controller: waterCtrl, decoration: const InputDecoration(labelText: "គីឡូទឹក (m³ / Water)"), keyboardType: TextInputType.number),
+              TextField(controller: tenantCtrl, decoration: InputDecoration(labelText: 'tenant_label'.tr)),
+              TextField(controller: roomCtrl, decoration: InputDecoration(labelText: 'room_number'.tr)),
+              TextField(controller: rentCtrl, decoration: InputDecoration(labelText: 'rent_price_label'.tr), keyboardType: TextInputType.number),
+              TextField(controller: elecCtrl, decoration: InputDecoration(labelText: "${'electricity_fee_item'.tr} (kWh)"), keyboardType: TextInputType.number),
+              TextField(controller: waterCtrl, decoration: InputDecoration(labelText: "${'water_fee_item'.tr} (m³)"), keyboardType: TextInputType.number),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("បោះបង់")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr)),
           ElevatedButton(
             onPressed: () {
               final rent = double.tryParse(rentCtrl.text.trim()) ?? 50.0;
@@ -292,7 +293,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                 propertyName: "My Home",
                 tenantName: tenantCtrl.text.trim(),
                 roomNumber: roomCtrl.text.trim(),
-                floor: "ជាន់ទី១",
+                floor: LanguageService.isKhmer ? "ជាន់ទី ១" : "Floor 1",
                 issueDate: "Apr 9, 2026",
                 dueDate: "Apr 15, 2026",
                 rentAmount: rent,
@@ -305,10 +306,10 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
               );
               controller.createInvoice(newInv);
               Navigator.pop(ctx);
-              Get.snackbar("Success", "បានបង្កើតវិក្កយបត្រ ${newInv.invoiceNo} ជោគជ័យ!", backgroundColor: Colors.green.shade50);
+              Get.snackbar('success'.tr, "${newInv.invoiceNo}", backgroundColor: Colors.green.shade50);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text("បង្កើត (Create)"),
+            child: Text('save'.tr),
           ),
         ],
       ),
@@ -317,19 +318,22 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: "វិក្កយបត្រ",
-        propertyDropdownText: "My Home",
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 2x2 Dynamic Metric Cards Grid (Photo 4)
-            Obx(() {
-              return GridView.count(
+    return Obx(() {
+      // Rebuild when language changes
+      LanguageService.currentLocale.value;
+
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'invoices'.tr,
+          propertyDropdownText: "My Home",
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // 2x2 Dynamic Metric Cards Grid
+              GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -338,159 +342,156 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                 childAspectRatio: 1.4,
                 children: [
                   _InvoiceMetricCard(
-                    title: "រំពឹងទុក (Expected)",
+                    title: 'expected'.tr,
                     value: "\$${controller.totalExpectedRevenue.toStringAsFixed(2)}",
                     icon: Icons.attach_money,
                     color: AppColors.accentBlue,
                   ),
                   _InvoiceMetricCard(
-                    title: "ប្រមូលបាន (Collected)",
+                    title: 'collected'.tr,
                     value: "\$${controller.totalCollectedRevenue.toStringAsFixed(2)}",
                     icon: Icons.check_circle_outline,
                     color: AppColors.primary,
                   ),
                   _InvoiceMetricCard(
-                    title: "មិនទាន់បង់ (Unpaid)",
+                    title: 'unpaid_status'.tr,
                     value: "${controller.unpaidCount}",
                     icon: Icons.access_time,
                     color: AppColors.accentOrange,
                   ),
                   _InvoiceMetricCard(
-                    title: "ហួសកាលកំណត់ (Overdue)",
+                    title: 'overdue_status'.tr,
                     value: "${controller.overdueCount}",
                     icon: Icons.warning_amber_rounded,
                     color: AppColors.danger,
                   ),
                 ],
-              );
-            }),
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Filter Tabs (Photo 4)
-            Obx(() {
-              final selected = controller.selectedFilter.value;
-              return Row(
+              // Filter Tabs
+              Row(
                 children: [
-                  _buildFilterTab("ALL", "ទាំងអស់ (All)", selected),
+                  _buildFilterTab("ALL", 'all'.tr, controller.selectedFilter.value),
                   const SizedBox(width: 6),
-                  _buildFilterTab("UNPAID", "មិនទាន់បង់", selected),
+                  _buildFilterTab("UNPAID", 'unpaid_status'.tr, controller.selectedFilter.value),
                   const SizedBox(width: 6),
-                  _buildFilterTab("PAID", "បានបង់", selected),
+                  _buildFilterTab("PAID", 'paid_status'.tr, controller.selectedFilter.value),
                 ],
-              );
-            }),
+              ),
 
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-            // Invoices List
-            Obx(() {
-              final list = controller.filteredInvoices;
-              if (list.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
-                        SizedBox(height: 12),
-                        Text(
-                          "មិនមានវិក្កយបត្រទេ / No Invoices Found",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: list.length,
-                itemBuilder: (ctx, i) {
-                  final inv = list[i];
-                  final isPaid = inv.isPaid;
-                  return InkWell(
-                    onTap: () => _showInvoiceDetailModal(inv),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
+              // Invoices List
+              Builder(builder: (ctx) {
+                final list = controller.filteredInvoices;
+                if (list.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              isPaid ? Icons.check_circle_outline : Icons.receipt_long,
-                              color: isPaid ? AppColors.primary : AppColors.accentOrange,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(inv.invoiceNo ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
-                                const SizedBox(height: 2),
-                                Text(inv.tenantName ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                const SizedBox(height: 2),
-                                Text("បន្ទប់: ${inv.roomNumber ?? ''} • ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                "\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  isPaid ? "បានបង់" : "មិនទាន់បង់",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: isPaid ? AppColors.primary : AppColors.accentOrange,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
+                          const SizedBox(height: 12),
+                          Text(
+                            'no_invoices_found'.tr,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                           ),
                         ],
                       ),
                     ),
                   );
-                },
-              );
-            }),
-          ],
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: list.length,
+                  itemBuilder: (ctx, i) {
+                    final inv = list[i];
+                    final isPaid = inv.isPaid;
+                    return InkWell(
+                      onTap: () => _showInvoiceDetailModal(inv),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                isPaid ? Icons.check_circle_outline : Icons.receipt_long,
+                                color: isPaid ? AppColors.primary : AppColors.accentOrange,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(inv.invoiceNo ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                                  const SizedBox(height: 2),
+                                  Text(inv.tenantName ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                  const SizedBox(height: 2),
+                                  Text("${'room_label_prefix'.tr}: ${inv.roomNumber ?? ''} • ${inv.issueDate ?? ''}", style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isPaid ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    isPaid ? 'paid_status'.tr : 'unpaid_status'.tr,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isPaid ? AppColors.primary : AppColors.accentOrange,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateInvoiceDialog,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white, size: 26),
-      ),
-    );
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showCreateInvoiceDialog,
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white, size: 26),
+        ),
+      );
+    });
   }
 
   Widget _buildFilterTab(String code, String label, String currentSelected) {

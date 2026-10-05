@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/owner_app_bar_helper.dart';
@@ -39,14 +40,14 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               child: const Icon(Icons.workspace_premium, color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 10),
-            Text("ដំឡើង $planName", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text("${'upgrade_plan'.tr} $planName", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("តើអ្នកចង់ដំឡើងគម្រោងទៅជា $planName មែនទេ?"),
+            Text('upgrade_confirm_msg'.trParams({'plan': planName})),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -55,14 +56,14 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.qr_code_2, color: AppColors.primary),
-                  SizedBox(width: 10),
+                  const Icon(Icons.qr_code_2, color: AppColors.primary),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      "ទូទាត់ប្រាក់ងាយស្រួល និងរហ័សតាមរយៈ Bakong KHQR",
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      'bakong_payment_prompt'.tr,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ),
                 ],
@@ -73,7 +74,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("បោះបង់", style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -81,8 +82,8 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), planName);
               setState(() => _selectedPlan = planName);
               Get.snackbar(
-                "ជោគជ័យ",
-                "អ្នកបានដំឡើងគម្រោងទៅ $planName ដោយជោគជ័យ!",
+                'success'.tr,
+                'plan_upgraded_success'.trParams({'plan': planName}),
                 backgroundColor: AppColors.primary,
                 colorText: Colors.white,
                 snackPosition: SnackPosition.BOTTOM,
@@ -94,7 +95,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text("បង់ប្រាក់ឥឡូវនេះ"),
+            child: Text('pay_now'.tr),
           ),
         ],
       ),
@@ -103,131 +104,162 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        propertyName: "My Home",
-        subtitle: "membership".tr,
-        onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
-        actions: OwnerAppBarHelper.buildStandardActions(context),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.darkEmerald, AppColors.primary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.star, color: Colors.amber, size: 24),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        "កញ្ចប់សមាជិកភាព RoomFinder KH",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "ជ្រើសរើសគម្រោងដែលស័ក្តិសមបំផុតសម្រាប់អាជីវកម្មផ្ទះជួលរបស់អ្នកដើម្បីបង្កើនប្រសិទ្ធភាពគ្រប់គ្រង",
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9), height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+    return Obx(() {
+      LanguageService.currentLocale.value;
 
-            // Plan 1: Basic
-            _buildPlanCard(
-              title: "Basic (ឥតគិតថ្លៃ)",
-              price: "\$0.00",
-              period: "/ ជារៀងរហូត",
-              isCurrent: _selectedPlan.toUpperCase() == "BASIC",
-              isPopular: false,
-              badgeText: null,
-              features: [
-                "គ្រប់គ្រងបន្ទប់រហូតដល់ 5 បន្ទប់",
-                "កត់ត្រាព័ត៌មានអ្នកជួល",
-                "បង្កើតវិក្កយបត្រសាមញ្ញ",
-                "ការគាំទ្រតាមអ៊ីមែល",
-              ],
-              onTap: () {
-                _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), "BASIC");
-                setState(() => _selectedPlan = "BASIC");
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Plan 2: Standard (Popular)
-            _buildPlanCard(
-              title: "Standard",
-              price: "\$9.99",
-              period: "/ ខែ",
-              isCurrent: _selectedPlan.toUpperCase() == "STANDARD",
-              isPopular: true,
-              badgeText: "ពេញនិយមបំផុត",
-              features: [
-                "គ្រប់គ្រងបន្ទប់រហូតដល់ 20 បន្ទប់",
-                "បង្កើត Bakong KHQR ដោយស្វ័យប្រវត្តិតាមវិក្កយបត្រ",
-                "ផ្ញើវិក្កយបត្រតាម Telegram ទៅកាន់អ្នកជួល",
-                "របាយការណ៍ចំណូល និងចំណាយលម្អិត",
-                "ជំនួយបច្ចេកទេសរហ័ស 24/7",
-              ],
-              onTap: () => _upgradePlan("Standard"),
-            ),
-            const SizedBox(height: 16),
-
-            // Plan 3: Premium
-            _buildPlanCard(
-              title: "Premium (គ្មានដែនកំណត់)",
-              price: "\$19.99",
-              period: "/ ខែ",
-              isCurrent: _selectedPlan.toUpperCase() == "PREMIUM",
-              isPopular: false,
-              badgeText: "គ្មានដែនកំណត់",
-              features: [
-                "ចំនួនបន្ទប់មិនកំណត់",
-                "គ្រប់គ្រងអគារ និងសាខាច្រើន (Multi-Property)",
-                "គ្រប់គ្រងបុគ្គលិក និងកំណត់សិទ្ធិចូលប្រើប្រព័ន្ធ",
-                "អាទិភាពបង្ហាញលើទំព័រដើមរបស់សិស្ស (Top Listing)",
-                "នាំចេញទិន្នន័យរបាយការណ៍ជា Excel / PDF",
-                "ជំនួយបច្ចេកទេសផ្ទាល់ខ្លួនពិសេស",
-              ],
-              onTap: () => _upgradePlan("Premium"),
-            ),
-            const SizedBox(height: 24),
-          ],
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'membership'.tr,
+          propertyName: "My Home",
+          subtitle: 'settings'.tr,
+          onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+          actions: OwnerAppBarHelper.buildStandardActions(context),
         ),
-      ),
-    );
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.darkEmerald, AppColors.primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.star, color: Colors.amber, size: 24),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'membership_plans_title'.tr,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'membership_plans_desc'.tr,
+                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9), height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Plan 1: Basic
+              _buildPlanCard(
+                title: "Basic (${'free_tier'.tr})",
+                price: "\$0.00",
+                period: LanguageService.isKhmer ? "/ ជារៀងរហូត" : "/ Forever",
+                isCurrent: _selectedPlan.toUpperCase() == "BASIC",
+                isPopular: false,
+                badgeText: null,
+                features: LanguageService.isKhmer
+                    ? [
+                        "គ្រប់គ្រងបន្ទប់រហូតដល់ 5 បន្ទប់",
+                        "កត់ត្រាព័ត៌មានអ្នកជួល",
+                        "បង្កើតវិក្កយបត្រសាមញ្ញ",
+                        "ការគាំទ្រតាមអ៊ីមែល",
+                      ]
+                    : [
+                        "Manage up to 5 rooms",
+                        "Tenant records & profiles",
+                        "Standard invoicing",
+                        "Email support",
+                      ],
+                onTap: () {
+                  _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), "BASIC");
+                  setState(() => _selectedPlan = "BASIC");
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Plan 2: Standard (Popular)
+              _buildPlanCard(
+                title: "Standard",
+                price: "\$9.99",
+                period: 'per_month'.tr,
+                isCurrent: _selectedPlan.toUpperCase() == "STANDARD",
+                isPopular: true,
+                badgeText: 'popular_badge'.tr,
+                features: LanguageService.isKhmer
+                    ? [
+                        "គ្រប់គ្រងបន្ទប់រហូតដល់ 20 បន្ទប់",
+                        "បង្កើត Bakong KHQR ដោយស្វ័យប្រវត្តិតាមវិក្កយបត្រ",
+                        "ផ្ញើវិក្កយបត្រតាម Telegram ទៅកាន់អ្នកជួល",
+                        "របាយការណ៍ចំណូល និងចំណាយលម្អិត",
+                        "ជំនួយបច្ចេកទេសរហ័ស 24/7",
+                      ]
+                    : [
+                        "Manage up to 20 rooms",
+                        "Auto-generated Bakong KHQR invoices",
+                        "Send invoices via Telegram directly",
+                        "Comprehensive revenue reports",
+                        "24/7 Priority support",
+                      ],
+                onTap: () => _upgradePlan("Standard"),
+              ),
+              const SizedBox(height: 16),
+
+              // Plan 3: Premium
+              _buildPlanCard(
+                title: "Premium (${'unlimited'.tr})",
+                price: "\$19.99",
+                period: 'per_month'.tr,
+                isCurrent: _selectedPlan.toUpperCase() == "PREMIUM",
+                isPopular: false,
+                badgeText: 'unlimited'.tr,
+                features: LanguageService.isKhmer
+                    ? [
+                        "ចំនួនបន្ទប់មិនកំណត់",
+                        "គ្រប់គ្រងអគារ និងសាខាច្រើន (Multi-Property)",
+                        "គ្រប់គ្រងបុគ្គលិក និងកំណត់សិទ្ធិចូលប្រើប្រព័ន្ធ",
+                        "អាទិភាពបង្ហាញលើទំព័រដើមរបស់សិស្ស (Top Listing)",
+                        "នាំចេញទិន្នន័យរបាយការណ៍ជា Excel / PDF",
+                        "ជំនួយបច្ចេកទេសផ្ទាល់ខ្លួនពិសេស",
+                      ]
+                    : [
+                        "Unlimited rooms & units",
+                        "Multi-property & building management",
+                        "Staff & team role access control",
+                        "Top listing priority on student search",
+                        "Export reports to Excel / PDF",
+                        "Dedicated account manager",
+                      ],
+                onTap: () => _upgradePlan("Premium"),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildPlanCard({
@@ -303,9 +335,9 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                           color: AppColors.primarySoft,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          "កំពុងប្រើ",
-                          style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                        child: Text(
+                          LanguageService.isKhmer ? "កំពុងប្រើ" : "Active",
+                          style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
                   ],
@@ -362,7 +394,9 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: Text(
-                      isCurrent ? "គម្រោងបច្ចុប្បន្ន" : "ជ្រើសរើសគម្រោង",
+                      isCurrent
+                          ? (LanguageService.isKhmer ? "គម្រោងបច្ចុប្បន្ន" : "Current Plan")
+                          : (LanguageService.isKhmer ? "ជ្រើសរើសគម្រោង" : "Choose Plan"),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),

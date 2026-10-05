@@ -4,7 +4,7 @@ import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../widgets/app_colors.dart';
-
+import '../home/student_home_controller.dart';
 import 'visit_requests_controller.dart';
 
 class RequestVisitDialog extends StatefulWidget {
@@ -85,6 +85,9 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
         if (Get.isRegistered<VisitRequestsController>()) {
           Get.find<VisitRequestsController>().loadRequests();
         }
+        if (Get.isRegistered<StudentHomeController>()) {
+          Get.find<StudentHomeController>().loadNotifications();
+        }
 
         Get.back();
         Get.snackbar(
@@ -131,9 +134,9 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "ស្នើសុំមើលបន្ទប់ / Book Visit",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                Text(
+                  'book_visit'.tr,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
@@ -153,7 +156,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
             const SizedBox(height: 16),
 
             // Date picker field
-            const Text("កាលបរិច្ឆេទ / Preferred Date", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('date_label'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             InkWell(
               onTap: () async {
@@ -188,7 +191,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
             const SizedBox(height: 14),
 
             // Time picker field
-            const Text("ពេលវេលា / Preferred Time", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('time_label'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             InkWell(
               onTap: () async {
@@ -221,7 +224,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
             const SizedBox(height: 14),
 
             // Contact Phone
-            const Text("លេខទូរស័ព្ទទំនាក់ទំនង / Contact Phone", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('phone_number'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             TextField(
               controller: phoneController,
@@ -236,13 +239,13 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
             const SizedBox(height: 14),
 
             // Note
-            const Text("ចំណាំបន្ថែម (ស្រេចចិត្ត) / Note (Optional)", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('description_optional'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             TextField(
               controller: noteController,
               maxLines: 2,
               decoration: InputDecoration(
-                hintText: "ឧ. ខ្ញុំជាសិស្សឆ្នាំទី៣ ចង់មើលបន្ទប់ផ្ទាល់...",
+                hintText: "...",
                 hintStyle: const TextStyle(fontSize: 12),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -268,9 +271,9 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
                         height: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text(
-                        "បញ្ជាក់ការស្នើសុំ / Confirm Request",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    : Text(
+                        'confirm'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
               ),
             ),

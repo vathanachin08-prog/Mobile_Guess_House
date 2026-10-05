@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../constants/constant_uri.dart';
 import '../models/rental/property_model.dart';
 import 'app_colors.dart';
 
@@ -15,6 +17,33 @@ class PropertyCard extends StatelessWidget {
     this.isFavorite = false,
     this.onFavoriteTap,
   });
+
+  Widget _buildMainImage() {
+    final img = property.mainImage;
+    if (img == null || img.trim().isEmpty) {
+      return _buildPlaceholderImage();
+    }
+    if (img.startsWith('data:image')) {
+      try {
+        final base64Str = img.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
+        );
+      } catch (_) {
+        return _buildPlaceholderImage();
+      }
+    }
+    final fullUrl = img.startsWith('http')
+        ? img
+        : "${ConstantUri.baseUri}/api/public/view/image?filename=$img";
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,13 +74,7 @@ class PropertyCard extends StatelessWidget {
                   height: 160,
                   width: double.infinity,
                   color: AppColors.primarySoft,
-                  child: property.mainImage != null && property.mainImage!.isNotEmpty
-                      ? Image.network(
-                          property.mainImage!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
-                        )
-                      : _buildPlaceholderImage(),
+                  child: _buildMainImage(),
                 ),
                 // Verification Badge
                 if (property.isVerified)

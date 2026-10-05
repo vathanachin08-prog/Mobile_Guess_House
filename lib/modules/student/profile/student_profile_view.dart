@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../student_main_controller.dart';
@@ -33,9 +34,9 @@ class StudentProfileView extends GetView<StudentProfileController> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                "ប្តូររូបភាពប្រវត្តិរូប / Change Avatar",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                'change_avatar'.tr,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -47,8 +48,8 @@ class StudentProfileView extends GetView<StudentProfileController> {
                   ),
                   child: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
                 ),
-                title: const Text("ថតរូបថ្មី / Take a Photo", style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text("ប្រើប្រាស់កាមេរ៉ាឧបករណ៍"),
+                title: Text('take_photo'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('use_camera'.tr),
                 onTap: () => controller.pickAndUploadImage(ImageSource.camera),
               ),
               ListTile(
@@ -60,8 +61,8 @@ class StudentProfileView extends GetView<StudentProfileController> {
                   ),
                   child: Icon(Icons.photo_library_outlined, color: Colors.blue.shade700),
                 ),
-                title: const Text("ជ្រើសរើសពីរូបភាព / Choose from Gallery", style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text("ជ្រើសរើសរូបភាពពីទូរស័ព្ទ"),
+                title: Text('choose_gallery'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('select_from_device'.tr),
                 onTap: () => controller.pickAndUploadImage(ImageSource.gallery),
               ),
             ],
@@ -167,154 +168,158 @@ class StudentProfileView extends GetView<StudentProfileController> {
       controller.fetchProfileFromServer();
     });
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: "គណនីរបស់ខ្ញុំ",
-        subtitle: "Student Profile",
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // User Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => _showImageSourceSheet(context),
-                    child: _buildAvatarWidget(),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Obx(() => Text(
-                          controller.displayName,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                        )),
-                        const SizedBox(height: 4),
-                        Obx(() => Text(
-                          controller.phone,
-                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                        )),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            "និស្សិត (STUDENT)",
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Obx(() {
+      LanguageService.currentLocale.value;
 
-            const SizedBox(height: 20),
-
-            // Quick Navigation
-            _buildSection(
-              title: "សកម្មភាពរបស់ខ្ញុំ / My Activity",
-              children: [
-                _buildListTile(
-                  icon: Icons.favorite_outline,
-                  title: "បន្ទប់ពេញចិត្ត / Saved Favorites",
-                  onTap: () {
-                    final mainCtrl = Get.find<StudentMainController>();
-                    mainCtrl.changeTab(2);
-                  },
-                ),
-                _buildListTile(
-                  icon: Icons.calendar_month_outlined,
-                  title: "ការណាត់ជួបមើលបន្ទប់ / Visit Requests",
-                  onTap: () {
-                    final mainCtrl = Get.find<StudentMainController>();
-                    mainCtrl.changeTab(3);
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Settings
-            _buildSection(
-              title: "ការកំណត់ / Settings",
-              children: [
-                _buildListTile(
-                  icon: Icons.language,
-                  title: "ភាសា / Language",
-                  trailing: Text(
-                    Get.locale?.languageCode == 'km' ? "ខ្មែរ (KH)" : "English (US)",
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
-                  ),
-                  onTap: controller.toggleLanguage,
-                ),
-                _buildListTile(
-                  icon: Icons.help_outline,
-                  title: "ជំនួយ និងការទាក់ទង / Help & Support",
-                  onTap: () {
-                    Get.snackbar("Support", "Telegram support: @roomfinderkh", backgroundColor: Colors.white);
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // Logout Button
-            OutlinedButton.icon(
-              onPressed: () {
-                Get.defaultDialog(
-                  title: "ចាកចេញ / Logout",
-                  middleText: "តើអ្នកប្រាកដជាចង់ចាកចេញមែនទេ? Are you sure you want to logout?",
-                  textConfirm: "ចាកចេញ",
-                  textCancel: "បោះបង់",
-                  confirmTextColor: Colors.white,
-                  buttonColor: AppColors.danger,
-                  onConfirm: () {
-                    Get.back();
-                    controller.logout();
-                  },
-                );
-              },
-              icon: const Icon(Icons.logout, color: AppColors.danger, size: 20),
-              label: const Text(
-                "ចាកចេញពីគណនី / Sign Out",
-                style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.dangerSoft),
-                backgroundColor: AppColors.dangerSoft.withValues(alpha: 0.3),
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'my_profile'.tr,
+          subtitle: 'student_profile'.tr,
         ),
-      ),
-    );
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // User Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showImageSourceSheet(context),
+                      child: _buildAvatarWidget(),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            controller.displayName,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            controller.phone,
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'student'.tr,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Quick Navigation
+              _buildSection(
+                title: 'my_activity'.tr,
+                children: [
+                  _buildListTile(
+                    icon: Icons.favorite_outline,
+                    title: 'saved_favorites'.tr,
+                    onTap: () {
+                      final mainCtrl = Get.find<StudentMainController>();
+                      mainCtrl.changeTab(2);
+                    },
+                  ),
+                  _buildListTile(
+                    icon: Icons.calendar_month_outlined,
+                    title: 'visit_appointments'.tr,
+                    onTap: () {
+                      final mainCtrl = Get.find<StudentMainController>();
+                      mainCtrl.changeTab(3);
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Settings
+              _buildSection(
+                title: 'settings'.tr,
+                children: [
+                  _buildListTile(
+                    icon: Icons.language,
+                    title: 'language'.tr,
+                    trailing: Text(
+                      LanguageService.currentLanguageLabel,
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
+                    ),
+                    onTap: () => LanguageService.showLanguageSelector(context),
+                  ),
+                  _buildListTile(
+                    icon: Icons.help_outline,
+                    title: 'help_support'.tr,
+                    onTap: () {
+                      Get.snackbar("Support", "Telegram support: @roomfinderkh", backgroundColor: Colors.white);
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 28),
+
+              // Logout Button
+              OutlinedButton.icon(
+                onPressed: () {
+                  Get.defaultDialog(
+                    title: 'sign_out'.tr,
+                    middleText: 'confirm_sign_out'.tr,
+                    textConfirm: 'confirm'.tr,
+                    textCancel: 'cancel'.tr,
+                    confirmTextColor: Colors.white,
+                    buttonColor: AppColors.danger,
+                    onConfirm: () {
+                      Get.back();
+                      controller.logout();
+                    },
+                  );
+                },
+                icon: const Icon(Icons.logout, color: AppColors.danger, size: 20),
+                label: Text(
+                  'sign_out'.tr,
+                  style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.dangerSoft),
+                  backgroundColor: AppColors.dangerSoft.withValues(alpha: 0.3),
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildSection({required String title, required List<Widget> children}) {

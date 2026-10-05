@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import 'owner_floors_controller.dart';
@@ -40,11 +41,11 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("បន្ថែមជាន់ថ្មី", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text("បញ្ចូលឈ្មោះសម្រាប់ជាន់ថ្មី។", style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text('add_new_floor'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('enter_floor_name'.tr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
             IconButton(
@@ -57,12 +58,12 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("ឈ្មោះជាន់", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+            Text('floor_name'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             TextField(
               controller: floorNameCtrl,
               decoration: InputDecoration(
-                hintText: "ឧ. ជាន់ទី ៥, ជាន់ផ្ទាល់ដី",
+                hintText: 'floor_hint'.tr,
                 hintStyle: const TextStyle(fontSize: 12),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -82,8 +83,8 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                     controller.addFloor(text);
                     Navigator.pop(ctx);
                     Get.snackbar(
-                      "ជោគជ័យ",
-                      "បានបង្កើត $text ដោយជោគជ័យ!",
+                      'success'.tr,
+                      "$text: ${'floor_created_success'.tr}",
                       backgroundColor: AppColors.primary,
                       colorText: Colors.white,
                       snackPosition: SnackPosition.BOTTOM,
@@ -95,7 +96,7 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                       success: false,
                       errorMessage: "Validation: Empty floor name",
                     );
-                    Get.snackbar("Error", "សូមបញ្ចូលឈ្មោះជាន់ / Please enter floor name");
+                    Get.snackbar('error'.tr, 'please_enter_floor_name'.tr);
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -104,13 +105,13 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text("បង្កើតជាន់", style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text('add_floor'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("បោះបង់", style: TextStyle(color: AppColors.textSecondary)),
+                child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
               ),
             ),
           ],
@@ -121,148 +122,152 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: "ជាន់",
-        propertyDropdownText: "My Home",
-      ),
-      body: Column(
-        children: [
-          // Search input
-          Container(
-            color: AppColors.surface,
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => controller.searchQuery.value = val.trim(),
-              decoration: InputDecoration(
-                hintText: "ស្វែងរកជាន់...",
-                hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
-                filled: true,
-                fillColor: AppColors.background,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
+    return Obx(() {
+      LanguageService.currentLocale.value;
+
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'floors'.tr,
+          propertyDropdownText: "My Home",
+        ),
+        body: Column(
+          children: [
+            // Search input
+            Container(
+              color: AppColors.surface,
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: searchController,
+                onChanged: (val) => controller.searchQuery.value = val.trim(),
+                decoration: InputDecoration(
+                  hintText: "${'search'.tr}...",
+                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
                 ),
               ),
             ),
-          ),
-          const Divider(height: 1, color: AppColors.border),
+            const Divider(height: 1, color: AppColors.border),
 
-          // Floors List
-          Expanded(
-            child: Obx(() {
-              final list = controller.filteredFloors;
-              if (list.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "មិនមានជាន់នៅឡើយទេ",
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: list.length,
-                itemBuilder: (ctx, i) {
-                  final floor = list[i];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+            // Floors List
+            Expanded(
+              child: Obx(() {
+                final list = controller.filteredFloors;
+                if (list.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'no_data'.tr,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(10),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: list.length,
+                  itemBuilder: (ctx, i) {
+                    final floor = list[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.layers_outlined, color: AppColors.primary, size: 22),
                           ),
-                          child: const Icon(Icons.layers_outlined, color: AppColors.primary, size: 22),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                floor.name,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  floor.name,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "${floor.totalRooms} ${'total_rooms'.tr}",
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (floor.occupiedRooms > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "${floor.totalRooms} បន្ទប់សរុប",
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              child: Text(
+                                "${floor.occupiedRooms} ${'occupied'.tr}",
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
+                            onSelected: (val) {
+                              if (val == 'delete') {
+                                controller.deleteFloor(i);
+                                Get.snackbar(
+                                  'delete'.tr,
+                                  floor.name,
+                                  backgroundColor: AppColors.surface,
+                                  colorText: AppColors.textPrimary,
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  margin: const EdgeInsets.all(16),
+                                );
+                              }
+                            },
+                            itemBuilder: (ctx) => [
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.delete_outline, size: 18, color: AppColors.danger),
+                                    const SizedBox(width: 8),
+                                    Text('delete'.tr, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        if (floor.occupiedRooms > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primarySoft,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              "${floor.occupiedRooms} មានមនុស្ស",
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                            ),
-                          ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
-                          onSelected: (val) {
-                            if (val == 'delete') {
-                              controller.deleteFloor(i);
-                              Get.snackbar(
-                                "បានលុប",
-                                "បានលុប ${floor.name} រួចរាល់",
-                                backgroundColor: AppColors.surface,
-                                colorText: AppColors.textPrimary,
-                                snackPosition: SnackPosition.BOTTOM,
-                                margin: const EdgeInsets.all(16),
-                              );
-                            }
-                          },
-                          itemBuilder: (ctx) => [
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete_outline, size: 18, color: AppColors.danger),
-                                  SizedBox(width: 8),
-                                  Text("លុបជាន់នេះ", style: TextStyle(color: AppColors.danger, fontSize: 13)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            }),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addFloorDialog,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white, size: 26),
-      ),
-    );
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _addFloorDialog,
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white, size: 26),
+        ),
+      );
+    });
   }
 }

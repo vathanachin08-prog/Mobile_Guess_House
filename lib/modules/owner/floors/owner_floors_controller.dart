@@ -5,6 +5,7 @@ import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../owner_main_controller.dart';
+import '../dashboard/owner_dashboard_controller.dart';
 
 class FloorItem {
   final int? id;
@@ -82,11 +83,13 @@ class OwnerFloorsController extends GetxController {
     final propId = activePropertyId;
     if (propId == null) {
       floors.clear();
+      syncToDashboard();
       return;
     }
 
     // First load from local storage cache for instant UI rendering
     _loadFromCache();
+    syncToDashboard();
 
     isLoading.value = true;
     try {
@@ -94,15 +97,31 @@ class OwnerFloorsController extends GetxController {
       if (res != null) {
         final decoded = res is Map ? res : jsonDecode(res.toString());
         final data = decoded['data'];
-        if (data is List) {
-          floors.value = data.map((item) => FloorItem.fromJson(Map<String, dynamic>.from(item))).toList();
+        List items = [];
+        if (data != null) {
+          if (data is Map && data['content'] is List) {
+            items = data['content'];
+          } else if (data is List) {
+            items = data;
+          }
+          floors.value = items.map((item) => FloorItem.fromJson(Map<String, dynamic>.from(item))).toList();
           _saveFloors();
+          syncToDashboard();
         }
       }
     } catch (e) {
       // If server unreachable, retain cached local data
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void syncToDashboard() {
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dashCtrl = Get.find<OwnerDashboardController>();
+      if (dashCtrl.currentProperty.value?.id == activePropertyId) {
+        dashCtrl.totalFloors.value = floors.length;
+      }
     }
   }
 
@@ -140,6 +159,7 @@ class OwnerFloorsController extends GetxController {
     final optimisticFloor = FloorItem(name: trimmedName, totalRooms: 0, occupiedRooms: 0);
     floors.insert(0, optimisticFloor);
     _saveFloors();
+    syncToDashboard();
 
     int? propId = activePropertyId;
     if (propId == null && Get.isRegistered<OwnerMainController>()) {
@@ -162,6 +182,7 @@ class OwnerFloorsController extends GetxController {
             if (idx != -1) {
               floors[idx] = FloorItem.fromJson(Map<String, dynamic>.from(data));
               _saveFloors();
+              syncToDashboard();
             }
           }
         }
@@ -176,6 +197,7 @@ class OwnerFloorsController extends GetxController {
       final item = floors[index];
       floors.removeAt(index);
       _saveFloors();
+      syncToDashboard();
 
       if (item.id != null) {
         try {

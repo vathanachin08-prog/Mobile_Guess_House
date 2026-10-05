@@ -4,9 +4,8 @@ import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../models/rental/property_model.dart';
-import '../../../models/rental/room_model.dart';
-import '../../../models/rental/facility_model.dart';
 import '../../../models/rental/favorite_model.dart';
+import '../../../widgets/app_colors.dart';
 import '../favorites/favorites_controller.dart';
 
 class StudentHomeController extends GetxController {
@@ -19,12 +18,15 @@ class StudentHomeController extends GetxController {
   final selectedCategory = "ALL".obs;
   final favoriteIds = <int>{}.obs;
   final propertyFavoriteMap = <int, int>{}.obs; // propertyId -> favoriteId
+  final notificationsList = <Map<String, dynamic>>[].obs;
+  final unreadNotificationsCount = 0.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadProperties();
     loadFavorites();
+    loadNotifications();
   }
 
   List<PropertyModel> get filteredProperties {
@@ -77,17 +79,12 @@ class StudentHomeController extends GetxController {
           final List content = decoded['data']['content'];
           final list = content.map((e) => PropertyModel.fromJson(e)).toList();
           properties.assignAll(list);
+        } else {
+          properties.clear();
         }
       }
-      // If server returned 0 properties (fresh DB), provide demo properties matching RoomFinder KH reference
-      if (properties.isEmpty) {
-        properties.assignAll(_getDemoProperties());
-      }
     } catch (e) {
-      // Fallback demo properties for offline or connection issues
-      if (properties.isEmpty) {
-        properties.assignAll(_getDemoProperties());
-      }
+      debugPrint("Error loading public properties: $e");
     } finally {
       isLoading.value = false;
     }
@@ -155,134 +152,96 @@ class StudentHomeController extends GetxController {
     }
   }
 
-  List<PropertyModel> _getDemoProperties() {
-    return [
-      PropertyModel(
-        id: 1,
-        name: "Sunrise Student Dormitory",
-        description: "Modern, quiet, and secure rental rooms within 5 minutes walk from RUPP and IFL. Free WiFi and parking included.",
-        propertyType: "DORMITORY",
-        address: "Russian Federation Blvd",
-        district: "Tuol Kouk",
-        city: "Phnom Penh",
-        latitude: 11.5683,
-        longitude: 104.8902,
-        status: "PUBLISHED",
-        verificationStatus: "VERIFIED",
-        minRoomPrice: 65.0,
-        availableRoomCount: 3,
-        totalRoomCount: 8,
-        averageRating: 4.8,
-        reviewCount: 12,
-        owner: OwnerSummaryModel(
-          id: 3,
-          firstName: "Owner",
-          lastName: "Sokha",
-          phoneNumber: "098765432",
-        ),
-        rooms: [
-          RoomModel(
-            id: 101,
-            roomNumber: "A101",
-            title: "Single Room with Private Bathroom",
-            price: 65.0,
-            floor: 1,
-            area: 18.0,
-            roomType: "SINGLE",
-            genderPreference: "ANY",
-            available: true,
-            facilities: [
-              FacilityModel(name: "WIFI"),
-              FacilityModel(name: "AIR_CONDITIONER"),
-              FacilityModel(name: "PRIVATE_BATHROOM"),
-            ],
-          ),
-          RoomModel(
-            id: 102,
-            roomNumber: "B201",
-            title: "Double Room with Balcony",
-            price: 90.0,
-            floor: 2,
-            area: 25.0,
-            roomType: "DOUBLE",
-            genderPreference: "ANY",
-            available: true,
-            facilities: [
-              FacilityModel(name: "WIFI"),
-              FacilityModel(name: "AIR_CONDITIONER"),
-              FacilityModel(name: "PRIVATE_BATHROOM"),
-              FacilityModel(name: "FURNITURE"),
-            ],
-          ),
-        ],
-      ),
-      PropertyModel(
-        id: 2,
-        name: "Campus View Apartment",
-        description: "Spacious private student apartments near Norton University with full air conditioning, study desk, and 24/7 security guard.",
-        propertyType: "APARTMENT",
-        address: "St. 337, Boeung Kak 1",
-        district: "Tuol Kouk",
-        city: "Phnom Penh",
-        latitude: 11.5790,
-        longitude: 104.9010,
-        status: "PUBLISHED",
-        verificationStatus: "VERIFIED",
-        minRoomPrice: 85.0,
-        availableRoomCount: 2,
-        totalRoomCount: 6,
-        averageRating: 4.6,
-        reviewCount: 8,
-        owner: OwnerSummaryModel(
-          id: 4,
-          firstName: "Veasna",
-          lastName: "Chea",
-          phoneNumber: "0889495446",
-        ),
-        rooms: [
-          RoomModel(
-            id: 201,
-            roomNumber: "C301",
-            title: "Studio Room with Kitchen",
-            price: 85.0,
-            floor: 3,
-            area: 22.0,
-            roomType: "SINGLE",
-            genderPreference: "ANY",
-            available: true,
-            facilities: [
-              FacilityModel(name: "WIFI"),
-              FacilityModel(name: "AIR_CONDITIONER"),
-              FacilityModel(name: "KITCHEN"),
-              FacilityModel(name: "SECURITY"),
-            ],
-          ),
-        ],
-      ),
-      PropertyModel(
-        id: 3,
-        name: "Green Garden Residence",
-        description: "Affordable and friendly rooms for university students. Includes shared kitchen and high-speed fiber WiFi.",
-        propertyType: "ROOM",
-        address: "St. 271, Teuk Thla",
-        district: "Sen Sok",
-        city: "Phnom Penh",
-        latitude: 11.5540,
-        longitude: 104.8820,
-        status: "PUBLISHED",
-        verificationStatus: "PENDING",
-        minRoomPrice: 50.0,
-        availableRoomCount: 4,
-        totalRoomCount: 10,
-        averageRating: 4.4,
-        reviewCount: 5,
-        owner: OwnerSummaryModel(
-          id: 5,
-          firstName: "Dara",
-          lastName: "Meng",
-          phoneNumber: "012889900",
-        ),
-      ),
+  Future<void> loadNotifications() async {
+    final List<Map<String, dynamic>> items = [
+      {
+        "id": "student_welcome",
+        "title": "សូមស្វាគមន៍មកកាន់ RoomFinder KH",
+        "message": "ស្វែងរកបន្ទប់ជួល និងផ្ទះជួលដែលមានសុវត្ថិភាព តម្លៃសមរម្យ និងនៅជិតសាកលវិទ្យាល័យរបស់អ្នក!",
+        "time": "ទើបតែឥឡូវ",
+        "icon": Icons.celebration_rounded,
+        "color": AppColors.primary,
+        "isUnread": false,
+      },
     ];
+
+    try {
+      final res = await apiService.getApi(ConstantUri.myVisitRequests);
+      if (res != null) {
+        final decoded = res is Map ? res : jsonDecode(res.toString());
+        final data = decoded['data'];
+        List reqList = [];
+        if (data != null) {
+          if (data is Map && data['content'] is List) {
+            reqList = data['content'];
+          } else if (data is List) {
+            reqList = data;
+          }
+        }
+
+        for (var r in reqList) {
+          final id = r['id'];
+          final status = (r['status'] ?? '').toString().toUpperCase();
+          final propName = r['propertyName'] ?? 'អគារស្នាក់នៅ';
+          final date = r['requestedDate'] ?? '';
+          final time = r['requestedTime'] ?? '';
+
+          if (status == 'ACCEPTED') {
+            items.insert(0, {
+              "id": "student_visit_$id",
+              "title": "ការណាត់ជួបត្រូវបានយល់ព្រម! ($propName)",
+              "message": "ម្ចាស់ផ្ទះបានយល់ព្រមទទួលការណាត់ជួបរបស់អ្នកនៅថ្ងៃ $date ម៉ោង $time។ សូមត្រៀមខ្លួនទៅទស្សនា!",
+              "time": "បានយល់ព្រម",
+              "icon": Icons.check_circle_rounded,
+              "color": AppColors.success,
+              "isUnread": true,
+              "tabIndex": 3,
+            });
+          } else if (status == 'REJECTED') {
+            items.insert(0, {
+              "id": "student_visit_$id",
+              "title": "ការណាត់ជួបត្រូវបានបដិសេធ ($propName)",
+              "message": "ការស្នើសុំណាត់ជួបរបស់អ្នកនៅថ្ងៃ $date ត្រូវបានបដិសេធ។ សូមជ្រើសរើសពេលវេលាផ្សេង។",
+              "time": "បានបដិសេធ",
+              "icon": Icons.cancel_rounded,
+              "color": AppColors.danger,
+              "isUnread": true,
+              "tabIndex": 3,
+            });
+          } else if (status == 'PENDING') {
+            items.insert(0, {
+              "id": "student_visit_$id",
+              "title": "កំពុងរង់ចាំការឆ្លើយតប ($propName)",
+              "message": "ការស្នើសុំណាត់ជួបរបស់អ្នកនៅថ្ងៃ $date ម៉ោង $time កំពុងរង់ចាំការឆ្លើយតបពីម្ចាស់ផ្ទះ។",
+              "time": "កំពុងរង់ចាំ",
+              "icon": Icons.pending_actions_rounded,
+              "color": AppColors.accentOrange,
+              "isUnread": false,
+              "tabIndex": 3,
+            });
+          }
+        }
+      }
+    } catch (_) {}
+
+    notificationsList.assignAll(items);
+    unreadNotificationsCount.value = items.where((n) => n['isUnread'] == true).length;
+  }
+
+  void markAllNotificationsAsRead() {
+    unreadNotificationsCount.value = 0;
+    for (var n in notificationsList) {
+      n['isUnread'] = false;
+    }
+    notificationsList.refresh();
+  }
+
+  void markNotificationAsRead(String id) {
+    final idx = notificationsList.indexWhere((n) => n['id'] == id);
+    if (idx != -1) {
+      notificationsList[idx]['isUnread'] = false;
+      notificationsList.refresh();
+      unreadNotificationsCount.value = notificationsList.where((n) => n['isUnread'] == true).length;
+    }
   }
 }
