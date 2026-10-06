@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
+import '../../../models/rental/property_model.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/facility_chip.dart';
@@ -60,6 +61,205 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
           color: AppColors.primary.withValues(alpha: 0.4),
         ),
       ),
+    );
+  }
+
+  Widget _buildOwnerAvatar(OwnerSummaryModel? owner, {double size = 44}) {
+    final profile = owner?.profile?.trim() ?? '';
+    final initial = (owner != null && owner.displayName.isNotEmpty)
+        ? owner.displayName[0].toUpperCase()
+        : "O";
+
+    Widget fallback = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+          fontSize: size * 0.42,
+        ),
+      ),
+    );
+
+    if (profile.isEmpty) {
+      return fallback;
+    }
+
+    if (profile.startsWith('data:image')) {
+      try {
+        final base64Str = profile.split(',').last;
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+          ),
+          child: ClipOval(
+            child: Image.memory(
+              base64Decode(base64Str),
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => fallback,
+            ),
+          ),
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    final fullUrl = profile.startsWith('http')
+        ? profile
+        : "${ConstantUri.baseUri}/api/public/view/image?filename=$profile";
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+      ),
+      child: ClipOval(
+        child: Image.network(
+          fullUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback,
+        ),
+      ),
+    );
+  }
+
+  void _showOwnerProfileSheet(BuildContext context, OwnerSummaryModel? owner) {
+    if (owner == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildOwnerAvatar(owner, size: 84),
+              const SizedBox(height: 14),
+              Text(
+                owner.displayName,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'owner_information'.tr,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.phone_rounded, size: 20, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'phone'.tr,
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            owner.phoneNumber ?? '098765432',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Get.snackbar("Contact", "Call owner at: ${owner.phoneNumber ?? '098765432'}");
+                  },
+                  icon: const Icon(Icons.phone, size: 18),
+                  label: Text('call_owner'.tr),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -295,54 +495,51 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     // Owner Card
                     Text('owner_information'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 22,
-                            backgroundColor: AppColors.primarySoft,
-                            child: Text(
-                              (p.owner?.displayName ?? "O")[0].toUpperCase(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                    InkWell(
+                      onTap: () => _showOwnerProfileSheet(context, p.owner),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildOwnerAvatar(p.owner, size: 46),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    p.owner?.displayName ?? "Property Owner",
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    p.owner?.phoneNumber ?? "098765432",
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.owner?.displayName ?? "Property Owner",
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  p.owner?.phoneNumber ?? "098765432",
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                ),
-                              ],
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Get.snackbar("Contact", "Call owner at: ${p.owner?.phoneNumber ?? '098765432'}");
+                              },
+                              icon: const Icon(Icons.phone, size: 16),
+                              label: Text('call_owner'.tr),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
                             ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Get.snackbar("Contact", "Call owner at: ${p.owner?.phoneNumber ?? '098765432'}");
-                            },
-                            icon: const Icon(Icons.phone, size: 16),
-                            label: Text('call_owner'.tr),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
 

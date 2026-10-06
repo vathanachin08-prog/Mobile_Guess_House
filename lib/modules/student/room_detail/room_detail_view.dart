@@ -109,7 +109,7 @@ class RoomDetailView extends StatelessWidget {
                   Expanded(
                     child: _buildSpecItem(
                       'floor_spec'.tr,
-                      LanguageService.isKhmer ? "ជាន់ទី ${room.floor ?? 1}" : "Floor ${room.floor ?? 1}",
+                      room.floorDisplayName,
                       Icons.layers_outlined,
                     ),
                   ),
@@ -129,7 +129,7 @@ class RoomDetailView extends StatelessWidget {
                   Expanded(
                     child: _buildSpecItem(
                       'type_spec'.tr,
-                      room.roomType ?? "SINGLE",
+                      room.roomTypeDisplayName,
                       Icons.king_bed_outlined,
                     ),
                   ),
@@ -137,7 +137,7 @@ class RoomDetailView extends StatelessWidget {
                   Expanded(
                     child: _buildSpecItem(
                       'gender_spec'.tr,
-                      room.genderPreference ?? "ANY",
+                      room.genderPreferenceDisplayName,
                       Icons.people_outline,
                     ),
                   ),
@@ -166,7 +166,15 @@ class RoomDetailView extends StatelessWidget {
                   children: room.facilities!.map((f) => FacilityChip(name: f.name ?? '')).toList(),
                 )
               else
-                const Text("WIFI, AIR_CONDITIONER, PRIVATE_BATHROOM", style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: const [
+                    FacilityChip(name: "WIFI"),
+                    FacilityChip(name: "AIR_CONDITIONER"),
+                    FacilityChip(name: "PRIVATE_BATHROOM"),
+                  ],
+                ),
 
               const SizedBox(height: 32),
 

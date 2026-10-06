@@ -5,8 +5,10 @@ import 'package:get_storage/get_storage.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/facility_model.dart';
+import '../../../models/rental/facility_preset.dart';
 import '../../../data/local/token_store_local.dart';
 import '../floors/owner_floors_controller.dart';
 import '../owner_main_controller.dart';
@@ -126,28 +128,49 @@ class OwnerRoomsController extends GetxController {
     }).toList();
   }
 
-  Future<void> addRoom({required String number, required int floor, double price = 50.0, String? desc}) async {
+  Future<void> addRoom({
+    required String number,
+    required int floor,
+    double price = 50.0,
+    double area = 18.0,
+    String roomType = "SINGLE",
+    String genderPreference = "ANY",
+    List<int> facilityIds = const [1, 2, 3],
+    String? desc,
+  }) async {
     AppFirebaseService.logAddRoomForm(
       roomNumber: number,
       floor: floor,
       price: price,
       success: true,
     );
+
+    final facModels = facilityIds.map((id) {
+      final p = kAllFacilityPresets.firstWhereOrNull((x) => x.id == id);
+      return FacilityModel(id: id, name: p?.code ?? 'FACILITY_$id');
+    }).toList();
+
     final optimisticRoom = RoomModel(
       id: rooms.length + 1,
       roomNumber: number,
       floor: floor,
       price: price,
-      roomType: "SINGLE",
+      area: area,
+      roomType: roomType,
+      genderPreference: genderPreference,
       available: true,
       description: desc,
-      facilities: [FacilityModel(name: "WIFI"), FacilityModel(name: "AIR_CONDITIONER")],
+      facilities: facModels,
     );
 
     rooms.add(optimisticRoom);
     _saveRooms();
     syncToDashboard();
-    Get.snackbar("Success", "បានបន្ថែមបន្ទប់ $number ជោគជ័យ! Room added.", backgroundColor: Colors.green.shade50);
+    Get.snackbar(
+      LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
+      LanguageService.isKhmer ? "បានបន្ថែមបន្ទប់ $number ជោគជ័យ!" : "Room $number added successfully!",
+      backgroundColor: Colors.green.shade50,
+    );
 
     // Save to PostgreSQL Backend API
     int? propId = activePropertyId;
@@ -165,8 +188,11 @@ class OwnerRoomsController extends GetxController {
             'description': desc ?? '',
             'price': price,
             'floor': floor,
-            'roomType': 'SINGLE',
+            'area': area,
+            'roomType': roomType,
+            'genderPreference': genderPreference,
             'available': true,
+            'facilityIds': facilityIds,
           },
         );
         if (res != null) {
@@ -186,6 +212,89 @@ class OwnerRoomsController extends GetxController {
     }
 
     // Refresh floors count dynamically
+    if (Get.isRegistered<OwnerFloorsController>()) {
+      Get.find<OwnerFloorsController>().loadFloors();
+    }
+  }
+
+  Future<void> updateRoom({
+    required RoomModel room,
+    required String number,
+    required int floor,
+    required double price,
+    required double area,
+    required String roomType,
+    required String genderPreference,
+    required List<int> facilityIds,
+    String? desc,
+  }) async {
+    final idx = rooms.indexWhere((r) => r.id == room.id);
+    if (idx == -1) return;
+
+    final facModels = facilityIds.map((id) {
+      final p = kAllFacilityPresets.firstWhereOrNull((x) => x.id == id);
+      return FacilityModel(id: id, name: p?.code ?? 'FACILITY_$id');
+    }).toList();
+
+    final updated = RoomModel(
+      id: room.id,
+      propertyId: room.propertyId,
+      propertyName: room.propertyName,
+      roomNumber: number,
+      title: 'បន្ទប់ $number',
+      description: desc ?? room.description,
+      price: price,
+      floor: floor,
+      area: area,
+      roomType: roomType,
+      genderPreference: genderPreference,
+      available: room.available ?? true,
+      images: room.images,
+      facilities: facModels,
+      createdAt: room.createdAt,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+
+    rooms[idx] = updated;
+    _saveRooms();
+    syncToDashboard();
+
+    Get.snackbar(
+      LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
+      LanguageService.isKhmer ? "បានកែសម្រួលព័ត៌មានបន្ទប់ $number ជោគជ័យ!" : "Room $number updated successfully!",
+      backgroundColor: Colors.green.shade50,
+    );
+
+    if (apiService != null && room.id != null) {
+      try {
+        final res = await apiService!.putApi(
+          ConstantUri.roomDetail(room.id),
+          body: {
+            'roomNumber': number,
+            'title': 'បន្ទប់ $number',
+            'description': desc ?? '',
+            'price': price,
+            'floor': floor,
+            'area': area,
+            'roomType': roomType,
+            'genderPreference': genderPreference,
+            'available': room.available ?? true,
+            'facilityIds': facilityIds,
+          },
+        );
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
+          final data = decoded['data'];
+          if (data != null) {
+            final serverRoom = RoomModel.fromJson(Map<String, dynamic>.from(data));
+            rooms[idx] = serverRoom;
+            _saveRooms();
+            syncToDashboard();
+          }
+        }
+      } catch (_) {}
+    }
+
     if (Get.isRegistered<OwnerFloorsController>()) {
       Get.find<OwnerFloorsController>().loadFloors();
     }

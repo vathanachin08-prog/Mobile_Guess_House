@@ -166,6 +166,7 @@ class Messages extends Translations {
       'enter_floor_name': 'Enter a name for the new floor.',
       'floor_name': 'Floor Name',
       'floor_hint': 'e.g. Floor 5, Ground Floor',
+      'ground_floor': 'Ground Floor',
       'floor_created_success': 'Floor created successfully!',
       'please_enter_floor_name': 'Please enter floor name',
 
@@ -228,6 +229,18 @@ class Messages extends Translations {
       'delete_room_confirm': 'Are you sure you want to delete this room?',
       'room_label_prefix': 'Room',
       'floor_label_prefix': 'Floor',
+      'edit_room': 'Edit Room',
+      'edit_room_desc': 'Configure size, type, gender, and amenities.',
+      'room_size_m2': 'Room Size (m²)',
+      'room_type_select': 'Room Type',
+      'gender_preference_select': 'Gender Preference',
+      'select_room_amenities': 'Room Amenities & Facilities',
+      'single_room_opt': 'Single Room (បន្ទប់ទោល)',
+      'double_room_opt': 'Double Room (បន្ទប់គូ)',
+      'shared_room_opt': 'Shared Room (បន្ទប់រួម)',
+      'gender_any': 'Any / Mixed (ទូទៅ)',
+      'gender_male': 'Male Only (បុរស)',
+      'gender_female': 'Female Only (ស្ត្រី)',
 
       // Invoices
       'invoice_date': 'Issue Date',
@@ -505,6 +518,7 @@ class Messages extends Translations {
       'enter_floor_name': 'បញ្ចូលឈ្មោះសម្រាប់ជាន់ថ្មី។',
       'floor_name': 'ឈ្មោះជាន់',
       'floor_hint': 'ឧ. ជាន់ទី ៥, ជាន់ផ្ទាល់ដី',
+      'ground_floor': 'ជាន់ផ្ទាល់ដី',
       'floor_created_success': 'បានបង្កើតជាន់ដោយជោគជ័យ!',
       'please_enter_floor_name': 'សូមបញ្ចូលឈ្មោះជាន់',
 
@@ -570,6 +584,18 @@ class Messages extends Translations {
       'delete_room_confirm': 'តើអ្នកប្រាកដថាចង់លុបបន្ទប់នេះមែនទេ?',
       'room_label_prefix': 'បន្ទប់',
       'floor_label_prefix': 'ជាន់',
+      'edit_room': 'កែសម្រួលព័ត៌មានបន្ទប់',
+      'edit_room_desc': 'កំណត់ទំហំ ប្រភេទបន្ទប់ ភេទ និងឧបករណ៍ប្រើប្រាស់',
+      'room_size_m2': 'ទំហំបន្ទប់ (m²)',
+      'room_type_select': 'ប្រភេទបន្ទប់',
+      'gender_preference_select': 'កំណត់ភេទ',
+      'select_room_amenities': 'ឧបករណ៍ប្រើប្រាស់ក្នុងបន្ទប់',
+      'single_room_opt': 'បន្ទប់ទោល (Single)',
+      'double_room_opt': 'បន្ទប់គូ (Double)',
+      'shared_room_opt': 'បន្ទប់រួម (Shared)',
+      'gender_any': 'ទូទៅ (ប្រុស/ស្រី)',
+      'gender_male': 'សម្រាប់បុរស (Male)',
+      'gender_female': 'សម្រាប់ស្ត្រី (Female)',
 
       // Invoices
       'invoice_date': 'កាលបរិច្ឆេទចេញ',

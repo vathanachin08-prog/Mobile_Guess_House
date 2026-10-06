@@ -32,7 +32,7 @@ class OwnerProfileController extends GetxController {
     user.value = TokenStoreLocal.getUser();
     final p = user.value?['profile']?.toString() ?? '';
     if (p.isNotEmpty) {
-      profileImagePath.value = p.startsWith('http')
+      profileImagePath.value = p.startsWith('http') || p.startsWith('data:image')
           ? p
           : "${ConstantUri.baseUri}/api/public/view/image?filename=$p";
       return;
@@ -109,9 +109,11 @@ class OwnerProfileController extends GetxController {
         user.value = map;
         final p = map['profile']?.toString() ?? '';
         if (p.isNotEmpty) {
-          profileImagePath.value = p.startsWith('http')
+          final resolvedUrl = p.startsWith('http') || p.startsWith('data:image')
               ? p
               : "${ConstantUri.baseUri}/api/public/view/image?filename=$p";
+          profileImagePath.value = resolvedUrl;
+          _storage.write("${_avatarStorageKey}_SERVER_URL", resolvedUrl);
         }
       }
     } catch (_) {}
@@ -197,8 +199,16 @@ class OwnerProfileController extends GetxController {
         try {
           final decoded = jsonDecode(utf8.decode(res.bodyBytes));
           final data = decoded['data'];
-          if (data != null && data['fileName'] != null) {
-            final serverFileName = data['fileName'].toString();
+          String? serverFileName;
+          if (data is Map) {
+            serverFileName = data['fileName']?.toString() ??
+                data['data']?.toString() ??
+                data['filename']?.toString();
+          } else if (data is String) {
+            serverFileName = data;
+          }
+
+          if (serverFileName != null && serverFileName.isNotEmpty) {
             final serverUrl = "${ConstantUri.baseUri}/api/public/view/image?filename=$serverFileName";
             _storage.write("${_avatarStorageKey}_SERVER_URL", serverUrl);
 

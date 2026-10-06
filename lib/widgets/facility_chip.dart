@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/services/language_service.dart';
 import 'app_colors.dart';
 
 class FacilityChip extends StatelessWidget {
@@ -27,6 +28,17 @@ class FacilityChip extends StatelessWidget {
   }
 
   String _formatName(String n) {
+    final lower = n.toLowerCase();
+    if (LanguageService.isKhmer) {
+      if (lower.contains('wifi')) return 'វ៉ាយហ្វាយ (WiFi)';
+      if (lower.contains('air') || lower.contains('ac')) return 'ម៉ាស៊ីនត្រជាក់';
+      if (lower.contains('bath')) return 'បន្ទប់ទឹកផ្ទាល់ខ្លួន';
+      if (lower.contains('park')) return 'ចំណតយានយន្ត';
+      if (lower.contains('kitch')) return 'ចង្ក្រានបាយ';
+      if (lower.contains('wash')) return 'ម៉ាស៊ីនបោកគក់';
+      if (lower.contains('secur')) return 'សន្តិសុខ / CCTV';
+      if (lower.contains('furn')) return 'គ្រឿងសង្ហារិម';
+    }
     return n.replaceAll('_', ' ').toLowerCase().split(' ').map((word) {
       if (word.isEmpty) return '';
       return word[0].toUpperCase() + word.substring(1);

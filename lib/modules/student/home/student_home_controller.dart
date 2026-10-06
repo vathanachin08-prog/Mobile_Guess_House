@@ -6,6 +6,7 @@ import '../../../core/services/api_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/favorite_model.dart';
 import '../../../widgets/app_colors.dart';
+import '../../../widgets/property_card.dart';
 import '../favorites/favorites_controller.dart';
 
 class StudentHomeController extends GetxController {
@@ -20,6 +21,13 @@ class StudentHomeController extends GetxController {
   final propertyFavoriteMap = <int, int>{}.obs; // propertyId -> favoriteId
   final notificationsList = <Map<String, dynamic>>[].obs;
   final unreadNotificationsCount = 0.obs;
+  final cardStyle = PropertyCardStyle.horizontal.obs;
+
+  void toggleCardStyle() {
+    cardStyle.value = cardStyle.value == PropertyCardStyle.horizontal
+        ? PropertyCardStyle.vertical
+        : PropertyCardStyle.horizontal;
+  }
 
   @override
   void onInit() {

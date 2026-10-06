@@ -1,14 +1,21 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../constants/constant_uri.dart';
+import '../core/services/language_service.dart';
 import '../models/rental/property_model.dart';
 import 'app_colors.dart';
+
+enum PropertyCardStyle {
+  vertical, // Style 1: Big vertical card with full image on top
+  horizontal, // Style 2: Modern marketplace horizontal card (like Khmer24)
+}
 
 class PropertyCard extends StatelessWidget {
   final PropertyModel property;
   final VoidCallback? onTap;
   final bool isFavorite;
   final VoidCallback? onFavoriteTap;
+  final PropertyCardStyle style;
 
   const PropertyCard({
     super.key,
@@ -16,6 +23,7 @@ class PropertyCard extends StatelessWidget {
     this.onTap,
     this.isFavorite = false,
     this.onFavoriteTap,
+    this.style = PropertyCardStyle.horizontal,
   });
 
   Widget _buildMainImage() {
@@ -47,6 +55,256 @@ class PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (style == PropertyCardStyle.vertical) {
+      return _buildVerticalCard(context);
+    }
+    return _buildHorizontalCard(context);
+  }
+
+  // ==========================================
+  // Style 2: Modern Horizontal Marketplace Card (Like Image 2)
+  // ==========================================
+  Widget _buildHorizontalCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Left: Image Thumbnail with 3-dot circle menu and photo count badge
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 122,
+                    height: 114,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(
+                          color: AppColors.primarySoft,
+                          child: _buildMainImage(),
+                        ),
+                        // 3-dots translucent button at top-right of image (matches screenshot 2)
+                        Positioned(
+                          top: 5,
+                          right: 5,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 3,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.more_vert,
+                              size: 15,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        // Photo count badge at bottom-right of image (e.g. 📷 8, 📷 5)
+                        Positioned(
+                          bottom: 5,
+                          right: 5,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 11,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  "${property.photoCount}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // 2. Right: Content Info Column
+                Expanded(
+                  child: SizedBox(
+                    height: 114,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Top info items
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title (Bold, max 2 lines with clean ellipsis)
+                            Text(
+                              property.displayTitle,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                                height: 1.25,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+
+                            // Post age & Location (e.g. 3ថ្ងៃ • ទួលគោក, ភ្នំពេញ)
+                            Text(
+                              "${property.postTimeDisplay} • ${property.shortLocation}",
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+
+                            // Type & Area (e.g. ជួល • 40m²)
+                            Row(
+                              children: [
+                                Text(
+                                  LanguageService.isKhmer ? "ជួល" : (property.propertyType ?? "Rental"),
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const Text(
+                                  " • ",
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                Text(
+                                  "${property.displayArea.toStringAsFixed(0)}m²",
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Verified Account Badge (Soft purple pill: ✔ បានផ្ទៀងផ្ទាត់គណនី)
+                            if (property.isVerified) ...[
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E8FF),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle,
+                                      size: 11,
+                                      color: Color(0xFF7C3AED),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      LanguageService.isKhmer ? "បានផ្ទៀងផ្ទាត់គណនី" : "Verified Account",
+                                      style: const TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+
+                        // Bottom Row: Bold Red Price & Favorite Outline Heart Icon
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "\$${(property.minRoomPrice ?? 50).toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE53935), // Red / Coral color like Image 2
+                              ),
+                            ),
+                            if (onFavoriteTap != null)
+                              InkWell(
+                                onTap: onFavoriteTap,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: Icon(
+                                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                                    size: 21,
+                                    color: isFavorite ? const Color(0xFFE53935) : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // Style 1: Big Vertical Card with Full Image on Top (Like Image 1)
+  // ==========================================
+  Widget _buildVerticalCard(BuildContext context) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),

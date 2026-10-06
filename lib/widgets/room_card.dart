@@ -77,7 +77,7 @@ class RoomCard extends StatelessWidget {
                         if (room.floor != null) ...[
                           const SizedBox(width: 8),
                           Text(
-                            LanguageService.isKhmer ? "ជាន់ទី ${room.floor}" : "Floor ${room.floor}",
+                            room.floorDisplayName,
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -91,7 +91,7 @@ class RoomCard extends StatelessWidget {
                       children: [
                         if (room.roomType != null) ...[
                           Text(
-                            room.roomType!,
+                            room.roomTypeDisplayName,
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,

@@ -579,8 +579,15 @@ class OwnerAppBarHelper {
                           if (res.statusCode == 200 || res.statusCode == 201) {
                             final decoded = jsonDecode(utf8.decode(res.bodyBytes));
                             final data = decoded['data'];
-                            if (data != null && data['fileName'] != null) {
-                              final fileName = data['fileName'].toString();
+                            String? fileName;
+                            if (data is Map) {
+                              fileName = data['fileName']?.toString() ??
+                                  data['data']?.toString() ??
+                                  data['filename']?.toString();
+                            } else if (data is String) {
+                              fileName = data;
+                            }
+                            if (fileName != null && fileName.isNotEmpty) {
                               uploadedImageUrl = "${ConstantUri.baseUri}/api/public/view/image?filename=$fileName";
                             }
                           }

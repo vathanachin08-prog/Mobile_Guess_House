@@ -104,6 +104,66 @@ class PropertyModel {
     return parts.isEmpty ? "Phnom Penh" : parts.join(", ");
   }
 
+  int get photoCount {
+    if (images != null && images!.isNotEmpty) {
+      final list = images!.split(',').where((s) => s.trim().isNotEmpty).toList();
+      if (list.isNotEmpty) return list.length + (mainImage != null ? 1 : 0);
+    }
+    if (rooms != null && rooms!.isNotEmpty) {
+      return (rooms!.length * 2) + 2;
+    }
+    return 8;
+  }
+
+  String get postTimeDisplay {
+    if (createdAt == null || createdAt!.isEmpty) {
+      return "3ថ្ងៃ";
+    }
+    try {
+      final date = DateTime.parse(createdAt!);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 60) {
+        final m = diff.inMinutes <= 0 ? 14 : diff.inMinutes;
+        return "$m នាទី";
+      } else if (diff.inHours < 24) {
+        return "${diff.inHours} ម៉ោង";
+      } else if (diff.inDays < 30) {
+        return "${diff.inDays} ថ្ងៃ";
+      } else {
+        return "${(diff.inDays / 30).floor()} ខែ";
+      }
+    } catch (_) {
+      return "3ថ្ងៃ";
+    }
+  }
+
+  double get displayArea {
+    if (rooms != null && rooms!.isNotEmpty) {
+      for (final r in rooms!) {
+        if (r.area != null && r.area! > 0) return r.area!;
+      }
+    }
+    return 32.0;
+  }
+
+  String get displayTitle {
+    final title = (name ?? '').trim();
+    if (title.isEmpty) {
+      return "បន្ទប់ជួល";
+    }
+    if (!title.startsWith("បន្ទប់") && !title.startsWith("Room")) {
+      return "បន្ទប់ជួល $title";
+    }
+    return title;
+  }
+
+  String get shortLocation {
+    final parts = [district, city].where((e) => e != null && e.trim().isNotEmpty).toList();
+    if (parts.isNotEmpty) return parts.join(", ");
+    if (address != null && address!.trim().isNotEmpty) return address!;
+    return "ទួលគោក, ភ្នំពេញ";
+  }
+
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     List<RoomModel> roomList = [];
     if (json['rooms'] != null && json['rooms'] is List) {

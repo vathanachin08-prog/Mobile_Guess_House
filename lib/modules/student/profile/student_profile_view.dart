@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../constants/constant_uri.dart';
 import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -132,33 +133,35 @@ class StudentProfileView extends GetView<StudentProfileController> {
         return const Icon(Icons.person, size: 38, color: AppColors.primary);
       }
     }
-    if (path.startsWith('http')) {
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        width: 74,
-        height: 74,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.person, size: 38, color: AppColors.primary),
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-            ),
-          );
-        },
-      );
-    }
-    if (!kIsWeb) {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(file, fit: BoxFit.cover, width: 74, height: 74);
-      }
-    }
-    return const Icon(Icons.person, size: 38, color: AppColors.primary);
+    final fullUrl = path.startsWith('http')
+        ? path
+        : "${ConstantUri.baseUri}/api/public/view/image?filename=$path";
+
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      width: 74,
+      height: 74,
+      errorBuilder: (context, error, stackTrace) {
+        if (!kIsWeb) {
+          final file = File(path);
+          if (file.existsSync()) {
+            return Image.file(file, fit: BoxFit.cover, width: 74, height: 74);
+          }
+        }
+        return const Icon(Icons.person, size: 38, color: AppColors.primary);
+      },
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          ),
+        );
+      },
+    );
   }
 
   @override

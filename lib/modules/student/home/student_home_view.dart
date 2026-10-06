@@ -133,20 +133,6 @@ class StudentHomeView extends GetView<StudentHomeController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'find_rooms'.tr,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      LanguageService.isKhmer ? "ស្វែងរកបន្ទប់ជួលមានសុវត្ថិភាពនៅជិតសាកលវិទ្យាល័យ" : "Find safe, student-friendly rooms near your university",
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 14),
 
                     // Search Input Trigger
                     InkWell(
@@ -263,6 +249,7 @@ class StudentHomeView extends GetView<StudentHomeController> {
                             margin: const EdgeInsets.only(right: 14),
                             child: Obx(() => PropertyCard(
                               property: item,
+                              style: PropertyCardStyle.vertical,
                               isFavorite: controller.favoriteIds.contains(item.id),
                               onFavoriteTap: () => controller.toggleFavorite(item),
                               onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: item),
@@ -291,10 +278,34 @@ class StudentHomeView extends GetView<StudentHomeController> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    Obx(() => Text(
-                      "${controller.filteredProperties.length} found",
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    )),
+                    Row(
+                      children: [
+                        Obx(() => Text(
+                          "${controller.filteredProperties.length} found",
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        )),
+                        const SizedBox(width: 8),
+                        Obx(() => InkWell(
+                          onTap: controller.toggleCardStyle,
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Icon(
+                              controller.cardStyle.value == PropertyCardStyle.horizontal
+                                  ? Icons.view_agenda_outlined
+                                  : Icons.view_list_outlined,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -326,9 +337,10 @@ class StudentHomeView extends GetView<StudentHomeController> {
                   itemBuilder: (context, index) {
                     final item = list[index];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: 12.0),
                       child: Obx(() => PropertyCard(
                         property: item,
+                        style: controller.cardStyle.value,
                         isFavorite: controller.favoriteIds.contains(item.id),
                         onFavoriteTap: () => controller.toggleFavorite(item),
                         onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: item),
