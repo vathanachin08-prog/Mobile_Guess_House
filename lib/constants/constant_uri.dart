@@ -1,6 +1,6 @@
 class ConstantUri {
   // Use localhost for Windows/Web, 10.0.2.2 for Android emulator, or LAN IP for physical device
-  static String baseUri = "http://192.168.110.52:30033";
+  static String baseUri = "http://192.168.110.43:30033";
 
   // Auth
   static String get login => "$baseUri/api/oauth/token";
@@ -42,4 +42,9 @@ class ConstantUri {
   // Reviews & Reports
   static String propertyReviews(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/reviews";
   static String propertyReports(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/reports";
+
+
+
+  // Support & Social
+  static const String telegramSupportUrl = "https://t.me/OuknhaTK";
 }

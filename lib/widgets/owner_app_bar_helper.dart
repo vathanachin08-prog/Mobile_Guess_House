@@ -9,6 +9,7 @@ import '../core/services/language_service.dart';
 import '../data/local/token_store_local.dart';
 import '../modules/owner/owner_main_controller.dart';
 import '../routes/app_route_name.dart';
+import 'animated_widgets.dart';
 import 'app_colors.dart';
 
 class OwnerAppBarHelper {
@@ -951,32 +952,11 @@ class OwnerAppBarHelper {
 
   /// Build language switcher action
   static Widget buildLanguageAction(BuildContext context) {
-    return IconButton(
-      tooltip: 'switch_language'.tr,
-      icon: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppColors.primarySoft,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.language, color: AppColors.primary, size: 15),
-            const SizedBox(width: 4),
-            Text(
-              LanguageService.isKhmer ? "KH" : "EN",
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: AnimatedLanguageToggle(),
       ),
-      onPressed: () => LanguageService.showLanguageSelector(context),
     );
   }
 
@@ -990,9 +970,9 @@ class OwnerAppBarHelper {
   }
 
   /// Standard owner action widgets (Language + Notification + Account)
-  static List<Widget> buildStandardActions(BuildContext context) {
+  static List<Widget> buildStandardActions(BuildContext context, {bool showLanguage = true}) {
     return [
-      buildLanguageAction(context),
+      if (showLanguage) buildLanguageAction(context),
       buildNotificationAction(context),
       buildAccountAction(context),
       const SizedBox(width: 4),

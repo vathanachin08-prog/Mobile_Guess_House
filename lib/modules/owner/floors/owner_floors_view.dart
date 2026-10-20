@@ -8,7 +8,8 @@ import '../../../widgets/custom_app_bar.dart';
 import 'owner_floors_controller.dart';
 
 class OwnerFloorsView extends StatefulWidget {
-  const OwnerFloorsView({super.key});
+  final bool showAppBar;
+  const OwnerFloorsView({super.key, this.showAppBar = false});
 
   @override
   State<OwnerFloorsView> createState() => _OwnerFloorsViewState();
@@ -127,10 +128,14 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'floors'.tr,
-          propertyDropdownText: "My Home",
-        ),
+        appBar: widget.showAppBar
+            ? CustomAppBar(
+                title: 'floors'.tr,
+                showProperty: false,
+                showLanguage: false,
+                isOwner: true,
+              )
+            : null,
         body: Column(
           children: [
             // Search input

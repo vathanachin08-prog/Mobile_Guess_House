@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/language_service.dart';
 import '../../routes/app_route_name.dart';
+import '../../widgets/animated_widgets.dart';
 import '../../widgets/app_colors.dart';
 import '../../widgets/button_custom_widget.dart';
 import '../../widgets/input_custom_widget.dart';
@@ -20,16 +21,13 @@ class LoginView extends GetView<LoginController> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          actions: [
-            TextButton.icon(
-              onPressed: () => LanguageService.showLanguageSelector(context),
-              icon: const Icon(Icons.language, size: 18, color: AppColors.primary),
-              label: Text(
-                LanguageService.currentLanguageLabel,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+          actions: const [
+            Center(
+              child: Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: AnimatedLanguageToggle(),
               ),
             ),
-            const SizedBox(width: 8),
           ],
         ),
         body: SafeArea(

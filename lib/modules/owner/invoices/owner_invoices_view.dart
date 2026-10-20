@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/language_service.dart';
+import '../../../core/services/url_service.dart';
 import '../../../models/rental/invoice_model.dart';
+import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../tenants/owner_tenants_controller.dart';
 import 'owner_invoices_controller.dart';
 
 class OwnerInvoicesView extends StatefulWidget {
-  const OwnerInvoicesView({super.key});
+  final bool showAppBar;
+  const OwnerInvoicesView({super.key, this.showAppBar = false});
 
   @override
   State<OwnerInvoicesView> createState() => _OwnerInvoicesViewState();
@@ -178,6 +181,11 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
+                        UrlService.sendInvoiceToTelegram(
+                          tenantName: inv.tenantName ?? '',
+                          roomNumber: inv.roomNumber ?? '',
+                          totalAmount: inv.totalAmount ?? 0.0,
+                        );
                         Get.snackbar("Telegram", 'telegram_sent_msg'.tr, backgroundColor: Colors.white);
                       },
                       icon: const Icon(Icons.send_rounded, size: 16, color: AppColors.primary),
@@ -324,10 +332,14 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'invoices'.tr,
-          propertyDropdownText: "My Home",
-        ),
+        appBar: widget.showAppBar
+            ? CustomAppBar(
+                title: 'invoices'.tr,
+                showProperty: false,
+                showLanguage: false,
+                isOwner: true,
+              )
+            : null,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -344,24 +356,32 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                   _InvoiceMetricCard(
                     title: 'expected'.tr,
                     value: "\$${controller.totalExpectedRevenue.toStringAsFixed(2)}",
+                    numericValue: controller.totalExpectedRevenue,
+                    prefix: "\$",
+                    decimalPlaces: 2,
                     icon: Icons.attach_money,
                     color: AppColors.accentBlue,
                   ),
                   _InvoiceMetricCard(
                     title: 'collected'.tr,
                     value: "\$${controller.totalCollectedRevenue.toStringAsFixed(2)}",
+                    numericValue: controller.totalCollectedRevenue,
+                    prefix: "\$",
+                    decimalPlaces: 2,
                     icon: Icons.check_circle_outline,
                     color: AppColors.primary,
                   ),
                   _InvoiceMetricCard(
                     title: 'unpaid_status'.tr,
                     value: "${controller.unpaidCount}",
+                    numericValue: controller.unpaidCount,
                     icon: Icons.access_time,
                     color: AppColors.accentOrange,
                   ),
                   _InvoiceMetricCard(
                     title: 'overdue_status'.tr,
                     value: "${controller.overdueCount}",
+                    numericValue: controller.overdueCount,
                     icon: Icons.warning_amber_rounded,
                     color: AppColors.danger,
                   ),
@@ -498,21 +518,36 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
     final isSelected = currentSelected == code;
     return InkWell(
       onTap: () => controller.selectedFilter.value = code,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
-        child: Text(
-          label,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
           ),
+          child: Text(label),
         ),
       ),
     );
@@ -522,12 +557,18 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 class _InvoiceMetricCard extends StatelessWidget {
   final String title;
   final String value;
+  final num? numericValue;
+  final String prefix;
+  final int decimalPlaces;
   final IconData icon;
   final Color color;
 
   const _InvoiceMetricCard({
     required this.title,
     required this.value,
+    this.numericValue,
+    this.prefix = '',
+    this.decimalPlaces = 0,
     required this.icon,
     required this.color,
   });
@@ -553,7 +594,15 @@ class _InvoiceMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          if (numericValue != null)
+            AnimatedCountText(
+              value: numericValue!,
+              prefix: prefix,
+              decimalPlaces: decimalPlaces,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            )
+          else
+            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ],
       ),
     );

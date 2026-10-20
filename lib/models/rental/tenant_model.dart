@@ -1,5 +1,6 @@
 class TenantModel {
   final int? id;
+  final int? propertyId;
   final String? name;
   final String? roomNumber;
   final String? floor;
@@ -10,6 +11,7 @@ class TenantModel {
 
   TenantModel({
     this.id,
+    this.propertyId,
     this.name,
     this.roomNumber,
     this.floor,
@@ -22,6 +24,7 @@ class TenantModel {
   factory TenantModel.fromJson(Map<String, dynamic> json) {
     return TenantModel(
       id: json['id'],
+      propertyId: json['propertyId'] != null ? (json['propertyId'] as num).toInt() : null,
       name: json['name'],
       roomNumber: json['roomNumber'],
       floor: json['floor'],
@@ -35,6 +38,7 @@ class TenantModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'propertyId': propertyId,
       'name': name,
       'roomNumber': roomNumber,
       'floor': floor,

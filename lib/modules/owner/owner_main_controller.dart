@@ -241,6 +241,16 @@ class OwnerMainController extends GetxController {
       vrCtrl.selectedPropertyFilter.value = selectedPropertyId.value;
       vrCtrl.loadRequests();
     }
+
+    // Sync with OwnerTenantsController
+    if (Get.isRegistered<OwnerTenantsController>()) {
+      Get.find<OwnerTenantsController>().loadTenants();
+    }
+
+    // Sync with OwnerInvoicesController
+    if (Get.isRegistered<OwnerInvoicesController>()) {
+      Get.find<OwnerInvoicesController>().loadInvoices();
+    }
   }
 
   Future<int> ensureActivePropertyId() async {

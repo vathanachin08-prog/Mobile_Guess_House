@@ -41,6 +41,8 @@ class MyApp extends StatelessWidget {
       translations: Messages(),
       locale: LanguageService.getInitialLocale(),
       fallbackLocale: LanguageService.englishLocale,
+      defaultTransition: Transition.cupertino,
+      transitionDuration: const Duration(milliseconds: 320),
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: AppColors.primary,

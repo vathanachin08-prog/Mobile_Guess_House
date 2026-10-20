@@ -6,15 +6,19 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/language_service.dart';
+import '../../../core/services/url_service.dart';
 import '../../../routes/app_route_name.dart';
+import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../membership/owner_membership_view.dart';
 import '../pricing/owner_pricing_view.dart';
+import '../reviews/owner_reviews_view.dart';
 import 'owner_profile_controller.dart';
 
 class OwnerProfileView extends GetView<OwnerProfileController> {
-  const OwnerProfileView({super.key});
+  final bool showAppBar;
+  const OwnerProfileView({super.key, this.showAppBar = false});
 
   void _showImageSourceSheet(BuildContext context) {
     showModalBottomSheet(
@@ -183,10 +187,12 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'my_profile'.tr,
-          subtitle: 'owner_profile'.tr,
-        ),
+        appBar: showAppBar
+            ? CustomAppBar(
+                title: 'my_profile'.tr,
+                subtitle: 'owner_profile'.tr,
+              )
+            : null,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -304,6 +310,11 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
                     title: 'bakong_payment'.tr,
                     onTap: () => Get.to(() => const OwnerPricingView()),
                   ),
+                  _buildListTile(
+                    icon: Icons.star_rate_rounded,
+                    title: 'reviews'.tr,
+                    onTap: () => Get.to(() => const OwnerReviewsView()),
+                  ),
                 ],
               ),
 
@@ -314,20 +325,15 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
                 title: 'settings'.tr,
                 children: [
                   _buildListTile(
-                    icon: Icons.language,
+                    icon: Icons.translate_rounded,
                     title: 'language'.tr,
-                    trailing: Text(
-                      LanguageService.currentLanguageLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
-                    ),
-                    onTap: () => LanguageService.showLanguageSelector(context),
+                    trailing: const AnimatedLanguageToggle(compact: false),
+                    onTap: () => LanguageService.toggleLanguage(),
                   ),
                   _buildListTile(
                     icon: Icons.support_agent_rounded,
                     title: 'help_support'.tr,
-                    onTap: () {
-                      Get.snackbar("Support", "Telegram support: @roomfinderkh_owner", backgroundColor: Colors.white);
-                    },
+                    onTap: () => UrlService.openTelegram(),
                   ),
                 ],
               ),

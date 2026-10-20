@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/language_service.dart';
 import '../../../routes/app_route_name.dart';
+import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/property_card.dart';
@@ -43,41 +44,16 @@ class StudentHomeView extends GetView<StudentHomeController> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
-                  "Phnom Penh, Cambodia 📍",
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
               ],
             ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'switch_language'.tr,
-            icon: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.language, color: AppColors.primary, size: 15),
-                  const SizedBox(width: 4),
-                  Text(
-                    LanguageService.isKhmer ? "KH" : "EN",
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: AnimatedLanguageToggle(),
             ),
-            onPressed: () => LanguageService.showLanguageSelector(context),
           ),
           Obx(() {
             final unread = controller.unreadNotificationsCount.value;

@@ -22,7 +22,9 @@ class OwnerVisitRequestsView extends GetView<OwnerVisitRequestsController> {
           title: 'appointment_visit'.tr,
           subtitle: 'visit_requests_schedule'.tr,
           showBack: true,
-          onBack: () => Get.back(),
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
         ),
         body: Column(
           children: [

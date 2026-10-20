@@ -7,7 +7,6 @@ import '../../../data/local/token_store_local.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/button_custom_widget.dart';
-import '../../../widgets/owner_app_bar_helper.dart';
 
 class OwnerPricingView extends StatefulWidget {
   const OwnerPricingView({super.key});
@@ -148,10 +147,11 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
         backgroundColor: AppColors.background,
         appBar: CustomAppBar(
           title: 'pricing_utilities'.tr,
-          propertyName: "My Home",
           subtitle: 'settings'.tr,
-          onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
-          actions: OwnerAppBarHelper.buildStandardActions(context),
+          showBack: true,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

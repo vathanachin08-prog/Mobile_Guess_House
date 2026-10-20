@@ -3,11 +3,26 @@ import 'package:get_storage/get_storage.dart';
 import '../../../models/rental/invoice_model.dart';
 import '../../../core/services/api_service.dart';
 import '../../../data/local/token_store_local.dart';
+import '../owner_main_controller.dart';
+import '../dashboard/owner_dashboard_controller.dart';
 
 class OwnerInvoicesController extends GetxController {
   final ApiService? apiService;
   final _storage = GetStorage();
-  String get _storageKey => TokenStoreLocal.getUserScopedKey("OWNER_INVOICES_PERSIST_KEY");
+
+  int? get activePropertyId {
+    if (Get.isRegistered<OwnerMainController>()) {
+      return Get.find<OwnerMainController>().selectedPropertyId.value;
+    }
+    return null;
+  }
+
+  String get _storageKey {
+    final propId = activePropertyId;
+    return TokenStoreLocal.getUserScopedKey("OWNER_INVOICES_${propId ?? 'none'}");
+  }
+
+  String get _legacyStorageKey => TokenStoreLocal.getUserScopedKey("OWNER_INVOICES_PERSIST_KEY");
 
   OwnerInvoicesController({this.apiService});
 
@@ -24,24 +39,44 @@ class OwnerInvoicesController extends GetxController {
   void loadInvoices() {
     isLoading.value = true;
     try {
-      final stored = _storage.read(_storageKey);
+      var stored = _storage.read(_storageKey);
+      if (stored == null || (stored is List && stored.isEmpty)) {
+        final legacyStored = _storage.read(_legacyStorageKey);
+        if (legacyStored is List && legacyStored.isNotEmpty) {
+          stored = legacyStored;
+          _storage.write(_storageKey, stored);
+          _storage.remove(_legacyStorageKey);
+        }
+      }
       if (stored is List && stored.isNotEmpty) {
         invoices.value = stored
             .map((item) => InvoiceModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
       } else {
-        // Keep clean for new accounts
         invoices.clear();
       }
     } catch (_) {
       invoices.clear();
     } finally {
       isLoading.value = false;
+      _syncToDashboard();
+    }
+  }
+
+  void _syncToDashboard() {
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dashCtrl = Get.find<OwnerDashboardController>();
+      if (dashCtrl.currentProperty.value?.id == activePropertyId) {
+        dashCtrl.unpaidInvoices.value = unpaidCount;
+        dashCtrl.totalRevenue.value = totalCollectedRevenue;
+        dashCtrl.expectedRevenue.value = totalExpectedRevenue;
+      }
     }
   }
 
   void _save() {
     _storage.write(_storageKey, invoices.map((inv) => inv.toJson()).toList());
+    _syncToDashboard();
   }
 
   List<InvoiceModel> get filteredInvoices {

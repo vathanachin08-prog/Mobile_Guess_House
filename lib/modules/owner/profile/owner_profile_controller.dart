@@ -10,6 +10,7 @@ import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../../../routes/app_route_name.dart';
+import '../dashboard/owner_dashboard_controller.dart';
 
 class OwnerProfileController extends GetxController {
   final _storage = GetStorage();
@@ -150,6 +151,9 @@ class OwnerProfileController extends GetxController {
 
         profileImagePath.value = base64Image;
         _storage.write(_avatarStorageKey, base64Image);
+        if (Get.isRegistered<OwnerDashboardController>()) {
+          Get.find<OwnerDashboardController>().profileImagePath.value = base64Image;
+        }
         Get.back(); // close bottom sheet
 
         // Upload to Spring Boot Backend API
@@ -217,6 +221,9 @@ class OwnerProfileController extends GetxController {
             TokenStoreLocal.setUser(u);
             user.value = u;
             profileImagePath.value = serverUrl;
+            if (Get.isRegistered<OwnerDashboardController>()) {
+              Get.find<OwnerDashboardController>().profileImagePath.value = serverUrl;
+            }
 
             // Persist to database users table so it stays permanently after logout/close!
             await _saveProfileToDatabase(serverFileName, token);

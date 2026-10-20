@@ -11,7 +11,8 @@ import '../floors/owner_floors_controller.dart';
 import 'owner_rooms_controller.dart';
 
 class OwnerRoomsView extends GetView<OwnerRoomsController> {
-  const OwnerRoomsView({super.key});
+  final bool showAppBar;
+  const OwnerRoomsView({super.key, this.showAppBar = false});
 
   String _getFloorDisplayName(int? floorNum) {
     if (Get.isRegistered<OwnerFloorsController>()) {
@@ -588,10 +589,14 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: CustomAppBar(
-          title: 'rooms'.tr,
-          propertyDropdownText: "My Home",
-        ),
+        appBar: showAppBar
+            ? CustomAppBar(
+                title: 'rooms'.tr,
+                showProperty: false,
+                showLanguage: false,
+                isOwner: true,
+              )
+            : null,
         body: Column(
           children: [
             // Search & Filter header

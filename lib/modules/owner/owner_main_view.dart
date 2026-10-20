@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/language_service.dart';
 import '../../widgets/app_colors.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../widgets/owner_dashboard_app_bar.dart';
 import 'dashboard/owner_dashboard_view.dart';
 import 'floors/owner_floors_view.dart';
 import 'rooms/owner_rooms_view.dart';
@@ -12,6 +14,55 @@ import 'owner_main_controller.dart';
 
 class OwnerMainView extends GetView<OwnerMainController> {
   const OwnerMainView({super.key});
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    switch (controller.currentIndex.value) {
+      case 0:
+        return const OwnerDashboardAppBar();
+      case 1:
+        return CustomAppBar(
+          title: 'floors'.tr,
+          subtitle: controller.selectedPropertyName.value,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
+        );
+      case 2:
+        return CustomAppBar(
+          title: 'rooms'.tr,
+          subtitle: controller.selectedPropertyName.value,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
+        );
+      case 3:
+        return CustomAppBar(
+          title: 'tenants'.tr,
+          subtitle: controller.selectedPropertyName.value,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
+        );
+      case 4:
+        return CustomAppBar(
+          title: 'invoices'.tr,
+          subtitle: controller.selectedPropertyName.value,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
+        );
+      case 5:
+        return CustomAppBar(
+          title: 'my_profile'.tr,
+          subtitle: 'owner_profile'.tr,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
+        );
+      default:
+        return const CustomAppBar(title: "RoomFinder KH");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +80,7 @@ class OwnerMainView extends GetView<OwnerMainController> {
       ];
 
       return Scaffold(
+        appBar: _buildAppBar(context),
         body: IndexedStack(
           index: controller.currentIndex.value,
           children: pages,

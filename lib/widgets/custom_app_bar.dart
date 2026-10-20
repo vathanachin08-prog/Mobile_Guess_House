@@ -13,6 +13,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onPropertyDropdownTap;
   final List<Widget>? actions;
   final Widget? leading;
+  final bool showProperty;
+  final bool showLanguage;
+  final bool? isOwner;
 
   const CustomAppBar({
     super.key,
@@ -26,6 +29,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     VoidCallback? onPropertyDropdownTap,
     this.actions,
     this.leading,
+    this.showProperty = true,
+    this.showLanguage = true,
+    this.isOwner,
   })  : propertyDropdownText = propertyDropdownText ?? propertyName,
         onPropertyDropdownTap = onPropertyDropdownTap ?? onPropertyTap;
 
@@ -34,10 +40,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If actions are not provided on an owner screen (indicated by propertyDropdownText != null),
-    // default to the standard interactive owner actions (Notification + Acc).
+    // If actions are not provided on an owner screen,
+    // default to the standard interactive owner actions (Notification + Acc, and optionally Language).
+    final effectiveIsOwner = isOwner ?? (propertyDropdownText != null);
     final effectiveActions = actions ??
-        (propertyDropdownText != null ? OwnerAppBarHelper.buildStandardActions(context) : null);
+        (effectiveIsOwner
+            ? OwnerAppBarHelper.buildStandardActions(context, showLanguage: showLanguage)
+            : null);
 
     final effectiveOnPropertyTap = onPropertyDropdownTap ??
         () => OwnerAppBarHelper.showPropertyPicker(context);
@@ -111,7 +120,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ],
                 ),
               ),
-              if (propertyDropdownText != null)
+              if (showProperty && propertyDropdownText != null)
                 InkWell(
                   onTap: effectiveOnPropertyTap,
                   borderRadius: BorderRadius.circular(20),

@@ -6,6 +6,7 @@ import '../../../widgets/app_colors.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/facility_chip.dart';
 import '../../../widgets/property_card.dart';
+import '../home/student_home_controller.dart';
 import 'student_search_controller.dart';
 
 class StudentSearchView extends GetView<StudentSearchController> {
@@ -151,12 +152,20 @@ class StudentSearchView extends GetView<StudentSearchController> {
                   itemCount: controller.searchResults.length,
                   itemBuilder: (ctx, i) {
                     final p = controller.searchResults[i];
+                    final homeCtrl = Get.isRegistered<StudentHomeController>()
+                        ? Get.find<StudentHomeController>()
+                        : null;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: PropertyCard(
-                        property: p,
-                        onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: p),
-                      ),
+                      child: Obx(() {
+                        final isFav = homeCtrl != null && homeCtrl.favoriteIds.contains(p.id);
+                        return PropertyCard(
+                          property: p,
+                          isFavorite: isFav,
+                          onFavoriteTap: homeCtrl != null ? () => homeCtrl.toggleFavorite(p) : null,
+                          onTap: () => Get.toNamed(AppRouteName.propertyDetail, arguments: p),
+                        );
+                      }),
                     );
                   },
                 );

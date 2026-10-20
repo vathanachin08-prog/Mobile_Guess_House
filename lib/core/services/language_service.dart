@@ -38,32 +38,34 @@ class LanguageService {
   }
 
   /// Switch to specific language
-  static Future<void> switchLanguage(String langCode) async {
+  static Future<void> switchLanguage(String langCode, {bool showSnackbar = false}) async {
     final targetLocale = (langCode == 'en') ? englishLocale : khmerLocale;
     final box = GetStorage();
-    await box.write(storageKey, langCode);
+    box.write(storageKey, langCode);
     currentLocale.value = targetLocale;
     await Get.updateLocale(targetLocale);
 
-    Get.snackbar(
-      langCode == 'en' ? "Language Changed" : "ការផ្លាស់ប្តូរភាសា",
-      langCode == 'en' ? "Language switched to English" : "ភាសាត្រូវបានប្តូរទៅជា ភាសាខ្មែរ",
-      snackPosition: SnackPosition.TOP,
-      backgroundColor: Colors.white,
-      colorText: AppColors.primary,
-      icon: const Icon(Icons.language, color: AppColors.primary),
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+    if (showSnackbar) {
+      Get.snackbar(
+        langCode == 'en' ? "Language Changed" : "ការផ្លាស់ប្តូរភាសា",
+        langCode == 'en' ? "Language switched to English" : "ភាសាត្រូវបានប្តូរទៅជា ភាសាខ្មែរ",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.white,
+        colorText: AppColors.primary,
+        icon: const Icon(Icons.language, color: AppColors.primary),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
   }
 
   /// Quick toggle between Khmer and English
-  static Future<void> toggleLanguage() async {
+  static Future<void> toggleLanguage({bool showSnackbar = false}) async {
     if (isKhmer) {
-      await switchLanguage('en');
+      await switchLanguage('en', showSnackbar: showSnackbar);
     } else {
-      await switchLanguage('km');
+      await switchLanguage('km', showSnackbar: showSnackbar);
     }
   }
 

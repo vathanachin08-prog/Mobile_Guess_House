@@ -4,7 +4,6 @@ import 'package:get_storage/get_storage.dart';
 import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
-import '../../../widgets/owner_app_bar_helper.dart';
 import '../../../data/local/token_store_local.dart';
 
 class OwnerMembershipView extends StatefulWidget {
@@ -111,10 +110,11 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
         backgroundColor: AppColors.background,
         appBar: CustomAppBar(
           title: 'membership'.tr,
-          propertyName: "My Home",
           subtitle: 'settings'.tr,
-          onPropertyTap: () => OwnerAppBarHelper.showPropertyPicker(context),
-          actions: OwnerAppBarHelper.buildStandardActions(context),
+          showBack: true,
+          showProperty: false,
+          showLanguage: false,
+          isOwner: true,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

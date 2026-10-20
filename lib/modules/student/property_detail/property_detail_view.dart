@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../routes/app_route_name.dart';
+import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/facility_chip.dart';
 import '../../../widgets/room_card.dart';
@@ -289,22 +290,16 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 onPressed: () => Get.back(),
               ),
               actions: [
-                IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      controller.isFavorite.value ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: controller.isFavorite.value ? Colors.red : AppColors.textSecondary,
-                    ),
-                  ),
-                  onPressed: controller.toggleFavorite,
+                Center(
+                  child: Obx(() => FavoriteHeartButton(
+                    isFavorite: controller.isFavorite.value,
+                    onTap: controller.toggleFavorite,
+                    size: 20,
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
+                    padding: const EdgeInsets.all(8.0),
+                  )),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
@@ -312,7 +307,12 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                   children: [
                     Container(
                       color: AppColors.primarySoft,
-                      child: _buildPropertyDetailImage(p.mainImage),
+                      child: (p.id != null)
+                          ? Hero(
+                              tag: 'property_hero_${p.id}',
+                              child: _buildPropertyDetailImage(p.mainImage),
+                            )
+                          : _buildPropertyDetailImage(p.mainImage),
                     ),
                     // Gradient overlay
                     Positioned(

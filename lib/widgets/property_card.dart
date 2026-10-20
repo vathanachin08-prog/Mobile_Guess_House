@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/constant_uri.dart';
 import '../core/services/language_service.dart';
 import '../models/rental/property_model.dart';
+import 'animated_widgets.dart';
 import 'app_colors.dart';
 
 enum PropertyCardStyle {
@@ -28,29 +29,38 @@ class PropertyCard extends StatelessWidget {
 
   Widget _buildMainImage() {
     final img = property.mainImage;
+    Widget imgWidget;
     if (img == null || img.trim().isEmpty) {
-      return _buildPlaceholderImage();
-    }
-    if (img.startsWith('data:image')) {
+      imgWidget = _buildPlaceholderImage();
+    } else if (img.startsWith('data:image')) {
       try {
         final base64Str = img.split(',').last;
-        return Image.memory(
+        imgWidget = Image.memory(
           base64Decode(base64Str),
           fit: BoxFit.cover,
           errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
         );
       } catch (_) {
-        return _buildPlaceholderImage();
+        imgWidget = _buildPlaceholderImage();
       }
+    } else {
+      final fullUrl = img.startsWith('http')
+          ? img
+          : "${ConstantUri.baseUri}/api/public/view/image?filename=$img";
+      imgWidget = Image.network(
+        fullUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
+      );
     }
-    final fullUrl = img.startsWith('http')
-        ? img
-        : "${ConstantUri.baseUri}/api/public/view/image?filename=$img";
-    return Image.network(
-      fullUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (ctx, err, stack) => _buildPlaceholderImage(),
-    );
+
+    if (property.id != null) {
+      return Hero(
+        tag: 'property_hero_${property.id}',
+        child: imgWidget,
+      );
+    }
+    return imgWidget;
   }
 
   @override
@@ -275,17 +285,13 @@ class PropertyCard extends StatelessWidget {
                               ),
                             ),
                             if (onFavoriteTap != null)
-                              InkWell(
+                              FavoriteHeartButton(
+                                isFavorite: isFavorite,
                                 onTap: onFavoriteTap,
-                                borderRadius: BorderRadius.circular(20),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(2.0),
-                                  child: Icon(
-                                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    size: 21,
-                                    color: isFavorite ? const Color(0xFFE53935) : AppColors.textSecondary,
-                                  ),
-                                ),
+                                size: 21,
+                                activeColor: const Color(0xFFE53935),
+                                inactiveColor: AppColors.textSecondary,
+                                padding: const EdgeInsets.all(4.0),
                               ),
                           ],
                         ),
@@ -373,21 +379,12 @@ class PropertyCard extends StatelessWidget {
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: InkWell(
+                    child: FavoriteHeartButton(
+                      isFavorite: isFavorite,
                       onTap: onFavoriteTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isFavorite ? Icons.favorite : Icons.favorite_border,
-                          size: 18,
-                          color: isFavorite ? Colors.red : AppColors.textSecondary,
-                        ),
-                      ),
+                      size: 19,
+                      backgroundColor: Colors.white.withValues(alpha: 0.9),
+                      padding: const EdgeInsets.all(7.0),
                     ),
                   ),
                 // Property Type pill

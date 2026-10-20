@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/language_service.dart';
+import '../../../core/services/url_service.dart';
+import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../student_main_controller.dart';
@@ -270,20 +272,15 @@ class StudentProfileView extends GetView<StudentProfileController> {
                 title: 'settings'.tr,
                 children: [
                   _buildListTile(
-                    icon: Icons.language,
+                    icon: Icons.translate_rounded,
                     title: 'language'.tr,
-                    trailing: Text(
-                      LanguageService.currentLanguageLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
-                    ),
-                    onTap: () => LanguageService.showLanguageSelector(context),
+                    trailing: const AnimatedLanguageToggle(compact: false),
+                    onTap: () => LanguageService.toggleLanguage(),
                   ),
                   _buildListTile(
                     icon: Icons.help_outline,
                     title: 'help_support'.tr,
-                    onTap: () {
-                      Get.snackbar("Support", "Telegram support: @roomfinderkh", backgroundColor: Colors.white);
-                    },
+                    onTap: () => UrlService.openTelegram(),
                   ),
                 ],
               ),

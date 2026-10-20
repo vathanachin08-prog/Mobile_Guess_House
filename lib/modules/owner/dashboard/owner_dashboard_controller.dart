@@ -1,8 +1,13 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/visit_request_model.dart';
@@ -36,6 +41,12 @@ class OwnerDashboardController extends GetxController {
 
   final user = Rxn<Map<String, dynamic>>();
   final ownerNameRx = "Owner".obs;
+  final profileImagePath = "".obs;
+  final isBalanceHidden = false.obs;
+
+  void toggleBalanceVisibility() {
+    isBalanceHidden.toggle();
+  }
 
   @override
   void onInit() {
@@ -52,15 +63,45 @@ class OwnerDashboardController extends GetxController {
       final last = u['lastName'] ?? '';
       if (first.toString().isNotEmpty || last.toString().isNotEmpty) {
         ownerNameRx.value = "$first $last".trim();
-        return;
+      } else {
+        final un = u['username'];
+        if (un != null && un.toString().isNotEmpty) {
+          ownerNameRx.value = un.toString();
+        } else {
+          ownerNameRx.value = 'Owner';
+        }
       }
-      final un = u['username'];
-      if (un != null && un.toString().isNotEmpty) {
-        ownerNameRx.value = un.toString();
-        return;
-      }
+    } else {
+      ownerNameRx.value = 'Owner';
     }
-    ownerNameRx.value = 'Owner';
+    loadAvatar();
+  }
+
+  void loadAvatar() {
+    profileImagePath.value = "";
+    final u = TokenStoreLocal.getUser();
+    final p = u?['profile']?.toString() ?? '';
+    if (p.isNotEmpty) {
+      profileImagePath.value = p.startsWith('http') || p.startsWith('data:image')
+          ? p
+          : "${ConstantUri.baseUri}/api/public/view/image?filename=$p";
+      return;
+    }
+
+    try {
+      final box = GetStorage();
+      final key = TokenStoreLocal.getUserScopedKey("OWNER_PROFILE_AVATAR_KEY");
+      final serverUrl = box.read("${key}_SERVER_URL");
+      if (serverUrl != null && serverUrl.toString().isNotEmpty) {
+        profileImagePath.value = serverUrl.toString();
+        return;
+      }
+
+      final savedAvatar = box.read(key);
+      if (savedAvatar != null && savedAvatar.toString().isNotEmpty) {
+        profileImagePath.value = savedAvatar.toString();
+      }
+    } catch (_) {}
   }
 
   String get ownerName => ownerNameRx.value;
@@ -86,7 +127,43 @@ class OwnerDashboardController extends GetxController {
           }
         }
         if (items.isNotEmpty) {
-          final props = items.map((e) => PropertyModel.fromJson(Map<String, dynamic>.from(e))).toList();
+          final props = items.map((e) {
+            final pm = PropertyModel.fromJson(Map<String, dynamic>.from(e));
+            if (pm.id != null) {
+              try {
+                final box = GetStorage();
+                final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${pm.id}");
+                final savedImg = box.read(localKey)?.toString();
+                if (savedImg != null && savedImg.trim().isNotEmpty) {
+                  return PropertyModel(
+                    id: pm.id,
+                    name: pm.name,
+                    description: pm.description,
+                    propertyType: pm.propertyType,
+                    address: pm.address,
+                    city: pm.city,
+                    district: pm.district,
+                    latitude: pm.latitude,
+                    longitude: pm.longitude,
+                    status: pm.status,
+                    verificationStatus: pm.verificationStatus,
+                    mainImage: savedImg.trim(),
+                    images: pm.images,
+                    owner: pm.owner,
+                    rooms: pm.rooms,
+                    minRoomPrice: pm.minRoomPrice,
+                    availableRoomCount: pm.availableRoomCount,
+                    totalRoomCount: pm.totalRoomCount,
+                    averageRating: pm.averageRating,
+                    reviewCount: pm.reviewCount,
+                    createdAt: pm.createdAt,
+                    updatedAt: pm.updatedAt,
+                  );
+                }
+              } catch (_) {}
+            }
+            return pm;
+          }).toList();
           myProperties.assignAll(props);
           if (myProperties.isNotEmpty) {
             int? activeId;
@@ -124,18 +201,57 @@ class OwnerDashboardController extends GetxController {
     }
     if (Get.isRegistered<OwnerTenantsController>()) {
       final tCtrl = Get.find<OwnerTenantsController>();
-      totalTenants.value = tCtrl.tenants.length;
+      if (tCtrl.activePropertyId == currentProperty.value?.id) {
+        totalTenants.value = tCtrl.tenants.length;
+      }
     }
     if (Get.isRegistered<OwnerInvoicesController>()) {
       final iCtrl = Get.find<OwnerInvoicesController>();
-      unpaidInvoices.value = iCtrl.unpaidCount;
-      totalRevenue.value = iCtrl.totalCollectedRevenue;
-      expectedRevenue.value = iCtrl.totalExpectedRevenue;
+      if (iCtrl.activePropertyId == currentProperty.value?.id) {
+        unpaidInvoices.value = iCtrl.unpaidCount;
+        totalRevenue.value = iCtrl.totalCollectedRevenue;
+        expectedRevenue.value = iCtrl.totalExpectedRevenue;
+      }
     }
   }
 
   Future<void> switchProperty(PropertyModel p) async {
-    currentProperty.value = p;
+    // Check if there is a local photo override for this property
+    PropertyModel effectiveProp = p;
+    if (p.id != null) {
+      try {
+        final box = GetStorage();
+        final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${p.id}");
+        final localImg = box.read(localKey)?.toString();
+        if (localImg != null && localImg.trim().isNotEmpty) {
+          effectiveProp = PropertyModel(
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            propertyType: p.propertyType,
+            address: p.address,
+            city: p.city,
+            district: p.district,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            status: p.status,
+            verificationStatus: p.verificationStatus,
+            mainImage: localImg.trim(),
+            images: p.images,
+            owner: p.owner,
+            rooms: p.rooms,
+            minRoomPrice: p.minRoomPrice,
+            availableRoomCount: p.availableRoomCount,
+            totalRoomCount: p.totalRoomCount,
+            averageRating: p.averageRating,
+            reviewCount: p.reviewCount,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          );
+        }
+      } catch (_) {}
+    }
+    currentProperty.value = effectiveProp;
     if (p.totalRoomCount != null) {
       totalRooms.value = p.totalRoomCount!;
       availableRooms.value = p.availableRoomCount ?? 0;
@@ -151,12 +267,33 @@ class OwnerDashboardController extends GetxController {
       occupiedRooms.value = 0;
     }
 
-    // Immediately reset floor count to 0 so we don't display stale floors from another property
+    // Immediately reset counts so we don't display stale data from another property
     totalFloors.value = 0;
     if (Get.isRegistered<OwnerFloorsController>()) {
       final fCtrl = Get.find<OwnerFloorsController>();
       if (fCtrl.activePropertyId == p.id) {
         totalFloors.value = fCtrl.floors.length;
+      }
+    }
+
+    totalTenants.value = 0;
+    if (Get.isRegistered<OwnerTenantsController>()) {
+      final tCtrl = Get.find<OwnerTenantsController>();
+      if (tCtrl.activePropertyId == p.id) {
+        totalTenants.value = tCtrl.tenants.length;
+      }
+    }
+
+    if (Get.isRegistered<OwnerInvoicesController>()) {
+      final iCtrl = Get.find<OwnerInvoicesController>();
+      if (iCtrl.activePropertyId == p.id) {
+        unpaidInvoices.value = iCtrl.unpaidCount;
+        totalRevenue.value = iCtrl.totalCollectedRevenue;
+        expectedRevenue.value = iCtrl.totalExpectedRevenue;
+      } else {
+        unpaidInvoices.value = 0;
+        totalRevenue.value = 0;
+        expectedRevenue.value = 0;
       }
     }
 
@@ -270,5 +407,204 @@ class OwnerDashboardController extends GetxController {
     } catch (e) {
       Get.snackbar("Error", "មិនអាចបដិសេធបានទេ: $e", backgroundColor: Colors.white);
     }
+  }
+
+  /// Get building image source from property or fallback sources
+  String? getBuildingImageSource(PropertyModel? property) {
+    if (property == null) return null;
+
+    // 1. Check user-scoped local storage override if user customized it
+    if (property.id != null) {
+      try {
+        final box = GetStorage();
+        final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${property.id}");
+        final localImg = box.read(localKey);
+        if (localImg != null && localImg.toString().trim().isNotEmpty) {
+          return localImg.toString().trim();
+        }
+      } catch (_) {}
+    }
+
+    // 2. Check property.mainImage
+    if (property.mainImage != null && property.mainImage!.trim().isNotEmpty) {
+      return property.mainImage!.trim();
+    }
+
+    // 3. Check property.images (first non-empty)
+    if (property.images != null && property.images!.trim().isNotEmpty) {
+      final list = property.images!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      if (list.isNotEmpty) return list.first;
+    }
+
+    // 4. Check OwnerMainController propertiesList
+    if (Get.isRegistered<OwnerMainController>()) {
+      final mainCtrl = Get.find<OwnerMainController>();
+      final match = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == property.id);
+      final mImg = match?['mainImage']?.toString();
+      if (mImg != null && mImg.trim().isNotEmpty) {
+        return mImg.trim();
+      }
+    }
+
+    // 5. Check if any room has an image
+    if (property.rooms != null && property.rooms!.isNotEmpty) {
+      for (final r in property.rooms!) {
+        if (r.images != null && r.images!.trim().isNotEmpty) {
+          final rImgs = r.images!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          if (rImgs.isNotEmpty) return rImgs.first;
+        }
+      }
+    }
+
+    // 6. Default to the BBU Takeo building photo
+    return "assets/images/bbu_building.png";
+  }
+
+  /// Pick and upload a new building background photo
+  Future<void> updateBuildingPhoto(ImageSource source) async {
+    final prop = currentProperty.value;
+    if (prop == null || prop.id == null) {
+      Get.snackbar(
+        LanguageService.isKhmer ? "បញ្ហា" : "Notice",
+        LanguageService.isKhmer ? "សូមជ្រើសរើសអគារជាមុនសិន" : "Please select a property first",
+      );
+      return;
+    }
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      String newImageSource = "data:image/jpeg;base64,${base64Encode(bytes)}";
+
+      // Try server upload in background
+      try {
+        final uri = Uri.parse("${ConstantUri.baseUri}/app/public/v1/image/upload");
+        final req = http.MultipartRequest("POST", uri);
+        if (kIsWeb) {
+          req.files.add(http.MultipartFile.fromBytes('File', bytes, filename: picked.name));
+        } else {
+          req.files.add(await http.MultipartFile.fromPath('File', picked.path));
+        }
+        final token = TokenStoreLocal.getAccessToken();
+        if (token.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $token';
+        }
+        final streamed = await req.send().timeout(const Duration(seconds: 15));
+        final res = await http.Response.fromStream(streamed);
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+          final data = decoded['data'];
+          String? fileName;
+          if (data is Map) {
+            fileName = data['fileName']?.toString() ?? data['data']?.toString() ?? data['filename']?.toString();
+          } else if (data is String) {
+            fileName = data;
+          }
+          if (fileName != null && fileName.isNotEmpty) {
+            newImageSource = "${ConstantUri.baseUri}/api/public/view/image?filename=$fileName";
+          }
+        }
+      } catch (e) {
+        debugPrint("Error uploading building photo: $e");
+      }
+
+      // 1. Save to local storage for instant persistence
+      try {
+        final box = GetStorage();
+        final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${prop.id}");
+        box.write(localKey, newImageSource);
+      } catch (_) {}
+
+      // 2. Try server update
+      try {
+        await apiService.putApi(
+          ConstantUri.propertyDetail(prop.id!),
+          body: {"mainImage": newImageSource},
+        );
+      } catch (_) {}
+
+      // 3. Update active PropertyModel
+      final updated = PropertyModel(
+        id: prop.id,
+        name: prop.name,
+        description: prop.description,
+        propertyType: prop.propertyType,
+        address: prop.address,
+        city: prop.city,
+        district: prop.district,
+        latitude: prop.latitude,
+        longitude: prop.longitude,
+        status: prop.status,
+        verificationStatus: prop.verificationStatus,
+        mainImage: newImageSource,
+        images: prop.images,
+        owner: prop.owner,
+        rooms: prop.rooms,
+        minRoomPrice: prop.minRoomPrice,
+        availableRoomCount: prop.availableRoomCount,
+        totalRoomCount: prop.totalRoomCount,
+        averageRating: prop.averageRating,
+        reviewCount: prop.reviewCount,
+        createdAt: prop.createdAt,
+        updatedAt: prop.updatedAt,
+      );
+
+      currentProperty.value = updated;
+      final idx = myProperties.indexWhere((p) => p.id == prop.id);
+      if (idx != -1) {
+        myProperties[idx] = updated;
+      }
+
+      // 4. Update OwnerMainController list
+      if (Get.isRegistered<OwnerMainController>()) {
+        final mainCtrl = Get.find<OwnerMainController>();
+        final mIdx = mainCtrl.propertiesList.indexWhere((p) => p['id'] == prop.id);
+        if (mIdx != -1) {
+          mainCtrl.propertiesList[mIdx]['mainImage'] = newImageSource;
+          mainCtrl.propertiesList.refresh();
+        }
+      }
+
+      Get.snackbar(
+        LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
+        LanguageService.isKhmer ? "បានប្តូររូបភាពអគាររួចរាល់!" : "Building photo updated successfully!",
+        backgroundColor: Colors.white,
+        colorText: AppColors.textPrimary,
+        icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+      );
+    } catch (e) {
+      Get.snackbar("Error", "Could not pick image: $e", backgroundColor: Colors.white);
+    }
+  }
+
+  /// Reset building photo to original
+  void resetBuildingPhoto() {
+    final prop = currentProperty.value;
+    if (prop == null || prop.id == null) return;
+    try {
+      final box = GetStorage();
+      final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${prop.id}");
+      box.remove(localKey);
+    } catch (_) {}
+
+    // Find original property from API response if any
+    final match = myProperties.firstWhereOrNull((p) => p.id == prop.id);
+    currentProperty.value = match ?? prop;
+    currentProperty.refresh();
+
+    Get.snackbar(
+      LanguageService.isKhmer ? "បានកំណត់ឡើងវិញ" : "Reset",
+      LanguageService.isKhmer ? "បានកំណត់រូបភាពអគារដើមឡើងវិញរួចរាល់" : "Reset to default building photo",
+      backgroundColor: Colors.white,
+      colorText: AppColors.textPrimary,
+    );
   }
 }
