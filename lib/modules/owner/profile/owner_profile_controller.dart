@@ -9,23 +9,29 @@ import '../../../constants/constant_uri.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
-import '../../../routes/app_route_name.dart';
 import '../dashboard/owner_dashboard_controller.dart';
+import '../owner_main_controller.dart';
 
 class OwnerProfileController extends GetxController {
   final _storage = GetStorage();
   String get _avatarStorageKey => TokenStoreLocal.getUserScopedKey("OWNER_PROFILE_AVATAR_KEY");
+  String get _membershipPlanStorageKey => TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN");
 
   final user = Rxn<Map<String, dynamic>>();
   final profileImagePath = "".obs;
   final isUploading = false.obs;
   final ImagePicker _picker = ImagePicker();
 
+  final propertiesCount = 0.obs;
+  final membershipPlan = "BASIC".obs;
+
   @override
   void onInit() {
     super.onInit();
     loadUser();
+    loadPlan();
     fetchProfileFromServer();
+    fetchPropertiesCount();
   }
 
   void loadUser() {
@@ -55,7 +61,9 @@ class OwnerProfileController extends GetxController {
   void onReady() {
     super.onReady();
     loadUser();
+    loadPlan();
     fetchProfileFromServer();
+    fetchPropertiesCount();
   }
 
   Future<void> fetchProfileFromServer() async {
@@ -135,6 +143,163 @@ class OwnerProfileController extends GetxController {
   String get phone => user.value?['phoneNumber'] ?? '098765432';
   String get email => user.value?['email'] ?? 'owner@roomfinderkh.com';
   String get propertyName => "My Home (អគារផ្ទះជួល)";
+
+  void loadPlan() {
+    final saved = _storage.read(_membershipPlanStorageKey);
+    if (saved != null && saved.toString().isNotEmpty) {
+      membershipPlan.value = saved.toString().toUpperCase();
+      return;
+    }
+    final uPlan = user.value?['membershipPlan'] ?? user.value?['plan'];
+    if (uPlan != null && uPlan.toString().isNotEmpty) {
+      membershipPlan.value = uPlan.toString().toUpperCase();
+      return;
+    }
+    membershipPlan.value = "BASIC";
+  }
+
+  void setPlan(String planName) {
+    membershipPlan.value = planName.toUpperCase();
+    _storage.write(_membershipPlanStorageKey, planName.toUpperCase());
+  }
+
+  Future<void> fetchPropertiesCount() async {
+    try {
+      final token = TokenStoreLocal.getAccessToken();
+      if (token.isEmpty) return;
+      final res = await http.get(
+        Uri.parse(ConstantUri.myProperties),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+        final data = decoded['data'];
+        List items = [];
+        if (data != null) {
+          if (data is Map && data['content'] is List) {
+            items = data['content'];
+          } else if (data is List) {
+            items = data;
+          }
+        }
+        propertiesCount.value = items.length;
+      }
+    } catch (_) {}
+  }
+
+  int get totalBuildingsCount {
+    if (Get.isRegistered<OwnerMainController>()) {
+      final mainCtrl = Get.find<OwnerMainController>();
+      if (mainCtrl.propertiesList.isNotEmpty) {
+        return mainCtrl.propertiesList.length;
+      }
+    }
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dashCtrl = Get.find<OwnerDashboardController>();
+      if (dashCtrl.myProperties.isNotEmpty) {
+        return dashCtrl.myProperties.length;
+      }
+    }
+    return propertiesCount.value;
+  }
+
+  String get locationDisplay {
+    String? rawLoc;
+
+    // 1. Try selected property from OwnerMainController
+    if (Get.isRegistered<OwnerMainController>()) {
+      final mainCtrl = Get.find<OwnerMainController>();
+      final selectedId = mainCtrl.selectedPropertyId.value;
+      final prop = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == selectedId)
+          ?? (mainCtrl.propertiesList.isNotEmpty ? mainCtrl.propertiesList.first : null);
+      if (prop != null) {
+        final city = prop['city']?.toString().trim();
+        final district = prop['district']?.toString().trim();
+        final address = prop['address']?.toString().trim();
+        if (city != null && city.isNotEmpty) {
+          rawLoc = city;
+        } else if (district != null && district.isNotEmpty) {
+          rawLoc = district;
+        } else if (address != null && address.isNotEmpty) {
+          rawLoc = address;
+        }
+      }
+    }
+
+    // 2. Fallback to OwnerDashboardController currentProperty
+    if ((rawLoc == null || rawLoc.isEmpty) && Get.isRegistered<OwnerDashboardController>()) {
+      final dashCtrl = Get.find<OwnerDashboardController>();
+      final prop = dashCtrl.currentProperty.value;
+      if (prop != null) {
+        if (prop.city != null && prop.city!.trim().isNotEmpty) {
+          rawLoc = prop.city!.trim();
+        } else if (prop.district != null && prop.district!.trim().isNotEmpty) {
+          rawLoc = prop.district!.trim();
+        } else if (prop.address != null && prop.address!.trim().isNotEmpty) {
+          rawLoc = prop.address!.trim();
+        }
+      }
+    }
+
+    // 3. Fallback to user model's city/address
+    if (rawLoc == null || rawLoc.isEmpty) {
+      final u = user.value ?? TokenStoreLocal.getUser();
+      final uCity = u?['city']?.toString().trim();
+      final uAddr = u?['address']?.toString().trim();
+      if (uCity != null && uCity.isNotEmpty) {
+        rawLoc = uCity;
+      } else if (uAddr != null && uAddr.isNotEmpty) {
+        rawLoc = uAddr;
+      }
+    }
+
+    // 4. Default fallback if nothing specified
+    if (rawLoc == null || rawLoc.isEmpty) {
+      return 'building_location'.tr;
+    }
+
+    // Standardize Phnom Penh variations between EN and KH
+    final lower = rawLoc.toLowerCase();
+    if (lower == 'phnom penh' || rawLoc == 'ភ្នំពេញ' || rawLoc == 'រាជធានីភ្នំពេញ') {
+      return 'building_location'.tr;
+    }
+
+    // If rawLoc has multiple comma-separated sections (e.g. "Khan Daun Penh, Phnom Penh"),
+    // extract the city or the most relevant district part to keep it clean in stat card
+    if (rawLoc.contains(',')) {
+      final parts = rawLoc.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      if (parts.isNotEmpty) {
+        final last = parts.last;
+        if (last.toLowerCase() == 'phnom penh' || last == 'ភ្នំពេញ' || last == 'រាជធានីភ្នំពេញ') {
+          return parts.length > 1 ? parts[parts.length - 2] : 'building_location'.tr;
+        }
+        return last;
+      }
+    }
+
+    return rawLoc;
+  }
+
+  String get planDisplay {
+    final p = membershipPlan.value.toUpperCase();
+    if (p == 'STANDARD') {
+      return 'membership_plan_standard'.tr;
+    } else if (p == 'PREMIUM') {
+      return 'membership_plan_premium'.tr;
+    }
+    return 'membership_plan_free'.tr;
+  }
+
+  String get planBadgeText {
+    final p = membershipPlan.value.toUpperCase();
+    if (p == 'STANDARD') return "Standard";
+    if (p == 'PREMIUM') return "Premium";
+    return "Free";
+  }
 
   Future<void> pickAndUploadImage(ImageSource source) async {
     try {
@@ -299,6 +464,5 @@ class OwnerProfileController extends GetxController {
 
   void logout() {
     TokenStoreLocal.removeToken();
-    Get.offAllNamed(AppRouteName.login);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/api_service_impl.dart';
 import '../../core/services/language_service.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/app_colors.dart';
@@ -9,6 +11,17 @@ import 'register_controller.dart';
 
 class RegisterView extends GetView<RegisterController> {
   const RegisterView({super.key});
+
+  @override
+  RegisterController get controller {
+    if (Get.isRegistered<RegisterController>()) {
+      return Get.find<RegisterController>();
+    }
+    final apiService = Get.isRegistered<ApiService>()
+        ? Get.find<ApiService>()
+        : Get.put<ApiService>(ApiServiceImpl(), permanent: true);
+    return Get.put<RegisterController>(RegisterController(apiService: apiService));
+  }
 
   @override
   Widget build(BuildContext context) {

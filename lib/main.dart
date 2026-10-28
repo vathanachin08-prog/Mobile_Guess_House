@@ -11,10 +11,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/language_service.dart';
+import 'data/local/token_store_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  TokenStoreLocal.initTokenListener();
 
   // Initialize Firebase
   await Firebase.initializeApp(

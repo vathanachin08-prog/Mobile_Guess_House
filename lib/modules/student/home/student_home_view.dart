@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/services/chat_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/animated_widgets.dart';
@@ -55,6 +56,42 @@ class StudentHomeView extends GetView<StudentHomeController> {
               child: AnimatedLanguageToggle(),
             ),
           ),
+          Obx(() {
+            final chatUnread = Get.isRegistered<ChatService>() ? ChatService.to.totalUnreadCount : 0;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  tooltip: LanguageService.isKhmer ? "សារជជែកជាមួយម្ចាស់ផ្ទះ" : "Messages",
+                  icon: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: AppColors.textPrimary,
+                    size: 21,
+                  ),
+                  onPressed: () => Get.toNamed(AppRouteName.chatList),
+                ),
+                if (chatUnread > 0)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Center(
+                        child: Text(
+                          "$chatUnread",
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
           Obx(() {
             final unread = controller.unreadNotificationsCount.value;
             return Stack(

@@ -151,7 +151,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
     );
   }
 
-  void _showOwnerProfileSheet(BuildContext context, OwnerSummaryModel? owner) {
+  void _showOwnerProfileSheet(BuildContext context, PropertyModel property, OwnerSummaryModel? owner) {
     if (owner == null) return;
     showModalBottomSheet(
       context: context,
@@ -239,27 +239,64 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Get.snackbar("Contact", "Call owner at: ${owner.phoneNumber ?? '098765432'}");
-                  },
-                  icon: const Icon(Icons.phone, size: 18),
-                  label: Text('call_owner'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _openChatWithOwner(property);
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                      label: Text(LanguageService.isKhmer ? "ជជែកជាមួយម្ចាស់" : "Chat with Owner"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Get.snackbar("Contact", "Call owner at: ${owner.phoneNumber ?? '098765432'}");
+                      },
+                      icon: const Icon(Icons.phone, size: 18),
+                      label: Text('call_owner'.tr),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
             ],
           ),
         );
+      },
+    );
+  }
+
+  void _openChatWithOwner(PropertyModel p) {
+    Get.toNamed(
+      AppRouteName.chatDetail,
+      arguments: {
+        'ownerId': p.owner?.id?.toString() ?? '1',
+        'ownerName': p.owner?.displayName ?? (LanguageService.isKhmer ? "ម្ចាស់អចលនទ្រព្យ" : "Property Owner"),
+        'ownerPhone': p.owner?.phoneNumber ?? "098 765 432",
+        'ownerAvatar': p.owner?.profile,
+        'propertyId': p.id,
+        'propertyName': p.name,
+        'initialMessage': LanguageService.isKhmer
+            ? "សួស្តី! ខ្ញុំចាប់អារម្មណ៍ ${p.name ?? 'អចលនទ្រព្យនេះ'}។ តើខ្ញុំអាចសាកសួរព័ត៌មានបន្ថែមបានទេ?"
+            : "Hello! I am interested in ${p.name ?? 'this property'}. Can I get more details?",
       },
     );
   }
@@ -496,7 +533,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                     Text('owner_information'.tr, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     InkWell(
-                      onTap: () => _showOwnerProfileSheet(context, p.owner),
+                      onTap: () => _showOwnerProfileSheet(context, p, p.owner),
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
                         padding: const EdgeInsets.all(14),
@@ -525,18 +562,39 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                                 ],
                               ),
                             ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Get.snackbar("Contact", "Call owner at: ${p.owner?.phoneNumber ?? '098765432'}");
-                              },
-                              icon: const Icon(Icons.phone, size: 16),
-                              label: Text('call_owner'.tr),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () => _openChatWithOwner(p),
+                                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
+                                  label: Text(LanguageService.isKhmer ? "ជជែក" : "Chat"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    elevation: 0,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.phone_rounded, color: Colors.green, size: 18),
+                                    padding: const EdgeInsets.all(7),
+                                    constraints: const BoxConstraints(),
+                                    tooltip: 'call_owner'.tr,
+                                    onPressed: () {
+                                      Get.snackbar("Contact", "Call owner at: ${p.owner?.phoneNumber ?? '098765432'}");
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -578,7 +636,7 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                           final room = controller.rooms[i];
                           return RoomCard(
                             room: room,
-                            onTap: () => Get.toNamed(AppRouteName.roomDetail, arguments: room),
+                            onTap: () => Get.toNamed(AppRouteName.roomDetail, arguments: {'room': room, 'canEdit': false}),
                           );
                         },
                       );
@@ -680,6 +738,21 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
             top: false,
             child: Row(
               children: [
+                OutlinedButton.icon(
+                  onPressed: () => _openChatWithOwner(p),
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                  label: Text(
+                    LanguageService.isKhmer ? "ជជែក" : "Chat",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {

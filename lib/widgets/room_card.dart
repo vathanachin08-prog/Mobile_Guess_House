@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../core/services/language_service.dart';
 import '../models/rental/room_model.dart';
 import 'app_colors.dart';
+import 'room_image_widget.dart';
 
 class RoomCard extends StatelessWidget {
   final RoomModel room;
@@ -44,19 +45,61 @@ class RoomCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Door / Room icon container
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isAvailable ? AppColors.primarySoft : AppColors.accentOrangeLight,
-                  borderRadius: BorderRadius.circular(12),
+              // Room image thumbnail or door icon container
+              if (room.imageList.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        RoomImageWidget(
+                          image: room.imageList.first,
+                          fit: BoxFit.cover,
+                          heroTag: 'room_hero_${room.id ?? room.roomNumber}',
+                        ),
+                        if (room.imageList.length > 1)
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.photo_library_outlined, size: 8.5, color: Colors.white),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    "${room.imageList.length}",
+                                    style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isAvailable ? AppColors.primarySoft : AppColors.accentOrangeLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.meeting_room_outlined,
+                    color: isAvailable ? AppColors.primary : AppColors.accentOrange,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  Icons.meeting_room_outlined,
-                  color: isAvailable ? AppColors.primary : AppColors.accentOrange,
-                  size: 24,
-                ),
-              ),
               const SizedBox(width: 14),
 
               // Middle info

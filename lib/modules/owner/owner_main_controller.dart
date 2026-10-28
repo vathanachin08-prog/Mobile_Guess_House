@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../constants/constant_uri.dart';
 import '../../core/services/api_service.dart';
 import '../../data/local/token_store_local.dart';
+import '../../models/rental/property_model.dart';
 import '../../routes/app_route_name.dart';
 import '../../widgets/app_colors.dart';
 import 'dashboard/owner_dashboard_controller.dart';
@@ -82,12 +84,24 @@ class OwnerMainController extends GetxController {
               final name = m['name']?.toString() ?? 'My Property';
               final short = name.length > 14 ? "${name.substring(0, 12)}..." : name;
               final roomCount = m['totalRoomCount'] ?? ((m['rooms'] as List?)?.length ?? 0);
+              String? img = m['mainImage']?.toString();
+              if (img == null || img.trim().isEmpty) {
+                try {
+                  final box = GetStorage();
+                  final saved = box.read(TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${m['id']}"));
+                  if (saved != null && saved.toString().trim().isNotEmpty) {
+                    img = saved.toString().trim();
+                  }
+                } catch (_) {}
+              }
               return {
                 "id": m['id'],
                 "name": name,
                 "shortName": short,
                 "address": m['address']?.toString() ?? '',
-                "mainImage": m['mainImage']?.toString(),
+                "city": m['city']?.toString() ?? '',
+                "district": m['district']?.toString() ?? '',
+                "mainImage": img,
                 "rooms": roomCount,
               };
             }).toList();
@@ -205,7 +219,9 @@ class OwnerMainController extends GetxController {
     if (index == 5 && Get.isRegistered<OwnerProfileController>()) {
       final ctrl = Get.find<OwnerProfileController>();
       ctrl.loadUser();
+      ctrl.loadPlan();
       ctrl.fetchProfileFromServer();
+      ctrl.fetchPropertiesCount();
     }
   }
 
@@ -214,14 +230,61 @@ class OwnerMainController extends GetxController {
     selectedPropertyName.value = (prop['name'] ?? 'My Property') as String;
     selectedPropertyShortName.value = (prop['shortName'] ?? prop['name'] ?? 'My Property') as String;
 
+    // Cache image locally so it is immediately available
+    final propImg = prop['mainImage']?.toString();
+    if (prop['id'] != null && propImg != null && propImg.isNotEmpty) {
+      try {
+        final box = GetStorage();
+        box.write(TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${prop['id']}"), propImg);
+      } catch (_) {}
+    }
+
     // Notify OwnerDashboardController
     if (Get.isRegistered<OwnerDashboardController>()) {
       final dashCtrl = Get.find<OwnerDashboardController>();
       final match = dashCtrl.myProperties.firstWhereOrNull((p) => p.id == selectedPropertyId.value);
       if (match != null) {
-        dashCtrl.switchProperty(match);
+        final effectiveImg = (propImg != null && propImg.isNotEmpty) ? propImg : match.mainImage;
+        final enriched = PropertyModel(
+          id: match.id,
+          name: match.name,
+          description: match.description,
+          propertyType: match.propertyType,
+          address: match.address,
+          city: match.city,
+          district: match.district,
+          latitude: match.latitude,
+          longitude: match.longitude,
+          status: match.status,
+          verificationStatus: match.verificationStatus,
+          mainImage: effectiveImg,
+          images: match.images,
+          owner: match.owner,
+          rooms: match.rooms,
+          minRoomPrice: match.minRoomPrice,
+          availableRoomCount: match.availableRoomCount,
+          totalRoomCount: match.totalRoomCount,
+          averageRating: match.averageRating,
+          reviewCount: match.reviewCount,
+          createdAt: match.createdAt,
+          updatedAt: match.updatedAt,
+        );
+        final idx = dashCtrl.myProperties.indexWhere((p) => p.id == match.id);
+        if (idx != -1) {
+          dashCtrl.myProperties[idx] = enriched;
+        }
+        dashCtrl.switchProperty(enriched);
       } else {
-        dashCtrl.loadDashboard();
+        final fallbackProp = PropertyModel(
+          id: prop['id'] as int?,
+          name: prop['name'] as String?,
+          address: prop['address'] as String?,
+          mainImage: propImg,
+        );
+        if (!dashCtrl.myProperties.any((p) => p.id == fallbackProp.id)) {
+          dashCtrl.myProperties.add(fallbackProp);
+        }
+        dashCtrl.switchProperty(fallbackProp);
       }
     }
 
@@ -273,7 +336,7 @@ class OwnerMainController extends GetxController {
           "propertyType": "APARTMENT",
           "description": name,
         };
-        if (mainImage != null && mainImage.isNotEmpty) {
+        if (mainImage != null && mainImage.isNotEmpty && !mainImage.startsWith('data:image')) {
           body["mainImage"] = mainImage;
         }
         final res = await api.postApi(
@@ -291,6 +354,13 @@ class OwnerMainController extends GetxController {
       } catch (e) {
         debugPrint("Error creating property: $e");
       }
+    }
+
+    if (mainImage != null && mainImage.isNotEmpty) {
+      try {
+        final box = GetStorage();
+        box.write(TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_$newId"), mainImage);
+      } catch (_) {}
     }
 
     if (serverSuccess) {
@@ -319,6 +389,59 @@ class OwnerMainController extends GetxController {
     if (Get.isRegistered<StudentHomeController>()) {
       Get.find<StudentHomeController>().loadProperties();
     }
+  }
+
+  Future<bool> deleteProperty(int propertyId) async {
+    final api = apiService ?? (Get.isRegistered<ApiService>() ? Get.find<ApiService>() : null);
+    bool serverSuccess = false;
+    if (api != null) {
+      try {
+        final res = await api.deleteApi(ConstantUri.propertyDetail(propertyId));
+        if (res != null) {
+          serverSuccess = true;
+        }
+      } catch (e) {
+        debugPrint("Error deleting property from server: $e");
+      }
+    }
+
+    // Clean up local user-scoped storage caches
+    try {
+      final box = GetStorage();
+      box.remove(TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_$propertyId"));
+      box.remove(TokenStoreLocal.getUserScopedKey("OWNER_ROOMS_$propertyId"));
+      box.remove(TokenStoreLocal.getUserScopedKey("OWNER_FLOORS_$propertyId"));
+      box.remove(TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_$propertyId"));
+      box.remove(TokenStoreLocal.getUserScopedKey("OWNER_INVOICES_$propertyId"));
+    } catch (_) {}
+
+    propertiesList.removeWhere((p) => p['id'] == propertyId);
+    propertiesList.refresh();
+
+    if (selectedPropertyId.value == propertyId) {
+      if (propertiesList.isNotEmpty) {
+        selectProperty(propertiesList.first);
+      } else {
+        selectedPropertyId.value = null;
+        selectedPropertyName.value = "មិនទាន់មានអគារ (No Property)";
+        selectedPropertyShortName.value = "No Property";
+        if (Get.isRegistered<OwnerDashboardController>()) {
+          Get.find<OwnerDashboardController>().currentProperty.value = null;
+          Get.find<OwnerDashboardController>().currentProperty.refresh();
+        }
+      }
+    }
+
+    if (Get.isRegistered<OwnerDashboardController>()) {
+      final dCtrl = Get.find<OwnerDashboardController>();
+      dCtrl.myProperties.removeWhere((p) => p.id == propertyId);
+      await dCtrl.loadDashboard();
+    }
+    if (Get.isRegistered<StudentHomeController>()) {
+      Get.find<StudentHomeController>().loadProperties();
+    }
+
+    return serverSuccess;
   }
 
   void markAllNotificationsAsRead() {

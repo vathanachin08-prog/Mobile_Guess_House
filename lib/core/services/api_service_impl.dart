@@ -6,8 +6,6 @@ import 'package:demo_access_refresh_token_app/data/local/token_store_local.dart'
 import 'package:demo_access_refresh_token_app/models/login/LoginRequest.dart';
 import 'package:demo_access_refresh_token_app/models/login/LoginResponse.dart';
 import 'package:demo_access_refresh_token_app/models/login/RefreshTokenRequest.dart';
-import 'package:demo_access_refresh_token_app/routes/app_route_name.dart';
-import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 class ApiServiceImpl implements ApiService {
@@ -81,80 +79,88 @@ class ApiServiceImpl implements ApiService {
 
   @override
   Future<dynamic> getApi(String url, {String? param}) async {
-    final fullUrl = param != null ? "$url?$param" : url;
-    final response = await http.get(Uri.parse(fullUrl), headers: authHeaders);
-    if (response.statusCode == 200) {
-      return response.body;
-    } else if (response.statusCode == 401) {
-      final refreshed = await refreshToken(TokenStoreLocal.getRefreshToken());
-      if (!refreshed) {
-        TokenStoreLocal.removeToken();
-        Get.offAllNamed(AppRouteName.login);
-        return null;
-      } else {
-        final retryRes = await http.get(Uri.parse(fullUrl), headers: authHeaders);
-        return retryRes.statusCode == 200 ? retryRes.body : null;
+    try {
+      final fullUrl = param != null ? "$url?$param" : url;
+      final response = await http.get(Uri.parse(fullUrl), headers: authHeaders);
+      if (response.statusCode == 200) {
+        return response.body;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        final refreshTok = TokenStoreLocal.getRefreshToken();
+        final refreshed = refreshTok.isNotEmpty ? await refreshToken(refreshTok) : false;
+        if (!refreshed) {
+          TokenStoreLocal.removeToken();
+          return null;
+        } else {
+          final retryRes = await http.get(Uri.parse(fullUrl), headers: authHeaders);
+          return retryRes.statusCode == 200 ? retryRes.body : null;
+        }
       }
-    }
+    } catch (_) {}
     return null;
   }
 
   @override
   Future<dynamic> postApi(String url, {dynamic body}) async {
-    final encoded = body is String ? body : jsonEncode(body ?? {});
-    final response = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return response.body;
-    } else if (response.statusCode == 401) {
-      final refreshed = await refreshToken(TokenStoreLocal.getRefreshToken());
-      if (!refreshed) {
-        TokenStoreLocal.removeToken();
-        Get.offAllNamed(AppRouteName.login);
-        return null;
-      } else {
-        final retryRes = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
-        return (retryRes.statusCode == 200 || retryRes.statusCode == 201) ? retryRes.body : null;
+    try {
+      final encoded = body is String ? body : jsonEncode(body ?? {});
+      final response = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.body;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        final refreshTok = TokenStoreLocal.getRefreshToken();
+        final refreshed = refreshTok.isNotEmpty ? await refreshToken(refreshTok) : false;
+        if (!refreshed) {
+          TokenStoreLocal.removeToken();
+          return null;
+        } else {
+          final retryRes = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
+          return (retryRes.statusCode == 200 || retryRes.statusCode == 201) ? retryRes.body : null;
+        }
       }
-    }
+    } catch (_) {}
     return null;
   }
 
   @override
   Future<dynamic> putApi(String url, {dynamic body}) async {
-    final encoded = body is String ? body : jsonEncode(body ?? {});
-    final response = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
-    if (response.statusCode == 200) {
-      return response.body;
-    } else if (response.statusCode == 401) {
-      final refreshed = await refreshToken(TokenStoreLocal.getRefreshToken());
-      if (!refreshed) {
-        TokenStoreLocal.removeToken();
-        Get.offAllNamed(AppRouteName.login);
-        return null;
-      } else {
-        final retryRes = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
-        return retryRes.statusCode == 200 ? retryRes.body : null;
+    try {
+      final encoded = body is String ? body : jsonEncode(body ?? {});
+      final response = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
+      if (response.statusCode == 200) {
+        return response.body;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        final refreshTok = TokenStoreLocal.getRefreshToken();
+        final refreshed = refreshTok.isNotEmpty ? await refreshToken(refreshTok) : false;
+        if (!refreshed) {
+          TokenStoreLocal.removeToken();
+          return null;
+        } else {
+          final retryRes = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
+          return retryRes.statusCode == 200 ? retryRes.body : null;
+        }
       }
-    }
+    } catch (_) {}
     return null;
   }
 
   @override
   Future<dynamic> deleteApi(String url) async {
-    final response = await http.delete(Uri.parse(url), headers: authHeaders);
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return response.body;
-    } else if (response.statusCode == 401) {
-      final refreshed = await refreshToken(TokenStoreLocal.getRefreshToken());
-      if (!refreshed) {
-        TokenStoreLocal.removeToken();
-        Get.offAllNamed(AppRouteName.login);
-        return null;
-      } else {
-        final retryRes = await http.delete(Uri.parse(url), headers: authHeaders);
-        return (retryRes.statusCode == 200 || retryRes.statusCode == 204) ? retryRes.body : null;
+    try {
+      final response = await http.delete(Uri.parse(url), headers: authHeaders);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return response.body;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        final refreshTok = TokenStoreLocal.getRefreshToken();
+        final refreshed = refreshTok.isNotEmpty ? await refreshToken(refreshTok) : false;
+        if (!refreshed) {
+          TokenStoreLocal.removeToken();
+          return null;
+        } else {
+          final retryRes = await http.delete(Uri.parse(url), headers: authHeaders);
+          return (retryRes.statusCode == 200 || retryRes.statusCode == 204) ? retryRes.body : null;
+        }
       }
-    }
+    } catch (_) {}
     return null;
   }
 }

@@ -12,16 +12,20 @@ class LoginController extends GetxController {
   final ApiService apiService;
   LoginController({required this.apiService});
 
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
   final isLoading = false.obs;
   final obscurePassword = true.obs;
 
-  @override
-  void onClose() {
-    usernameController.dispose();
-    passwordController.dispose();
-    super.onClose();
+  void ensureControllers() {
+    // Kept safe: do not replace active controllers to prevent wiping user input
+  }
+
+  void resetForm() {
+    usernameController.clear();
+    passwordController.clear();
+    isLoading.value = false;
+    obscurePassword.value = true;
   }
 
   void togglePasswordVisibility() {

@@ -42,8 +42,7 @@ class HomeView extends GetView<HomeController> {
           actions: [
             IconButton(onPressed: (){
               TokenStoreLocal.removeToken();
-              Get.offAll(LoginView());
-            }, icon: Icon(Icons.logout)),
+            }, icon: const Icon(Icons.logout)),
             IconButton(onPressed: (){
               if(Get.locale!.languageCode == "km"){
                 var locale = Locale('en', 'US');

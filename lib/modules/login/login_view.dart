@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/api_service_impl.dart';
 import '../../core/services/language_service.dart';
 import '../../routes/app_route_name.dart';
 import '../../widgets/animated_widgets.dart';
@@ -10,6 +12,17 @@ import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
+
+  @override
+  LoginController get controller {
+    if (Get.isRegistered<LoginController>()) {
+      return Get.find<LoginController>();
+    }
+    final apiService = Get.isRegistered<ApiService>()
+        ? Get.find<ApiService>()
+        : Get.put<ApiService>(ApiServiceImpl(), permanent: true);
+    return Get.put<LoginController>(LoginController(apiService: apiService));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,48 +133,48 @@ class LoginView extends GetView<LoginController> {
                   const SizedBox(height: 24),
 
                 // Helper card for test credentials
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            'test_credentials'.tr,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              controller.usernameController.text = "012345678";
-                              controller.passwordController.text = "password123";
-                            },
-                            child: Text("${'student_test'.tr} (012345678)", style: const TextStyle(fontSize: 11)),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              controller.usernameController.text = "098765432";
-                              controller.passwordController.text = "password123";
-                            },
-                            child: Text("${'owner_test'.tr} (098765432)", style: const TextStyle(fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                // Container(
+                //   padding: const EdgeInsets.all(12),
+                //   decoration: BoxDecoration(
+                //     color: AppColors.primarySoft,
+                //     borderRadius: BorderRadius.circular(12),
+                //     border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                //   ),
+                //   child: Column(
+                //     children: [
+                //       Row(
+                //         children: [
+                //           const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                //           const SizedBox(width: 6),
+                //           Text(
+                //             'test_credentials'.tr,
+                //             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                //           ),
+                //         ],
+                //       ),
+                //       const SizedBox(height: 6),
+                //       Row(
+                //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //         children: [
+                //           TextButton(
+                //             onPressed: () {
+                //               controller.usernameController.text = "012345678";
+                //               controller.passwordController.text = "password123";
+                //             },
+                //             child: Text("${'student_test'.tr} (012345678)", style: const TextStyle(fontSize: 11)),
+                //           ),
+                //           TextButton(
+                //             onPressed: () {
+                //               controller.usernameController.text = "098765432";
+                //               controller.passwordController.text = "password123";
+                //             },
+                //             child: Text("${'owner_test'.tr} (098765432)", style: const TextStyle(fontSize: 11)),
+                //           ),
+                //         ],
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
           ),

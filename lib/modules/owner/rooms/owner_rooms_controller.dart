@@ -13,6 +13,7 @@ import '../../../data/local/token_store_local.dart';
 import '../floors/owner_floors_controller.dart';
 import '../owner_main_controller.dart';
 import '../dashboard/owner_dashboard_controller.dart';
+import '../profile/owner_profile_controller.dart';
 
 class OwnerRoomsController extends GetxController {
   final ApiService? apiService;
@@ -34,6 +35,48 @@ class OwnerRoomsController extends GetxController {
   final selectedFilter = "ALL".obs; // ALL, AVAILABLE, OCCUPIED
   final searchQuery = "".obs;
   final isLoading = false.obs;
+
+  String get currentPlan {
+    if (Get.isRegistered<OwnerProfileController>()) {
+      final p = Get.find<OwnerProfileController>().membershipPlan.value.trim().toUpperCase();
+      if (p.isNotEmpty) return p;
+    }
+    final saved = _storage.read(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"));
+    if (saved != null && saved.toString().trim().isNotEmpty) {
+      return saved.toString().trim().toUpperCase();
+    }
+    return "BASIC";
+  }
+
+  int get maxAllowedRooms {
+    final plan = currentPlan;
+    if (plan == "PREMIUM") return 999999;
+    if (plan == "STANDARD") return 20;
+    return 5; // BASIC
+  }
+
+  bool get canAddMoreRooms => rooms.length < maxAllowedRooms;
+
+  bool get isOverPlanLimit => rooms.length > maxAllowedRooms;
+
+  String get roomUsageText {
+    final max = maxAllowedRooms;
+    if (max >= 999999) {
+      return LanguageService.isKhmer ? "${rooms.length} បន្ទប់" : "${rooms.length} rooms";
+    }
+    return "${rooms.length}/$max";
+  }
+
+  String get currentPlanNameDisplay {
+    final plan = currentPlan;
+    if (plan == "PREMIUM") {
+      return LanguageService.isKhmer ? "កញ្ចប់ពិសេស (Premium)" : "Premium Plan";
+    }
+    if (plan == "STANDARD") {
+      return LanguageService.isKhmer ? "កញ្ចប់ស្តង់ដារ (Standard)" : "Standard Plan";
+    }
+    return LanguageService.isKhmer ? "កញ្ចប់ឥតគិតថ្លៃ (Basic)" : "Basic Free";
+  }
 
   OwnerRoomsController({this.apiService});
 
@@ -114,7 +157,12 @@ class OwnerRoomsController extends GetxController {
   }
 
   void _saveRooms() {
-    _storage.write(_storageKey, rooms.map((r) => r.toJson()).toList());
+    final list = rooms.map((r) => r.toJson()).toList();
+    _storage.write(_storageKey, list);
+    final propId = activePropertyId;
+    if (propId != null) {
+      _storage.write("PROPERTY_ROOMS_$propId", list);
+    }
   }
 
   List<RoomModel> get filteredRooms {
@@ -137,7 +185,22 @@ class OwnerRoomsController extends GetxController {
     String genderPreference = "ANY",
     List<int> facilityIds = const [1, 2, 3],
     String? desc,
+    String? image,
   }) async {
+    if (!canAddMoreRooms) {
+      Get.snackbar(
+        LanguageService.isKhmer ? "ដែនកំណត់គម្រោង" : "Plan Limit Reached",
+        LanguageService.isKhmer
+            ? "គម្រោង $currentPlanNameDisplay អនុញ្ញាតអតិបរមាត្រឹមតែ $maxAllowedRooms បន្ទប់ប៉ុណ្ណោះ។ សូមដំឡើងគម្រោង!"
+            : "Your current plan ($currentPlanNameDisplay) allows up to $maxAllowedRooms rooms only. Please upgrade your plan!",
+        backgroundColor: Colors.amber.shade100,
+        colorText: Colors.amber.shade900,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
     AppFirebaseService.logAddRoomForm(
       roomNumber: number,
       floor: floor,
@@ -152,7 +215,9 @@ class OwnerRoomsController extends GetxController {
 
     final optimisticRoom = RoomModel(
       id: rooms.length + 1,
+      propertyId: activePropertyId,
       roomNumber: number,
+      title: 'បន្ទប់ $number',
       floor: floor,
       price: price,
       area: area,
@@ -160,6 +225,7 @@ class OwnerRoomsController extends GetxController {
       genderPreference: genderPreference,
       available: true,
       description: desc,
+      images: image,
       facilities: facModels,
     );
 
@@ -193,6 +259,7 @@ class OwnerRoomsController extends GetxController {
             'genderPreference': genderPreference,
             'available': true,
             'facilityIds': facilityIds,
+            if (image != null && image.isNotEmpty) 'images': image,
           },
         );
         if (res != null) {
@@ -200,9 +267,29 @@ class OwnerRoomsController extends GetxController {
           final data = decoded['data'];
           if (data != null) {
             final serverRoom = RoomModel.fromJson(Map<String, dynamic>.from(data));
+            final mergedRoom = (serverRoom.images == null || serverRoom.images!.isEmpty) && optimisticRoom.images != null
+                ? RoomModel(
+                    id: serverRoom.id ?? optimisticRoom.id,
+                    propertyId: serverRoom.propertyId ?? optimisticRoom.propertyId,
+                    propertyName: serverRoom.propertyName ?? optimisticRoom.propertyName,
+                    roomNumber: serverRoom.roomNumber ?? optimisticRoom.roomNumber,
+                    title: serverRoom.title ?? optimisticRoom.title,
+                    description: serverRoom.description ?? optimisticRoom.description,
+                    price: serverRoom.price ?? optimisticRoom.price,
+                    floor: serverRoom.floor ?? optimisticRoom.floor,
+                    area: serverRoom.area ?? optimisticRoom.area,
+                    roomType: serverRoom.roomType ?? optimisticRoom.roomType,
+                    genderPreference: serverRoom.genderPreference ?? optimisticRoom.genderPreference,
+                    available: serverRoom.available ?? optimisticRoom.available,
+                    images: optimisticRoom.images,
+                    facilities: serverRoom.facilities ?? optimisticRoom.facilities,
+                    createdAt: serverRoom.createdAt ?? optimisticRoom.createdAt,
+                    updatedAt: serverRoom.updatedAt ?? optimisticRoom.updatedAt,
+                  )
+                : serverRoom;
             final idx = rooms.indexOf(optimisticRoom);
             if (idx != -1) {
-              rooms[idx] = serverRoom;
+              rooms[idx] = mergedRoom;
               _saveRooms();
               syncToDashboard();
             }
@@ -227,6 +314,7 @@ class OwnerRoomsController extends GetxController {
     required String genderPreference,
     required List<int> facilityIds,
     String? desc,
+    String? image,
   }) async {
     final idx = rooms.indexWhere((r) => r.id == room.id);
     if (idx == -1) return;
@@ -235,6 +323,8 @@ class OwnerRoomsController extends GetxController {
       final p = kAllFacilityPresets.firstWhereOrNull((x) => x.id == id);
       return FacilityModel(id: id, name: p?.code ?? 'FACILITY_$id');
     }).toList();
+
+    final finalImage = image ?? room.images;
 
     final updated = RoomModel(
       id: room.id,
@@ -249,7 +339,7 @@ class OwnerRoomsController extends GetxController {
       roomType: roomType,
       genderPreference: genderPreference,
       available: room.available ?? true,
-      images: room.images,
+      images: finalImage,
       facilities: facModels,
       createdAt: room.createdAt,
       updatedAt: DateTime.now().toIso8601String(),
@@ -277,9 +367,9 @@ class OwnerRoomsController extends GetxController {
             'floor': floor,
             'area': area,
             'roomType': roomType,
-            'genderPreference': genderPreference,
             'available': room.available ?? true,
             'facilityIds': facilityIds,
+            if (finalImage != null && finalImage.isNotEmpty) 'images': finalImage,
           },
         );
         if (res != null) {
@@ -306,13 +396,21 @@ class OwnerRoomsController extends GetxController {
       final newAvail = !(room.available ?? true);
       rooms[idx] = RoomModel(
         id: room.id,
+        propertyId: room.propertyId,
+        propertyName: room.propertyName,
         roomNumber: room.roomNumber,
+        title: room.title,
         floor: room.floor,
         price: room.price,
+        area: room.area,
         roomType: room.roomType,
+        genderPreference: room.genderPreference,
         available: newAvail,
         description: room.description,
+        images: room.images,
         facilities: room.facilities,
+        createdAt: room.createdAt,
+        updatedAt: DateTime.now().toIso8601String(),
       );
       _saveRooms();
       syncToDashboard();

@@ -57,7 +57,7 @@ class FavoritesView extends GetView<FavoritesController> {
                 } else if (fav.room != null) {
                   return RoomCard(
                     room: fav.room!,
-                    onTap: () => Get.toNamed(AppRouteName.roomDetail, arguments: fav.room),
+                    onTap: () => Get.toNamed(AppRouteName.roomDetail, arguments: {'room': fav.room, 'canEdit': false}),
                   );
                 }
                 return const SizedBox.shrink();

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
+import '../../../core/services/chat_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
@@ -215,20 +216,11 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Chat / Support Icon
+            // Chat / Messages with Students
             _buildHeaderIconButton(
               icon: Icons.chat_bubble_outline_rounded,
-              onTap: () {
-                Get.snackbar(
-                  LanguageService.isKhmer ? "ជំនួយការគាំទ្រ" : "Support Center",
-                  LanguageService.isKhmer
-                      ? "សូមស្វាគមន៍មកកាន់ប្រព័ន្ធជំនួយ RoomFinder KH"
-                      : "Welcome to RoomFinder KH Support",
-                  backgroundColor: AppColors.surface,
-                  colorText: AppColors.textPrimary,
-                  snackPosition: SnackPosition.TOP,
-                );
-              },
+              hasBadge: Get.isRegistered<ChatService>() && ChatService.to.totalUnreadCount > 0,
+              onTap: () => Get.toNamed(AppRouteName.chatList),
             ),
 
             const SizedBox(width: 8),
@@ -502,6 +494,10 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   // ==========================================
   Widget _buildMainAccountCard(BuildContext context) {
     return Obx(() {
+      controller.currentProperty.value;
+      if (Get.isRegistered<OwnerMainController>()) {
+        Get.find<OwnerMainController>().selectedPropertyId.value;
+      }
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -617,36 +613,69 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                             ),
 
                             // Quick Camera button to change building photo
-                            GestureDetector(
-                              onTap: () => _showBuildingImageSheet(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primarySoft.withValues(alpha: 0.92),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  color: AppColors.primary,
-                                  size: 15,
-                                ),
-                              ),
-                            ),
+                            // GestureDetector(
+                            //   onTap: () => _showBuildingImageSheet(context),
+                            //   child: Container(
+                            //     padding: const EdgeInsets.all(6),
+                            //     decoration: BoxDecoration(
+                            //       color: AppColors.primarySoft.withValues(alpha: 0.92),
+                            //       shape: BoxShape.circle,
+                            //       border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                            //     ),
+                            //     child: const Icon(
+                            //       Icons.camera_alt_rounded,
+                            //       color: AppColors.primary,
+                            //       size: 15,
+                            //     ),
+                            //   ),
+                            // ),
                           ],
                         ),
 
                         const SizedBox(height: 4),
 
-                        // Subtitle
-                        Text(
-                          LanguageService.isKhmer
-                              ? "ចំណូលសរុបប្រចាំខែ • Revenue Collected"
-                              : "Total Monthly Collected Revenue",
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
+                        // Subtitle Row
+                        Row(
+                          children: [
+                            Text(
+                              LanguageService.isKhmer
+                                  ? "ចំណូលសរុបប្រចាំខែ • Revenue Collected"
+                                  : "Total Monthly Collected Revenue",
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            if (controller.currentProperty.value == null) ...[
+                              const Spacer(),
+                              GestureDetector(
+                                onTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.add_business_rounded, size: 11, color: AppColors.primary),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        LanguageService.isKhmer ? "បង្កើតអគារ" : "Add Property",
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
 
                         const SizedBox(height: 16),
@@ -695,98 +724,98 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   }
 
   /// Builds the building background image with 80% white transparency watermark effect
+  /// Only renders if an actual property image exists; otherwise returns empty so card stays Clean White.
   Widget _buildBuildingBackgroundImage() {
     final prop = controller.currentProperty.value;
     final imageSource = controller.getBuildingImageSource(prop);
 
-    Widget imgWidget;
-
-    if (imageSource != null && imageSource.trim().isNotEmpty) {
-      final src = imageSource.trim();
-      if (src.startsWith('assets/')) {
-        imgWidget = Image.asset(
-          src,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          gaplessPlayback: true,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackBuildingImage(),
-        );
-      } else if (src.startsWith('data:image')) {
-        try {
-          final base64Part = src.split(',').last;
-          imgWidget = Image.memory(
-            base64Decode(base64Part),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            gaplessPlayback: true,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (context, error, stackTrace) => _buildFallbackBuildingImage(),
-          );
-        } catch (_) {
-          imgWidget = _buildFallbackBuildingImage();
-        }
-      } else {
-        final fullUrl = src.startsWith('http')
-            ? src
-            : "${ConstantUri.baseUri}/api/public/view/image?filename=$src";
-        imgWidget = Image.network(
-          fullUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          gaplessPlayback: true,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackBuildingImage(),
-        );
-      }
-    } else {
-      imgWidget = _buildFallbackBuildingImage();
+    if (imageSource == null || imageSource.trim().isEmpty) {
+      return const SizedBox.shrink();
     }
 
-    final isAlreadyWatermarked = imageSource == "assets/images/bbu_building.png";
+    final src = imageSource.trim();
+    Widget imgWidget;
+
+    if (src.startsWith('assets/')) {
+      imgWidget = Image.asset(
+        src,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      );
+    } else if (src.startsWith('data:image')) {
+      try {
+        final base64Part = src.split(',').last;
+        imgWidget = Image.memory(
+          base64Decode(base64Part),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        );
+      } catch (_) {
+        return const SizedBox.shrink();
+      }
+    } else {
+      final fullUrl = src.startsWith('http')
+          ? src
+          : "${ConstantUri.baseUri}/api/public/view/image?filename=$src";
+      imgWidget = Image.network(
+        fullUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      );
+    }
 
     return Stack(
       fit: StackFit.expand,
       children: [
         imgWidget,
-        // If it's a new colorful photo, apply 80% white transparency to match the exact watermark style!
-        if (!isAlreadyWatermarked)
-          Container(
-            color: Colors.white.withValues(alpha: 0.80),
-          ),
-      ],
-    );
-  }
-
-  /// Default fallback image uses the BBU building photo
-  Widget _buildFallbackBuildingImage() {
-    return Image.asset(
-      "assets/images/bbu_building.png",
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      gaplessPlayback: true,
-      filterQuality: FilterQuality.medium,
-      errorBuilder: (context, error, stackTrace) => Container(
-        color: Colors.white,
-        child: Center(
-          child: Icon(
-            Icons.apartment_rounded,
-            size: 68,
-            color: AppColors.primary.withValues(alpha: 0.15),
-          ),
+        // Apply 80% white transparency overlay so card text and numbers remain crystal clear
+        Container(
+          color: Colors.white.withValues(alpha: 0.80),
         ),
-      ),
+      ],
     );
   }
 
   /// Sheet to take photo with camera, choose from gallery, or reset building photo
   void _showBuildingImageSheet(BuildContext context) {
     final currentProp = controller.currentProperty.value;
-    final propName = currentProp?.name ?? "អគារ";
+    if (currentProp == null) {
+      Get.snackbar(
+        LanguageService.isKhmer ? "មិនទាន់មានអគារ" : "No Property Yet",
+        LanguageService.isKhmer
+            ? "សូមបង្កើតអគារ ឬផ្ទះជួលដំបូងរបស់អ្នកជាមុនសិន"
+            : "Please create your first property first",
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: Colors.white,
+        colorText: AppColors.textPrimary,
+        icon: const Icon(Icons.apartment_rounded, color: AppColors.primary),
+        mainButton: TextButton(
+          onPressed: () {
+            OwnerAppBarHelper.showPropertyPicker(context);
+          },
+          child: Text(
+            LanguageService.isKhmer ? "បង្កើតអគារ" : "Create",
+            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final propName = currentProp.name ?? (LanguageService.isKhmer ? "អគារ" : "Property");
     final hasCustomImg = controller.getBuildingImageSource(currentProp) != null;
 
     showModalBottomSheet(

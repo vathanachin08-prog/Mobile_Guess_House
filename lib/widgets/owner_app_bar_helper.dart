@@ -106,6 +106,29 @@ class OwnerAppBarHelper {
 
                 // Property List
                 Obx(() {
+                  if (ctrl.propertiesList.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          Icon(Icons.apartment_outlined, size: 42, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                          const SizedBox(height: 10),
+                          Text(
+                            LanguageService.isKhmer ? "មិនទាន់មានអគារនៅឡើយទេ" : "No properties created yet",
+                            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            LanguageService.isKhmer ? "សូមចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតអគារដំបូងរបស់អ្នក" : "Tap the button below to add your first property",
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -115,63 +138,104 @@ class OwnerAppBarHelper {
                       final item = ctrl.propertiesList[index];
                       final isSelected = item['id'] == ctrl.selectedPropertyId.value;
 
-                      return InkWell(
-                        onTap: () {
-                          ctrl.selectProperty(item);
-                          Navigator.pop(ctx);
-                          Get.snackbar(
-                            'select_property'.tr,
-                            "${'switch_active_building'.tr}: ${item['name']}",
-                            snackPosition: SnackPosition.BOTTOM,
-                            margin: const EdgeInsets.all(16),
-                            backgroundColor: Colors.white,
-                            colorText: AppColors.textPrimary,
-                            icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                            duration: const Duration(seconds: 2),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primarySoft.withValues(alpha: 0.35) : AppColors.background,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.border,
-                              width: isSelected ? 1.5 : 1,
-                            ),
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primarySoft.withValues(alpha: 0.35) : AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : AppColors.border,
+                            width: isSelected ? 1.5 : 1,
                           ),
-                          child: Row(
-                            children: [
-                              _buildPropertyThumbnail(item['mainImage'] as String?, isSelected),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        child: Row(
+                          children: [
+                            // Tap area to switch active property
+                            Expanded(
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  ctrl.selectProperty(item);
+                                  Navigator.pop(ctx);
+                                  Get.snackbar(
+                                    'select_property'.tr,
+                                    "${'switch_active_building'.tr}: ${item['name']}",
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    margin: const EdgeInsets.all(16),
+                                    backgroundColor: Colors.white,
+                                    colorText: AppColors.textPrimary,
+                                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                                    duration: const Duration(seconds: 2),
+                                  );
+                                },
+                                child: Row(
                                   children: [
-                                    Text(
-                                      item['name'] as String,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      "${item['address']} • ${item['rooms']} ${'rooms'.tr}",
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textSecondary,
+                                    _buildPropertyThumbnail(item['mainImage'] as String?, isSelected),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item['name'] as String,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "${item['address']} • ${item['rooms']} ${'rooms'.tr}",
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              if (isSelected)
-                                const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Action buttons: Checkmark (if selected) + Delete button
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isSelected) ...[
+                                  const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22),
+                                  const SizedBox(width: 6),
+                                ],
+                                Tooltip(
+                                  message: LanguageService.isKhmer ? "លុបអគារនេះ" : "Delete Property",
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(20),
+                                      onTap: () {
+                                        _confirmDeleteProperty(context, ctrl, item);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(7),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.shade50,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.red.shade200, width: 0.8),
+                                        ),
+                                        child: Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: Colors.red.shade600,
+                                          size: 19,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -209,35 +273,111 @@ class OwnerAppBarHelper {
     );
   }
 
+  /// Show confirmation dialog to delete a property and all its sub-data
+  static void _confirmDeleteProperty(
+    BuildContext context,
+    OwnerMainController ctrl,
+    Map<String, dynamic> item,
+  ) {
+    final propId = item['id'];
+    final propName = item['name']?.toString() ?? 'អគារ';
+
+    showDialog(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.delete_forever_rounded, color: Colors.red.shade600, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                LanguageService.isKhmer ? "លុបអគារ" : "Delete Property",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          LanguageService.isKhmer
+              ? "តើអ្នកប្រាកដជាចង់លុប '$propName' នេះមែនទេ? រាល់បន្ទប់ ជាន់ និងទិន្នន័យទាំងអស់នៃអគារនេះនឹងត្រូវលុបចេញពីប្រព័ន្ធ។"
+              : "Are you sure you want to delete '$propName'? All rooms, floors, and associated data will be permanently removed.",
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dlgCtx),
+            child: Text(
+              LanguageService.isKhmer ? "បោះបង់" : "Cancel",
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dlgCtx);
+              if (propId != null) {
+                final id = propId is int ? propId : int.tryParse(propId.toString());
+                if (id != null) {
+                  await ctrl.deleteProperty(id);
+                  Get.snackbar(
+                    LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
+                    LanguageService.isKhmer
+                        ? "បានលុប '$propName' រួចរាល់!"
+                        : "Property '$propName' deleted successfully!",
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: const EdgeInsets.all(16),
+                    backgroundColor: Colors.white,
+                    colorText: AppColors.textPrimary,
+                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                  );
+                }
+              }
+            },
+            child: Text(
+              LanguageService.isKhmer ? "យល់ព្រមលុប" : "Delete",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Helper to render property thumbnail or default fallback icon
   static Widget _buildPropertyThumbnail(String? imageSource, bool isSelected) {
-    if (imageSource != null && imageSource.trim().isNotEmpty) {
-      Widget imgWidget;
-      if (imageSource.startsWith('data:image')) {
-        try {
-          final base64Str = imageSource.split(',').last;
-          imgWidget = Image.memory(
-            base64Decode(base64Str),
-            fit: BoxFit.cover,
-            errorBuilder: (ctx, err, stack) => Icon(
-              Icons.business_rounded,
-              size: 20,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-            ),
-          );
-        } catch (_) {
-          imgWidget = Icon(
-            Icons.business_rounded,
-            size: 20,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-          );
-        }
-      } else {
-        final fullUrl = imageSource.startsWith('http')
-            ? imageSource
-            : "${ConstantUri.baseUri}/api/public/view/image?filename=$imageSource";
-        imgWidget = Image.network(
-          fullUrl,
+    String effectiveSource = (imageSource != null && imageSource.trim().isNotEmpty)
+        ? imageSource.trim()
+        : "assets/images/bbu_building.png";
+
+    Widget imgWidget;
+    if (effectiveSource.startsWith('assets/')) {
+      imgWidget = Image.asset(
+        effectiveSource,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => Icon(
+          Icons.business_rounded,
+          size: 20,
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+        ),
+      );
+    } else if (effectiveSource.startsWith('data:image')) {
+      try {
+        final base64Str = effectiveSource.split(',').last;
+        imgWidget = Image.memory(
+          base64Decode(base64Str),
           fit: BoxFit.cover,
           errorBuilder: (ctx, err, stack) => Icon(
             Icons.business_rounded,
@@ -245,30 +385,35 @@ class OwnerAppBarHelper {
             color: isSelected ? Colors.white : AppColors.textSecondary,
           ),
         );
+      } catch (_) {
+        imgWidget = Icon(
+          Icons.business_rounded,
+          size: 20,
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+        );
       }
-
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 42,
-          height: 42,
-          color: AppColors.primarySoft,
-          child: imgWidget,
+    } else {
+      final fullUrl = effectiveSource.startsWith('http')
+          ? effectiveSource
+          : "${ConstantUri.baseUri}/api/public/view/image?filename=$effectiveSource";
+      imgWidget = Image.network(
+        fullUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => Icon(
+          Icons.business_rounded,
+          size: 20,
+          color: isSelected ? Colors.white : AppColors.textSecondary,
         ),
       );
     }
 
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(
-        Icons.business_rounded,
-        size: 20,
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 42,
+        height: 42,
+        color: AppColors.primarySoft,
+        child: imgWidget,
       ),
     );
   }

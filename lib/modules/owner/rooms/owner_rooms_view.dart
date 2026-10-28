@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
@@ -7,7 +9,10 @@ import '../../../models/rental/room_model.dart';
 import '../../../models/rental/facility_preset.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../../../widgets/room_image_widget.dart';
+import '../../../routes/app_route_name.dart';
 import '../floors/owner_floors_controller.dart';
+import '../membership/owner_membership_view.dart';
 import 'owner_rooms_controller.dart';
 
 class OwnerRoomsView extends GetView<OwnerRoomsController> {
@@ -32,12 +37,74 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
     return LanguageService.isKhmer ? "ជាន់ទី $khmerNum" : "Floor $actualNum";
   }
 
+  void _showImageSourceSheet({
+    required BuildContext context,
+    required Function(ImageSource) onSelect,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                LanguageService.isKhmer ? "ជ្រើសរើសប្រភពរូបថត" : "Select Photo Source",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                ),
+                title: Text(LanguageService.isKhmer ? "ថតរូបភាពផ្ទាល់ (Camera)" : "Take a Photo (Camera)"),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onSelect(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                ),
+                title: Text(LanguageService.isKhmer ? "ជ្រើសពីវិចិត្រសាល (Gallery - ច្រើនរូប)" : "Choose from Gallery (Multiple)"),
+                subtitle: Text(
+                  LanguageService.isKhmer ? "អាចជ្រើសរើសរូបថតបានច្រើនសន្លឹកក្នុងពេលតែមួយ" : "You can select multiple photos at once",
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onSelect(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showAddRoomDialog(BuildContext context) {
     _showRoomDialog(context);
   }
 
   void _showRoomDialog(BuildContext context, {RoomModel? roomToEdit}) {
     final isEdit = roomToEdit != null;
+    final List<String> pickedImages = List<String>.from(roomToEdit?.imageList ?? []);
     final nameCtrl = TextEditingController(text: roomToEdit?.roomNumber ?? '');
     final priceCtrl = TextEditingController(
       text: roomToEdit?.price != null ? roomToEdit!.price!.toStringAsFixed(0) : "50",
@@ -152,6 +219,303 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 0. Room Photo Uploader (Multi-Photo)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        LanguageService.isKhmer
+                            ? "រូបថតបន្ទប់ (${pickedImages.length})"
+                            : "Room Photos (${pickedImages.length})",
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                      if (pickedImages.isNotEmpty)
+                        InkWell(
+                          onTap: () {
+                            _showImageSourceSheet(
+                              context: ctx,
+                              onSelect: (source) async {
+                                try {
+                                  final picker = ImagePicker();
+                                  if (source == ImageSource.gallery) {
+                                    final pickedList = await picker.pickMultiImage(
+                                      maxWidth: 1024,
+                                      maxHeight: 1024,
+                                      imageQuality: 85,
+                                    );
+                                    if (pickedList.isNotEmpty) {
+                                      for (var xFile in pickedList) {
+                                        final bytes = await xFile.readAsBytes();
+                                        final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                        pickedImages.add(base64String);
+                                      }
+                                      setState(() {});
+                                    }
+                                  } else {
+                                    final img = await picker.pickImage(
+                                      source: ImageSource.camera,
+                                      maxWidth: 1024,
+                                      maxHeight: 1024,
+                                      imageQuality: 85,
+                                    );
+                                    if (img != null) {
+                                      final bytes = await img.readAsBytes();
+                                      final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                      pickedImages.add(base64String);
+                                      setState(() {});
+                                    }
+                                  }
+                                } catch (e) {
+                                  Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red.shade50);
+                                }
+                              },
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add_photo_alternate_outlined, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  LanguageService.isKhmer ? "បន្ថែមរូបថត" : "Add Photos",
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (pickedImages.isEmpty)
+                    InkWell(
+                      onTap: () {
+                        _showImageSourceSheet(
+                          context: ctx,
+                          onSelect: (source) async {
+                            try {
+                              final picker = ImagePicker();
+                              if (source == ImageSource.gallery) {
+                                final pickedList = await picker.pickMultiImage(
+                                  maxWidth: 1024,
+                                  maxHeight: 1024,
+                                  imageQuality: 85,
+                                );
+                                if (pickedList.isNotEmpty) {
+                                  for (var xFile in pickedList) {
+                                    final bytes = await xFile.readAsBytes();
+                                    final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                    pickedImages.add(base64String);
+                                  }
+                                  setState(() {});
+                                }
+                              } else {
+                                final img = await picker.pickImage(
+                                  source: ImageSource.camera,
+                                  maxWidth: 1024,
+                                  maxHeight: 1024,
+                                  imageQuality: 85,
+                                );
+                                if (img != null) {
+                                  final bytes = await img.readAsBytes();
+                                  final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                  pickedImages.add(base64String);
+                                  setState(() {});
+                                }
+                              }
+                            } catch (e) {
+                              Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red.shade50);
+                            }
+                          },
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        height: 125,
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_a_photo_outlined, size: 30, color: AppColors.primary),
+                            const SizedBox(height: 6),
+                            Text(
+                              LanguageService.isKhmer ? "បញ្ចូលរូបថតបន្ទប់ (ជ្រើសបានច្រើនរូប)" : "Upload Room Photos (Multiple)",
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              LanguageService.isKhmer ? "ចុចដើម្បីថតរូប ឬជ្រើសពីវិចិត្រសាល" : "Tap to capture from camera or choose from gallery",
+                              style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 110,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: pickedImages.length + 1,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (ctx, i) {
+                          if (i == pickedImages.length) {
+                            // "Add More" card
+                            return InkWell(
+                              onTap: () {
+                                _showImageSourceSheet(
+                                  context: ctx,
+                                  onSelect: (source) async {
+                                    try {
+                                      final picker = ImagePicker();
+                                      if (source == ImageSource.gallery) {
+                                        final pickedList = await picker.pickMultiImage(
+                                          maxWidth: 1024,
+                                          maxHeight: 1024,
+                                          imageQuality: 85,
+                                        );
+                                        if (pickedList.isNotEmpty) {
+                                          for (var xFile in pickedList) {
+                                            final bytes = await xFile.readAsBytes();
+                                            final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                            pickedImages.add(base64String);
+                                          }
+                                          setState(() {});
+                                        }
+                                      } else {
+                                        final img = await picker.pickImage(
+                                          source: ImageSource.camera,
+                                          maxWidth: 1024,
+                                          maxHeight: 1024,
+                                          imageQuality: 85,
+                                        );
+                                        if (img != null) {
+                                          final bytes = await img.readAsBytes();
+                                          final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
+                                          pickedImages.add(base64String);
+                                          setState(() {});
+                                        }
+                                      }
+                                    } catch (e) {
+                                      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red.shade50);
+                                    }
+                                  },
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: 80,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primarySoft.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.add_circle_outline_rounded, size: 24, color: AppColors.primary),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      LanguageService.isKhmer ? "បន្ថែម" : "Add More",
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          final isCover = i == 0;
+                          return Container(
+                            width: 100,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isCover ? AppColors.primary : AppColors.border,
+                                width: isCover ? 2 : 1,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  RoomImageWidget(
+                                    image: pickedImages[i],
+                                    fit: BoxFit.cover,
+                                  ),
+                                  if (isCover)
+                                    Positioned(
+                                      top: 5,
+                                      left: 5,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          LanguageService.isKhmer ? "រូបតំណាង" : "Cover",
+                                          style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    bottom: 5,
+                                    left: 5,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        "#${i + 1}",
+                                        style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          pickedImages.removeAt(i);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3.5),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+
                   // 1. Room Number
                   Text('room_number'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
@@ -444,6 +808,11 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                         final area = double.tryParse(areaCtrl.text.trim()) ?? 18.0;
 
                         if (number.isNotEmpty) {
+                          if (!isEdit && !controller.canAddMoreRooms) {
+                            Navigator.pop(ctx);
+                            _showPlanLimitDialog(context);
+                            return;
+                          }
                           int floorToAssign = 1;
                           if (isCreatingNewFloor) {
                             final enteredName = floorNameCtrl.text.trim().isNotEmpty
@@ -460,6 +829,10 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                             floorToAssign = selectedFloor ?? 1;
                           }
 
+                          final String? finalImage = pickedImages.isEmpty
+                              ? null
+                              : (pickedImages.length == 1 ? pickedImages.first : jsonEncode(pickedImages));
+
                           if (isEdit) {
                             controller.updateRoom(
                               room: roomToEdit,
@@ -471,6 +844,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                               genderPreference: selectedGender,
                               facilityIds: selectedFacilities.toList(),
                               desc: descCtrl.text.trim(),
+                              image: finalImage,
                             );
                           } else {
                             controller.addRoom(
@@ -482,6 +856,7 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                               genderPreference: selectedGender,
                               facilityIds: selectedFacilities.toList(),
                               desc: descCtrl.text.trim(),
+                              image: finalImage,
                             );
                           }
                           Navigator.pop(ctx);
@@ -533,6 +908,18 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
           children: [
             Text("${'room_label_prefix'.tr} ${room.roomNumber ?? ''}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.remove_red_eye_outlined, color: AppColors.primary),
+              title: Text(LanguageService.isKhmer ? "មើលព័ត៌មានលម្អិត និងរូបភាពបន្ទប់" : "View Room Detail & Photos"),
+              subtitle: Text(
+                LanguageService.isKhmer ? "បើកមើល និងបញ្ចូល/ប្តូររូបភាពបន្ទប់" : "View detail & upload/change photos",
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Get.toNamed(AppRouteName.roomDetail, arguments: {'room': room, 'canEdit': true});
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
               title: Text('edit_room'.tr),
@@ -621,11 +1008,24 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _buildChip("ALL", 'all'.tr),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildChip("ALL", 'all'.tr),
+                              const SizedBox(width: 8),
+                              _buildChip("AVAILABLE", 'available'.tr),
+                              const SizedBox(width: 8),
+                              _buildChip("OCCUPIED", 'occupied'.tr),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      _buildChip("AVAILABLE", 'available'.tr),
-                      const SizedBox(width: 8),
-                      _buildChip("OCCUPIED", 'occupied'.tr),
+                      _buildPlanUsageBadge(context),
                     ],
                   ),
                 ],
@@ -682,18 +1082,52 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                           padding: const EdgeInsets.all(14),
                           child: Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: isAvail ? AppColors.primarySoft : Colors.amber.shade50,
+                              if (room.imageList.isNotEmpty)
+                                ClipRRect(
                                   borderRadius: BorderRadius.circular(10),
+                                  child: SizedBox(
+                                    width: 44,
+                                    height: 44,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        RoomImageWidget(
+                                          image: room.imageList.first,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        if (room.imageList.length > 1)
+                                          Positioned(
+                                            bottom: 1.5,
+                                            right: 1.5,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withValues(alpha: 0.65),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                "${room.imageList.length}",
+                                                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: isAvail ? AppColors.primarySoft : Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.meeting_room_outlined,
+                                    color: isAvail ? AppColors.primary : Colors.amber.shade800,
+                                    size: 22,
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.meeting_room_outlined,
-                                  color: isAvail ? AppColors.primary : Colors.amber.shade800,
-                                  size: 22,
-                                ),
-                              ),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
@@ -701,9 +1135,13 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          room.roomNumber ?? 'room_label_prefix'.tr,
-                                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                        Flexible(
+                                          child: Text(
+                                            room.roomNumber ?? 'room_label_prefix'.tr,
+                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
                                         const SizedBox(width: 6),
                                         Container(
@@ -724,26 +1162,34 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                                     Text(
                                       "${_getFloorDisplayName(room.floor)} • ${(room.area ?? 18).toStringAsFixed(0)} m² • \$${room.price?.toStringAsFixed(0) ?? 50}/mo",
                                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 3),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "${'gender_spec'.tr}: ${room.genderPreferenceDisplayName}",
-                                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                                        ),
-                                        if (room.facilities != null && room.facilities!.isNotEmpty) ...[
-                                          const Text(" • ", style: TextStyle(color: AppColors.textMuted)),
-                                          Text(
-                                            "${room.facilities!.length} ${'room_facilities'.tr}",
-                                            style: const TextStyle(fontSize: 11, color: AppColors.primary),
+                                    Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: "${'gender_spec'.tr}: ${room.genderPreferenceDisplayName}",
+                                            style: const TextStyle(color: AppColors.textMuted),
                                           ),
+                                          if (room.facilities != null && room.facilities!.isNotEmpty) ...[
+                                            const TextSpan(text: " • ", style: TextStyle(color: AppColors.textMuted)),
+                                            TextSpan(
+                                              text: "${room.facilities!.length} ${'room_facilities'.tr}",
+                                              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
+                                      style: const TextStyle(fontSize: 11),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
@@ -760,6 +1206,8 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                                 ),
                               ),
                               IconButton(
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                padding: const EdgeInsets.all(4),
                                 icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
                                 onPressed: () => _showRoomActionSheet(context, room),
                               ),
@@ -775,12 +1223,135 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _showAddRoomDialog(context),
+          onPressed: () {
+            if (!controller.canAddMoreRooms) {
+              _showPlanLimitDialog(context);
+              return;
+            }
+            _showAddRoomDialog(context);
+          },
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.add, color: Colors.white, size: 26),
         ),
       );
     });
+  }
+
+  Widget _buildPlanUsageBadge(BuildContext context) {
+    return Obx(() {
+      final isOver = controller.isOverPlanLimit;
+      final text = controller.roomUsageText;
+      return InkWell(
+        onTap: () => _showPlanLimitDialog(context),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: isOver
+                ? AppColors.danger.withValues(alpha: 0.1)
+                : AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isOver
+                  ? AppColors.danger.withValues(alpha: 0.4)
+                  : AppColors.primary.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isOver ? Icons.warning_amber_rounded : Icons.meeting_room_rounded,
+                size: 13,
+                color: isOver ? AppColors.danger : AppColors.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isOver ? AppColors.danger : AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  void _showPlanLimitDialog(BuildContext context) {
+    final planName = controller.currentPlanNameDisplay;
+    final maxRooms = controller.maxAllowedRooms;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 26),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                LanguageService.isKhmer ? "ដល់ដែនកំណត់បន្ទប់" : "Room Limit Reached",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              LanguageService.isKhmer
+                  ? "គម្រោងបច្ចុប្បន្នរបស់អ្នក ($planName) អនុញ្ញាតអតិបរមាត្រឹម $maxRooms បន្ទប់ប៉ុណ្ណោះ។"
+                  : "Your current plan ($planName) allows a maximum of $maxRooms rooms.",
+              style: const TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              LanguageService.isKhmer
+                  ? "សូមដំឡើងទៅកាន់ កញ្ចប់ស្តង់ដារ (Standard) ឬ កញ្ចប់ពិសេស (Premium) ដើម្បីអាចបង្កើត និងគ្រប់គ្រងបន្ទប់បន្ថែមបាន។"
+                  : "Please upgrade to Standard (up to 20 rooms) or Premium (unlimited rooms) to create and manage more rooms.",
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              LanguageService.isKhmer ? "ពេលក្រោយ" : "Later",
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Get.to(() => const OwnerMembershipView());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text(
+              LanguageService.isKhmer ? "ដំឡើងគម្រោង" : "Upgrade Plan",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildChip(String code, String label) {

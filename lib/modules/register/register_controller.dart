@@ -10,28 +10,32 @@ class RegisterController extends GetxController {
   final ApiService apiService;
   RegisterController({required this.apiService});
 
-  final usernameController = TextEditingController();
-  final firstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
-  final phoneController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController firstNameController = TextEditingController();
+  TextEditingController lastNameController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
 
   final selectedRole = "STUDENT".obs; // STUDENT or OWNER
   final isLoading = false.obs;
   final obscurePassword = true.obs;
 
-  @override
-  void onClose() {
-    usernameController.dispose();
-    firstNameController.dispose();
-    lastNameController.dispose();
-    phoneController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.onClose();
+  void ensureControllers() {
+    // Kept safe: do not replace active controllers to prevent wiping user input
+  }
+
+  void resetForm() {
+    usernameController.clear();
+    firstNameController.clear();
+    lastNameController.clear();
+    phoneController.clear();
+    emailController.clear();
+    passwordController.clear();
+    confirmPasswordController.clear();
+    isLoading.value = false;
+    obscurePassword.value = true;
   }
 
   void togglePasswordVisibility() {
@@ -98,7 +102,7 @@ class RegisterController extends GetxController {
         );
         if (loginRes.accessToken != null && loginRes.accessToken!.isNotEmpty) {
           // Clear any previous session so new registered account is completely clean
-          TokenStoreLocal.removeToken();
+          TokenStoreLocal.removeToken(redirect: false);
           TokenStoreLocal.setAccessToken(loginRes.accessToken ?? "");
           TokenStoreLocal.setRefreshToken(loginRes.refreshToken ?? "");
           final registeredUser = (response is Map && response['data'] is Map)

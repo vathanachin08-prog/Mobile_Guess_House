@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
@@ -61,6 +62,44 @@ class PropertyDetailController extends GetxController {
           }
           _syncInitialFavorite();
         }
+      }
+
+      // Check local cache for newly created owner rooms & room images
+      final storage = GetStorage();
+      final cachedRooms = storage.read("PROPERTY_ROOMS_$id");
+      if (cachedRooms is List && cachedRooms.isNotEmpty) {
+        try {
+          final localList = cachedRooms.map((e) => RoomModel.fromJson(Map<String, dynamic>.from(e))).toList();
+          if (rooms.isEmpty) {
+            rooms.assignAll(localList);
+          } else {
+            final merged = rooms.map((r) {
+              final localMatch = localList.firstWhereOrNull((l) => l.roomNumber == r.roomNumber || l.id == r.id);
+              if (localMatch != null && localMatch.images != null && localMatch.images!.trim().isNotEmpty && (r.images == null || r.images!.trim().isEmpty || localMatch.images!.length > (r.images?.length ?? 0))) {
+                return RoomModel(
+                  id: r.id,
+                  propertyId: r.propertyId ?? localMatch.propertyId,
+                  propertyName: r.propertyName ?? localMatch.propertyName,
+                  roomNumber: r.roomNumber,
+                  title: r.title,
+                  description: r.description,
+                  price: r.price,
+                  roomType: r.roomType,
+                  genderPreference: r.genderPreference,
+                  available: r.available,
+                  floor: r.floor,
+                  area: r.area,
+                  images: localMatch.images,
+                  facilities: r.facilities,
+                  createdAt: r.createdAt,
+                  updatedAt: r.updatedAt,
+                );
+              }
+              return r;
+            }).toList();
+            rooms.assignAll(merged);
+          }
+        } catch (_) {}
       }
 
       // 2. Fetch Reviews

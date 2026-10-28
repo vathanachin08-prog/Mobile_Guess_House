@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/language_service.dart';
 import '../../../models/rental/visit_request_model.dart';
+import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -186,18 +187,39 @@ class VisitRequestsView extends GetView<VisitRequestsController> {
               style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textMuted),
             ),
           ],
-          if (req.status == 'PENDING') ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => controller.cancelRequest(req.id),
-                child: Text('cancel_request'.tr, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  Get.toNamed(
+                    AppRouteName.chatDetail,
+                    arguments: {
+                      'ownerId': '1',
+                      'ownerName': LanguageService.isKhmer ? "ម្ចាស់ផ្ទះ" : "Property Owner",
+                      'propertyId': req.propertyId,
+                      'propertyName': req.propertyName,
+                      'roomId': req.roomId,
+                      'roomNumber': req.roomNumber,
+                      'initialMessage': LanguageService.isKhmer
+                          ? "សួស្តីលោកពូ/អ្នកមីង! ខ្ញុំបានស្នើសុំទស្សនា ${req.propertyName ?? 'បន្ទប់'}${req.roomNumber != null ? ' បន្ទប់ #${req.roomNumber}' : ''} នៅថ្ងៃ ${req.requestedDate ?? ''}។"
+                          : "Hello! Regarding my visit request for ${req.propertyName ?? 'the property'}${req.roomNumber != null ? ' Room #${req.roomNumber}' : ''} on ${req.requestedDate ?? ''}.",
+                    },
+                  );
+                },
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14, color: AppColors.primary),
+                label: Text(LanguageService.isKhmer ? "ឆាតជាមួយម្ចាស់" : "Chat Owner", style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
+              if (req.status == 'PENDING')
+                TextButton(
+                  onPressed: () => controller.cancelRequest(req.id),
+                  child: Text('cancel_request'.tr, style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                ),
+            ],
+          ),
         ],
       ),
     );

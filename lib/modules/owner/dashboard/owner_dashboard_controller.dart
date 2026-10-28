@@ -174,9 +174,17 @@ class OwnerDashboardController extends GetxController {
             final selected = match ?? myProperties.first;
             await switchProperty(selected);
           }
+        } else {
+          myProperties.clear();
+          currentProperty.value = null;
         }
+      } else {
+        myProperties.clear();
+        currentProperty.value = null;
       }
     } catch (_) {
+      myProperties.clear();
+      currentProperty.value = null;
     } finally {
       _syncDynamicStats();
       isLoading.value = false;
@@ -250,8 +258,42 @@ class OwnerDashboardController extends GetxController {
           );
         }
       } catch (_) {}
+
+      // If mainImage is still empty, look up in OwnerMainController.propertiesList
+      if ((effectiveProp.mainImage == null || effectiveProp.mainImage!.trim().isEmpty) && Get.isRegistered<OwnerMainController>()) {
+        final mainCtrl = Get.find<OwnerMainController>();
+        final match = mainCtrl.propertiesList.firstWhereOrNull((item) => item['id'] == p.id);
+        final mImg = match?['mainImage']?.toString();
+        if (mImg != null && mImg.trim().isNotEmpty) {
+          effectiveProp = PropertyModel(
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            propertyType: p.propertyType,
+            address: p.address,
+            city: p.city,
+            district: p.district,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            status: p.status,
+            verificationStatus: p.verificationStatus,
+            mainImage: mImg.trim(),
+            images: p.images,
+            owner: p.owner,
+            rooms: p.rooms,
+            minRoomPrice: p.minRoomPrice,
+            availableRoomCount: p.availableRoomCount,
+            totalRoomCount: p.totalRoomCount,
+            averageRating: p.averageRating,
+            reviewCount: p.reviewCount,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          );
+        }
+      }
     }
     currentProperty.value = effectiveProp;
+    currentProperty.refresh();
     if (p.totalRoomCount != null) {
       totalRooms.value = p.totalRoomCount!;
       availableRooms.value = p.availableRoomCount ?? 0;
@@ -411,13 +453,26 @@ class OwnerDashboardController extends GetxController {
 
   /// Get building image source from property or fallback sources
   String? getBuildingImageSource(PropertyModel? property) {
-    if (property == null) return null;
+    PropertyModel? effectiveProp = property;
+    if (effectiveProp == null && Get.isRegistered<OwnerMainController>()) {
+      final mainCtrl = Get.find<OwnerMainController>();
+      final activeId = mainCtrl.selectedPropertyId.value;
+      if (activeId != null) {
+        final match = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == activeId);
+        final mImg = match?['mainImage']?.toString();
+        if (mImg != null && mImg.trim().isNotEmpty) {
+          return mImg.trim();
+        }
+      }
+    }
+
+    if (effectiveProp == null) return null;
 
     // 1. Check user-scoped local storage override if user customized it
-    if (property.id != null) {
+    if (effectiveProp.id != null) {
       try {
         final box = GetStorage();
-        final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${property.id}");
+        final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_${effectiveProp.id}");
         final localImg = box.read(localKey);
         if (localImg != null && localImg.toString().trim().isNotEmpty) {
           return localImg.toString().trim();
@@ -425,21 +480,21 @@ class OwnerDashboardController extends GetxController {
       } catch (_) {}
     }
 
-    // 2. Check property.mainImage
-    if (property.mainImage != null && property.mainImage!.trim().isNotEmpty) {
-      return property.mainImage!.trim();
+    // 2. Check effectiveProp.mainImage
+    if (effectiveProp.mainImage != null && effectiveProp.mainImage!.trim().isNotEmpty) {
+      return effectiveProp.mainImage!.trim();
     }
 
-    // 3. Check property.images (first non-empty)
-    if (property.images != null && property.images!.trim().isNotEmpty) {
-      final list = property.images!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    // 3. Check effectiveProp.images (first non-empty)
+    if (effectiveProp.images != null && effectiveProp.images!.trim().isNotEmpty) {
+      final list = effectiveProp.images!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
       if (list.isNotEmpty) return list.first;
     }
 
     // 4. Check OwnerMainController propertiesList
-    if (Get.isRegistered<OwnerMainController>()) {
+    if (Get.isRegistered<OwnerMainController>() && effectiveProp.id != null) {
       final mainCtrl = Get.find<OwnerMainController>();
-      final match = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == property.id);
+      final match = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == effectiveProp.id);
       final mImg = match?['mainImage']?.toString();
       if (mImg != null && mImg.trim().isNotEmpty) {
         return mImg.trim();
@@ -447,8 +502,8 @@ class OwnerDashboardController extends GetxController {
     }
 
     // 5. Check if any room has an image
-    if (property.rooms != null && property.rooms!.isNotEmpty) {
-      for (final r in property.rooms!) {
+    if (effectiveProp.rooms != null && effectiveProp.rooms!.isNotEmpty) {
+      for (final r in effectiveProp.rooms!) {
         if (r.images != null && r.images!.trim().isNotEmpty) {
           final rImgs = r.images!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
           if (rImgs.isNotEmpty) return rImgs.first;
@@ -456,7 +511,29 @@ class OwnerDashboardController extends GetxController {
       }
     }
 
-    // 6. Default to the BBU Takeo building photo
+    // 6. Also check active selected property image from storage or propertiesList
+    if (Get.isRegistered<OwnerMainController>()) {
+      final mainCtrl = Get.find<OwnerMainController>();
+      final activeId = mainCtrl.selectedPropertyId.value;
+      if (activeId != null) {
+        try {
+          final box = GetStorage();
+          final localKey = TokenStoreLocal.getUserScopedKey("PROPERTY_IMG_$activeId");
+          final localImg = box.read(localKey);
+          if (localImg != null && localImg.toString().trim().isNotEmpty) {
+            return localImg.toString().trim();
+          }
+        } catch (_) {}
+
+        final match = mainCtrl.propertiesList.firstWhereOrNull((p) => p['id'] == activeId);
+        final mImg = match?['mainImage']?.toString();
+        if (mImg != null && mImg.trim().isNotEmpty) {
+          return mImg.trim();
+        }
+      }
+    }
+
+    // 5. If property exists, use the default BBU building photo so card is never blank
     return "assets/images/bbu_building.png";
   }
 

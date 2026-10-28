@@ -19,6 +19,10 @@ import '../modules/student/favorites/favorites_view.dart';
 import '../modules/student/visit_requests/visit_requests_view.dart';
 import '../modules/student/profile/student_profile_view.dart';
 
+// Chat
+import '../modules/chat/chat_list_view.dart';
+import '../modules/chat/chat_detail_view.dart';
+
 // Owner
 import '../modules/owner/owner_main_controller.dart';
 import '../modules/owner/owner_main_view.dart';
@@ -92,6 +96,16 @@ class AppRoute {
       GetPage(
         name: AppRouteName.profile,
         page: () => const StudentProfileView(),
+      ),
+
+      // Chat
+      GetPage(
+        name: AppRouteName.chatList,
+        page: () => const ChatListView(),
+      ),
+      GetPage(
+        name: AppRouteName.chatDetail,
+        page: () => const ChatDetailView(),
       ),
 
       // Owner Experience

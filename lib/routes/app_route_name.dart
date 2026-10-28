@@ -14,6 +14,10 @@ class AppRouteName {
   static const String visitRequests = "/visit-requests";
   static const String profile = "/profile";
 
+  // Chat
+  static const String chatList = "/chat";
+  static const String chatDetail = "/chat/detail";
+
   // Owner
   static const String ownerMain = "/owner";
   static const String ownerDashboard = "/owner/dashboard";

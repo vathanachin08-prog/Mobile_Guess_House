@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../core/services/language_service.dart';
 import 'facility_model.dart';
 
@@ -37,6 +38,66 @@ class RoomModel {
     this.createdAt,
     this.updatedAt,
   });
+
+  RoomModel copyWith({
+    int? id,
+    int? propertyId,
+    String? propertyName,
+    String? roomNumber,
+    String? title,
+    String? description,
+    double? price,
+    String? roomType,
+    String? genderPreference,
+    bool? available,
+    int? floor,
+    double? area,
+    String? images,
+    List<FacilityModel>? facilities,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return RoomModel(
+      id: id ?? this.id,
+      propertyId: propertyId ?? this.propertyId,
+      propertyName: propertyName ?? this.propertyName,
+      roomNumber: roomNumber ?? this.roomNumber,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      roomType: roomType ?? this.roomType,
+      genderPreference: genderPreference ?? this.genderPreference,
+      available: available ?? this.available,
+      floor: floor ?? this.floor,
+      area: area ?? this.area,
+      images: images ?? this.images,
+      facilities: facilities ?? this.facilities,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  List<String> get imageList {
+    if (images == null || images!.trim().isEmpty) return [];
+    final str = images!.trim();
+    if (str.startsWith('[') && str.endsWith(']')) {
+      try {
+        final decoded = jsonDecode(str);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        }
+      } catch (_) {}
+    }
+    if (str.contains(',') && !str.startsWith('data:image')) {
+      return str.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    }
+    return [str];
+  }
+
+  String? get firstImage {
+    final list = imageList;
+    return list.isNotEmpty ? list.first : null;
+  }
 
   String get floorDisplayName {
     final isKhmer = LanguageService.isKhmer;
@@ -112,6 +173,15 @@ class RoomModel {
       }
     }
 
+    String? imagesStr;
+    if (json['images'] != null) {
+      if (json['images'] is List) {
+        imagesStr = jsonEncode(json['images']);
+      } else {
+        imagesStr = json['images'].toString();
+      }
+    }
+
     return RoomModel(
       id: json['id'],
       propertyId: json['propertyId'],
@@ -125,7 +195,7 @@ class RoomModel {
       available: json['available'] == true,
       floor: json['floor'],
       area: json['area'] != null ? (json['area'] as num).toDouble() : null,
-      images: json['images'],
+      images: imagesStr,
       facilities: facs,
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],

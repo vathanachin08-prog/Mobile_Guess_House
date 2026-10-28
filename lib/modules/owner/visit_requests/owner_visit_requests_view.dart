@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/language_service.dart';
+import '../../../data/local/token_store_local.dart';
 import '../../../models/rental/visit_request_model.dart';
+import '../../../routes/app_route_name.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -308,6 +310,33 @@ class OwnerVisitRequestsView extends GetView<OwnerVisitRequestsController> {
                       ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.primary),
+                ),
+                tooltip: LanguageService.isKhmer ? "ឆាតជាមួយសិស្ស" : "Chat with Student",
+                onPressed: () {
+                  Get.toNamed(
+                    AppRouteName.chatDetail,
+                    arguments: {
+                      'ownerId': TokenStoreLocal.getUserId().isNotEmpty ? TokenStoreLocal.getUserId() : '1',
+                      'ownerName': 'Owner',
+                      'propertyId': req.propertyId,
+                      'propertyName': req.propertyName,
+                      'roomId': req.roomId,
+                      'roomNumber': req.roomNumber,
+                      'initialMessage': LanguageService.isKhmer
+                          ? "សួស្តី ${req.studentName ?? 'ប្អូន'}! ខ្ញុំជាម្ចាស់ ${req.propertyName ?? 'អចលនទ្រព្យ'} ទាក់ទងនឹងការស្នើសុំទស្សនារបស់ប្អូន។"
+                          : "Hello ${req.studentName ?? 'Student'}! Regarding your visit request for ${req.propertyName ?? 'the property'}.",
+                    },
+                  );
+                },
               ),
             ],
           ),

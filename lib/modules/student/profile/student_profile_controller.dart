@@ -293,6 +293,5 @@ class StudentProfileController extends GetxController {
 
   void logout() {
     TokenStoreLocal.removeToken();
-    Get.offAllNamed(AppRouteName.login);
   }
 }

@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../core/services/api_service.dart';
+import '../core/services/chat_service.dart';
 import '../core/services/language_service.dart';
 import '../modules/owner/dashboard/owner_dashboard_controller.dart';
 import '../modules/owner/owner_main_controller.dart';
+import '../routes/app_route_name.dart';
 import 'app_colors.dart';
 import 'owner_app_bar_helper.dart';
 
@@ -131,17 +133,8 @@ class OwnerDashboardAppBar extends StatelessWidget implements PreferredSizeWidge
                     // Chat button
                     _buildIconButton(
                       icon: Icons.chat_bubble_outline_rounded,
-                      onTap: () {
-                        Get.snackbar(
-                          LanguageService.isKhmer ? "ជំនួយការគាំទ្រ" : "Support Center",
-                          LanguageService.isKhmer
-                              ? "សូមស្វាគមន៍មកកាន់ប្រព័ន្ធជំនួយ RoomFinder KH"
-                              : "Welcome to RoomFinder KH Support",
-                          backgroundColor: AppColors.surface,
-                          colorText: AppColors.textPrimary,
-                          snackPosition: SnackPosition.TOP,
-                        );
-                      },
+                      hasBadge: Get.isRegistered<ChatService>() && ChatService.to.totalUnreadCount > 0,
+                      onTap: () => Get.toNamed(AppRouteName.chatList),
                     ),
 
                     const SizedBox(width: 6),

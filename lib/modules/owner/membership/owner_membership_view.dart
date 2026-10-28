@@ -5,6 +5,8 @@ import '../../../core/services/language_service.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../data/local/token_store_local.dart';
+import '../../../widgets/bakong_khqr_dialog.dart';
+import '../profile/owner_profile_controller.dart';
 
 class OwnerMembershipView extends StatefulWidget {
   const OwnerMembershipView({super.key});
@@ -15,15 +17,20 @@ class OwnerMembershipView extends StatefulWidget {
 
 class _OwnerMembershipViewState extends State<OwnerMembershipView> {
   final _storage = GetStorage();
-  late String _selectedPlan;
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedPlan = _storage.read(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN")) ?? "BASIC";
+  String get _currentActivePlan {
+    if (Get.isRegistered<OwnerProfileController>()) {
+      final p = Get.find<OwnerProfileController>().membershipPlan.value.trim().toUpperCase();
+      if (p.isNotEmpty) return p;
+    }
+    final saved = _storage.read(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"));
+    if (saved != null && saved.toString().trim().isNotEmpty) {
+      return saved.toString().trim().toUpperCase();
+    }
+    return "BASIC";
   }
 
-  void _upgradePlan(String planName) {
+  void _upgradePlan(String planKey, String planTitle) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -39,14 +46,19 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
               child: const Icon(Icons.workspace_premium, color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 10),
-            Text("${'upgrade_plan'.tr} $planName", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                "${'upgrade_plan'.tr} $planTitle",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('upgrade_confirm_msg'.trParams({'plan': planName})),
+            Text('upgrade_confirm_msg'.trParams({'plan': planTitle})),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -75,29 +87,65 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
             onPressed: () => Navigator.pop(ctx),
             child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), planName);
-              setState(() => _selectedPlan = planName);
-              Get.snackbar(
-                'success'.tr,
-                'plan_upgraded_success'.trParams({'plan': planName}),
-                backgroundColor: AppColors.primary,
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-                margin: const EdgeInsets.all(16),
+              final amount = planKey == "PREMIUM" ? 19.99 : 9.99;
+              BakongKhqrDialog.show(
+                context: context,
+                planKey: planKey,
+                planTitle: planTitle,
+                amountUsd: amount,
+                onPaymentSuccess: () {
+                  _executeUpgrade(planKey, planTitle);
+                },
               );
             },
+            icon: const Icon(Icons.qr_code_2, size: 18),
+            label: Text(LanguageService.isKhmer ? "ទូទាត់តាម Bakong KHQR" : "Pay via Bakong KHQR"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFFE1251B),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text('pay_now'.tr),
           ),
         ],
       ),
+    );
+  }
+
+  void _executeUpgrade(String planKey, String planTitle) {
+    _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), planKey);
+    if (Get.isRegistered<OwnerProfileController>()) {
+      Get.find<OwnerProfileController>().setPlan(planKey);
+    }
+    setState(() {});
+    Get.snackbar(
+      'success'.tr,
+      'plan_upgraded_success'.trParams({'plan': planTitle}),
+      backgroundColor: AppColors.primary,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  void _switchToBasic() {
+    final title = LanguageService.isKhmer ? "កញ្ចប់ឥតគិតថ្លៃ (Basic)" : "Basic Free";
+    _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), "BASIC");
+    if (Get.isRegistered<OwnerProfileController>()) {
+      Get.find<OwnerProfileController>().setPlan("BASIC");
+    }
+    setState(() {});
+    Get.snackbar(
+      'success'.tr,
+      LanguageService.isKhmer
+          ? "អ្នកបានប្តូរមកកាន់ $title ដោយជោគជ័យ!"
+          : "Switched to $title successfully!",
+      backgroundColor: AppColors.primary,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
     );
   }
 
@@ -105,6 +153,10 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
   Widget build(BuildContext context) {
     return Obx(() {
       LanguageService.currentLocale.value;
+      final currentPlan = _currentActivePlan;
+      final isBasic = currentPlan == "BASIC";
+      final isStandard = currentPlan == "STANDARD";
+      final isPremium = currentPlan == "PREMIUM";
 
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -174,10 +226,10 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
 
               // Plan 1: Basic
               _buildPlanCard(
-                title: "Basic (${'free_tier'.tr})",
+                title: LanguageService.isKhmer ? "កញ្ចប់ឥតគិតថ្លៃ (Basic)" : "Basic (${'free_tier'.tr})",
                 price: "\$0.00",
                 period: LanguageService.isKhmer ? "/ ជារៀងរហូត" : "/ Forever",
-                isCurrent: _selectedPlan.toUpperCase() == "BASIC",
+                isCurrent: isBasic,
                 isPopular: false,
                 badgeText: null,
                 features: LanguageService.isKhmer
@@ -193,19 +245,16 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                         "Standard invoicing",
                         "Email support",
                       ],
-                onTap: () {
-                  _storage.write(TokenStoreLocal.getUserScopedKey("OWNER_MEMBERSHIP_PLAN"), "BASIC");
-                  setState(() => _selectedPlan = "BASIC");
-                },
+                onTap: _switchToBasic,
               ),
               const SizedBox(height: 16),
 
               // Plan 2: Standard (Popular)
               _buildPlanCard(
-                title: "Standard",
+                title: LanguageService.isKhmer ? "កញ្ចប់ស្តង់ដារ (Standard)" : "Standard",
                 price: "\$9.99",
                 period: 'per_month'.tr,
-                isCurrent: _selectedPlan.toUpperCase() == "STANDARD",
+                isCurrent: isStandard,
                 isPopular: true,
                 badgeText: 'popular_badge'.tr,
                 features: LanguageService.isKhmer
@@ -223,16 +272,19 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                         "Comprehensive revenue reports",
                         "24/7 Priority support",
                       ],
-                onTap: () => _upgradePlan("Standard"),
+                onTap: () => _upgradePlan(
+                  "STANDARD",
+                  LanguageService.isKhmer ? "កញ្ចប់ស្តង់ដារ (Standard)" : "Standard",
+                ),
               ),
               const SizedBox(height: 16),
 
               // Plan 3: Premium
               _buildPlanCard(
-                title: "Premium (${'unlimited'.tr})",
+                title: LanguageService.isKhmer ? "កញ្ចប់ពិសេស (Premium)" : "Premium (${'unlimited'.tr})",
                 price: "\$19.99",
                 period: 'per_month'.tr,
-                isCurrent: _selectedPlan.toUpperCase() == "PREMIUM",
+                isCurrent: isPremium,
                 isPopular: false,
                 badgeText: 'unlimited'.tr,
                 features: LanguageService.isKhmer
@@ -252,7 +304,10 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                         "Export reports to Excel / PDF",
                         "Dedicated account manager",
                       ],
-                onTap: () => _upgradePlan("Premium"),
+                onTap: () => _upgradePlan(
+                  "PREMIUM",
+                  LanguageService.isKhmer ? "កញ្ចប់ពិសេស (Premium)" : "Premium",
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -324,11 +379,14 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
                     ),
-                    if (isCurrent)
+                    if (isCurrent) ...[
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -340,6 +398,7 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                           style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -356,9 +415,13 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      period,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    Flexible(
+                      child: Text(
+                        period,
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

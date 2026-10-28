@@ -11,6 +11,7 @@ import '../../../routes/app_route_name.dart';
 import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../../../widgets/owner_app_bar_helper.dart';
 import '../membership/owner_membership_view.dart';
 import '../pricing/owner_pricing_view.dart';
 import '../reviews/owner_reviews_view.dart';
@@ -178,7 +179,9 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.loadUser();
+      controller.loadPlan();
       controller.fetchProfileFromServer();
+      controller.fetchPropertiesCount();
     });
 
     return Obx(() {
@@ -255,20 +258,41 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
 
               // Business Properties Summary Row
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem('building_label'.tr, "1 ${'units'.tr}"),
+                    _buildStatItem(
+                      label: 'building_label'.tr,
+                      value: "${controller.totalBuildingsCount} ${'units'.tr}",
+                      onTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+                    ),
                     Container(width: 1, height: 26, color: AppColors.border),
-                    _buildStatItem('location_label'.tr, 'building_location'.tr),
+                    _buildStatItem(
+                      label: 'location_label'.tr,
+                      value: controller.locationDisplay,
+                      onTap: () => OwnerAppBarHelper.showPropertyPicker(context),
+                    ),
                     Container(width: 1, height: 26, color: AppColors.border),
-                    _buildStatItem('plan_label'.tr, 'membership_plan_free'.tr),
+                    _buildStatItem(
+                      label: 'plan_label'.tr,
+                      value: controller.planDisplay,
+                      onTap: () async {
+                        await Get.to(() => const OwnerMembershipView());
+                        controller.loadPlan();
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -295,15 +319,30 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: controller.membershipPlan.value == "PREMIUM"
+                            ? Colors.purple.shade50
+                            : controller.membershipPlan.value == "STANDARD"
+                                ? Colors.blue.shade50
+                                : Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        "Free",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber.shade800),
+                        controller.planBadgeText,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: controller.membershipPlan.value == "PREMIUM"
+                              ? Colors.purple.shade800
+                              : controller.membershipPlan.value == "STANDARD"
+                                  ? Colors.blue.shade800
+                                  : Colors.amber.shade800,
+                        ),
                       ),
                     ),
-                    onTap: () => Get.to(() => const OwnerMembershipView()),
+                    onTap: () async {
+                      await Get.to(() => const OwnerMembershipView());
+                      controller.loadPlan();
+                    },
                   ),
                   _buildListTile(
                     icon: Icons.qr_code_2_rounded,
@@ -376,13 +415,46 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
     });
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-      ],
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

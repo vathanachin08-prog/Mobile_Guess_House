@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/language_service.dart';
 import '../../../core/services/url_service.dart';
+import '../../../routes/app_route_name.dart';
 import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -261,6 +262,11 @@ class StudentProfileView extends GetView<StudentProfileController> {
                       final mainCtrl = Get.find<StudentMainController>();
                       mainCtrl.changeTab(3);
                     },
+                  ),
+                  _buildListTile(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: LanguageService.isKhmer ? "សារជជែកជាមួយម្ចាស់ផ្ទះ" : "Messages with Owners",
+                    onTap: () => Get.toNamed(AppRouteName.chatList),
                   ),
                 ],
               ),
