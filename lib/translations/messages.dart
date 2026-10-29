@@ -39,7 +39,7 @@ class Messages extends Translations {
 
       // Student Features
       'find_rooms': 'Find Your Perfect Room',
-      'search_hint': 'Search by university, street, or area...',
+      'search_hint': '',
       'categories': 'Categories',
       'verified_properties': 'Verified Properties',
       'near_university': 'Near University',
@@ -167,7 +167,7 @@ class Messages extends Translations {
       'add_new_floor': 'Add New Floor',
       'enter_floor_name': 'Enter a name for the new floor.',
       'floor_name': 'Floor Name',
-      'floor_hint': 'e.g. Floor 5, Ground Floor',
+      'floor_hint': '',
       'ground_floor': 'Ground Floor',
       'floor_created_success': 'Floor created successfully!',
       'please_enter_floor_name': 'Please enter floor name',
@@ -209,7 +209,7 @@ class Messages extends Translations {
       'no_data': 'No data found',
       'retry': 'Retry',
       // Room Management
-      'search_rooms_hint': 'Search rooms...',
+      'search_rooms_hint': '',
       'vacant': 'Vacant',
       'occupied_status': 'Occupied',
       'no_rooms_yet': 'No rooms yet',
@@ -223,7 +223,7 @@ class Messages extends Translations {
       'auto_new_floor_info': 'ℹ️ This new floor will be automatically registered.',
       'rent_price_label': 'Rent Price (\$ / month)',
       'description_optional': 'Description (Optional)',
-      'description_hint': 'Describe the room features...',
+      'description_hint': '',
       'please_enter_room_num': 'Please enter room number',
       'mark_occupied': 'Mark as Occupied',
       'mark_available': 'Mark as Available',
@@ -237,12 +237,12 @@ class Messages extends Translations {
       'room_type_select': 'Room Type',
       'gender_preference_select': 'Gender Preference',
       'select_room_amenities': 'Room Amenities & Facilities',
-      'single_room_opt': 'Single Room (បន្ទប់ទោល)',
-      'double_room_opt': 'Double Room (បន្ទប់គូ)',
-      'shared_room_opt': 'Shared Room (បន្ទប់រួម)',
-      'gender_any': 'Any / Mixed (ទូទៅ)',
-      'gender_male': 'Male Only (បុរស)',
-      'gender_female': 'Female Only (ស្ត្រី)',
+      'single_room_opt': 'Single Room',
+      'double_room_opt': 'Double Room',
+      'shared_room_opt': 'Shared Room',
+      'gender_any': 'Any / Mixed',
+      'gender_male': 'Male Only',
+      'gender_female': 'Female Only',
 
       // Invoices
       'invoice_date': 'Issue Date',
@@ -302,7 +302,7 @@ class Messages extends Translations {
       'unlimited': 'Unlimited',
 
       // Property & Search & Details
-      'search_properties_hint': 'Search university, district, street...',
+      'search_properties_hint': '',
       'room_type': 'Room Type',
       'single_room': 'Single Room',
       'double_room': 'Double Room',
@@ -393,7 +393,7 @@ class Messages extends Translations {
 
       // Student Features
       'find_rooms': 'ស្វែងរកបន្ទប់ជួលដែលអ្នកពេញចិត្ត',
-      'search_hint': 'ស្វែងរកតាមសាកលវិទ្យាល័យ ផ្លូវ ឬតំបន់...',
+      'search_hint': '',
       'categories': 'ជម្រើសបន្ទប់',
       'verified_properties': 'ផ្ទះជួលមានការផ្ទៀងផ្ទាត់ត្រឹមត្រូវ',
       'near_university': 'នៅជិតសាកលវិទ្យាល័យ',
@@ -521,7 +521,7 @@ class Messages extends Translations {
       'add_new_floor': 'បន្ថែមជាន់ថ្មី',
       'enter_floor_name': 'បញ្ចូលឈ្មោះសម្រាប់ជាន់ថ្មី។',
       'floor_name': 'ឈ្មោះជាន់',
-      'floor_hint': 'ឧ. ជាន់ទី ៥, ជាន់ផ្ទាល់ដី',
+      'floor_hint': '',
       'ground_floor': 'ជាន់ផ្ទាល់ដី',
       'floor_created_success': 'បានបង្កើតជាន់ដោយជោគជ័យ!',
       'please_enter_floor_name': 'សូមបញ្ចូលឈ្មោះជាន់',
@@ -566,7 +566,7 @@ class Messages extends Translations {
       'welcome': 'សូមស្វាគមន៍',
 
       // Room Management
-      'search_rooms_hint': 'ស្វែងរកបន្ទប់...',
+      'search_rooms_hint': '',
       'vacant': 'ទំនេរ',
       'occupied_status': 'មានមនុស្ស',
       'no_rooms_yet': 'មិនទាន់មានបន្ទប់នៅឡើយទេ',
@@ -580,7 +580,7 @@ class Messages extends Translations {
       'auto_new_floor_info': 'ℹ️ ជាន់ថ្មីនេះនឹងត្រូវបានបង្កើតចូលក្នុងប្រព័ន្ធដោយស្វ័យប្រវត្តិ។',
       'rent_price_label': 'តម្លៃ (\$ / ខែ)',
       'description_optional': 'ការពិពណ៌នា (ស្រេចចិត្ត)',
-      'description_hint': 'ពិពណ៌នាអំពីបន្ទប់...',
+      'description_hint': '',
       'please_enter_room_num': 'សូមបញ្ចូលឈ្មោះបន្ទប់',
       'mark_occupied': 'ដាក់ជាមានមនុស្ស',
       'mark_available': 'ដាក់ជាទំនេរ',
@@ -594,12 +594,12 @@ class Messages extends Translations {
       'room_type_select': 'ប្រភេទបន្ទប់',
       'gender_preference_select': 'កំណត់ភេទ',
       'select_room_amenities': 'ឧបករណ៍ប្រើប្រាស់ក្នុងបន្ទប់',
-      'single_room_opt': 'បន្ទប់ទោល (Single)',
-      'double_room_opt': 'បន្ទប់គូ (Double)',
-      'shared_room_opt': 'បន្ទប់រួម (Shared)',
-      'gender_any': 'ទូទៅ (ប្រុស/ស្រី)',
-      'gender_male': 'សម្រាប់បុរស (Male)',
-      'gender_female': 'សម្រាប់ស្ត្រី (Female)',
+      'single_room_opt': 'បន្ទប់ទោល',
+      'double_room_opt': 'បន្ទប់គូ',
+      'shared_room_opt': 'បន្ទប់រួម',
+      'gender_any': 'ទូទៅ',
+      'gender_male': 'សម្រាប់បុរស',
+      'gender_female': 'សម្រាប់ស្ត្រី',
 
       // Invoices
       'invoice_date': 'កាលបរិច្ឆេទចេញ',
@@ -659,7 +659,7 @@ class Messages extends Translations {
       'unlimited': 'គ្មានដែនកំណត់',
 
       // Property & Search & Details
-      'search_properties_hint': 'ស្វែងរកឈ្មោះ សាកលវិទ្យាល័យ ខណ្ឌ...',
+      'search_properties_hint': '',
       'room_type': 'ប្រភេទបន្ទប់',
       'single_room': 'បន្ទប់ទោល',
       'double_room': 'បន្ទប់គូ',

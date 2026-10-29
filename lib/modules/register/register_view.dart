@@ -95,7 +95,6 @@ class RegisterView extends GetView<RegisterController> {
                       child: InputCustomWidget(
                         controller: controller.firstNameController,
                         label: 'first_name'.tr,
-                        hint: "Vathana",
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -103,7 +102,6 @@ class RegisterView extends GetView<RegisterController> {
                       child: InputCustomWidget(
                         controller: controller.lastNameController,
                         label: 'last_name'.tr,
-                        hint: "Chin",
                       ),
                     ),
                   ],
@@ -111,21 +109,18 @@ class RegisterView extends GetView<RegisterController> {
                 InputCustomWidget(
                   controller: controller.phoneController,
                   label: 'phone'.tr,
-                  hint: "012345678",
                   keyboardType: TextInputType.phone,
                   prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
                 ),
                 InputCustomWidget(
                   controller: controller.emailController,
                   label: LanguageService.isKhmer ? "អ៊ីមែល" : "Email Address",
-                  hint: "student@example.com",
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
                 ),
                 InputCustomWidget(
                   controller: controller.passwordController,
                   label: 'password'.tr,
-                  hint: LanguageService.isKhmer ? "យ៉ាងហោចណាស់ ៦ តួអក្សរ" : "At least 6 characters",
                   obscureText: controller.obscurePassword.value,
                   prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                   suffixIcon: IconButton(
@@ -139,7 +134,6 @@ class RegisterView extends GetView<RegisterController> {
                 InputCustomWidget(
                   controller: controller.confirmPasswordController,
                   label: 'confirm_password'.tr,
-                  hint: LanguageService.isKhmer ? "បញ្ចូលពាក្យសម្ងាត់ម្តងទៀត" : "Re-enter password",
                   obscureText: controller.obscurePassword.value,
                   prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                 ),

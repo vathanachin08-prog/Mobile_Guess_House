@@ -44,8 +44,6 @@ class InputCustomWidget extends StatelessWidget {
             obscureText: obscureText,
             keyboardType: keyboardType,
             decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
               prefixIcon: prefixIcon,
               suffixIcon: suffixIcon,
               filled: true,

@@ -64,8 +64,6 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
             TextField(
               controller: floorNameCtrl,
               decoration: InputDecoration(
-                hintText: 'floor_hint'.tr,
-                hintStyle: const TextStyle(fontSize: 12),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -146,8 +144,6 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                 controller: searchController,
                 onChanged: (val) => controller.searchQuery.value = val.trim(),
                 decoration: InputDecoration(
-                  hintText: "${'search'.tr}...",
-                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                   filled: true,
                   fillColor: AppColors.background,

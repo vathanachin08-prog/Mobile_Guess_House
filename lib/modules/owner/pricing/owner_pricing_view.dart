@@ -225,7 +225,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Base room price
                       _buildInputField(
                         label: 'base_rent_label'.tr,
-                        hint: "120.00",
                         controller: _rentPriceController,
                         prefixIcon: Icons.home_outlined,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -235,7 +234,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Electricity
                       _buildInputField(
                         label: 'electricity_rate_label'.tr,
-                        hint: "1000",
                         controller: _electricityController,
                         prefixIcon: Icons.bolt,
                         keyboardType: TextInputType.number,
@@ -245,7 +243,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Water
                       _buildInputField(
                         label: 'water_rate_label'.tr,
-                        hint: "1500",
                         controller: _waterController,
                         prefixIcon: Icons.water_drop_outlined,
                         keyboardType: TextInputType.number,
@@ -255,7 +252,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Garbage
                       _buildInputField(
                         label: 'garbage_rate_label'.tr,
-                        hint: "2.00",
                         controller: _garbageController,
                         prefixIcon: Icons.delete_outline,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -309,8 +305,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                             keyboardType: TextInputType.number,
                             style: const TextStyle(fontSize: 14),
                             decoration: InputDecoration(
-                              hintText: "5000",
-                              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                               prefixIcon: const Icon(Icons.currency_exchange, color: AppColors.primary, size: 18),
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.refresh, size: 18, color: AppColors.primary),
@@ -397,7 +391,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Account Name
                       _buildInputField(
                         label: 'account_name_label'.tr,
-                        hint: "e.g. CHIN VATHANA",
                         controller: _accountNameController,
                         prefixIcon: Icons.badge_outlined,
                       ),
@@ -406,7 +399,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
                       // Account Number / Bakong ID
                       _buildInputField(
                         label: 'account_number_label'.tr,
-                        hint: "e.g. 098765432@aba",
                         controller: _accountNumberController,
                         prefixIcon: Icons.account_balance_wallet_outlined,
                       ),
@@ -490,7 +482,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
 
   Widget _buildInputField({
     required String label,
-    required String hint,
     required TextEditingController controller,
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
@@ -508,8 +499,6 @@ class _OwnerPricingViewState extends State<OwnerPricingView> {
           keyboardType: keyboardType,
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             prefixIcon: Icon(prefixIcon, color: AppColors.primary, size: 18),
             filled: true,
             fillColor: AppColors.background,

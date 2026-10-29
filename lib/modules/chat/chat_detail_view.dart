@@ -506,12 +506,10 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                               minLines: 1,
                               textInputAction: TextInputAction.send,
                               onSubmitted: (_) => _sendMessage(),
-                              decoration: InputDecoration(
-                                hintText: LanguageService.isKhmer ? "សរសេរសារនៅទីនេះ..." : "Type a message...",
-                                hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(vertical: 10),
                               ),
                             ),
                           ),

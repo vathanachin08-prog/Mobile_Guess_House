@@ -35,6 +35,23 @@ class OwnerRoomsController extends GetxController {
   final selectedFilter = "ALL".obs; // ALL, AVAILABLE, OCCUPIED
   final searchQuery = "".obs;
   final isLoading = false.obs;
+  final visibleLimit = 5.obs;
+  final isLoadingMore = false.obs;
+
+  void loadMore() {
+    final total = filteredRooms.length;
+    if (visibleLimit.value < total && !isLoadingMore.value) {
+      isLoadingMore.value = true;
+      Future.delayed(const Duration(milliseconds: 300), () {
+        visibleLimit.value = (visibleLimit.value + 5).clamp(0, total);
+        isLoadingMore.value = false;
+      });
+    }
+  }
+
+  void resetPagination() {
+    visibleLimit.value = 5;
+  }
 
   String get currentPlan {
     if (Get.isRegistered<OwnerProfileController>()) {
@@ -418,6 +435,39 @@ class OwnerRoomsController extends GetxController {
 
       if (Get.isRegistered<OwnerFloorsController>()) {
         Get.find<OwnerFloorsController>().loadFloors();
+      }
+    }
+  }
+
+  Future<void> setRoomAvailability(String roomNumber, bool isAvailable) async {
+    final cleanRoom = roomNumber.trim().toLowerCase();
+    final idx = rooms.indexWhere((r) => (r.roomNumber ?? '').trim().toLowerCase() == cleanRoom);
+    if (idx != -1) {
+      final room = rooms[idx];
+      if (room.available != isAvailable) {
+        rooms[idx] = RoomModel(
+          id: room.id,
+          propertyId: room.propertyId,
+          propertyName: room.propertyName,
+          roomNumber: room.roomNumber,
+          title: room.title,
+          floor: room.floor,
+          price: room.price,
+          area: room.area,
+          roomType: room.roomType,
+          genderPreference: room.genderPreference,
+          available: isAvailable,
+          description: room.description,
+          images: room.images,
+          facilities: room.facilities,
+          createdAt: room.createdAt,
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+        _saveRooms();
+        syncToDashboard();
+        if (Get.isRegistered<OwnerFloorsController>()) {
+          Get.find<OwnerFloorsController>().loadFloors();
+        }
       }
     }
   }

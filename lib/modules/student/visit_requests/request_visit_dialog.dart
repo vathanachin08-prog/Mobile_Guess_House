@@ -230,7 +230,6 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
               controller: phoneController,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                hintText: "012345678",
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -245,8 +244,6 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
               controller: noteController,
               maxLines: 2,
               decoration: InputDecoration(
-                hintText: "...",
-                hintStyle: const TextStyle(fontSize: 12),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),

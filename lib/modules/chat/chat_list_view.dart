@@ -106,10 +106,6 @@ class _ChatListViewState extends State<ChatListView> {
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val.trim()),
                     decoration: InputDecoration(
-                      hintText: isOwner
-                          ? (LanguageService.isKhmer ? "ស្វែងរកឈ្មោះសិស្ស ឬអចលនទ្រព្យ..." : "Search student or property...")
-                          : (LanguageService.isKhmer ? "ស្វែងរកឈ្មោះម្ចាស់ផ្ទះ ឬអចលនទ្រព្យ..." : "Search owner or property..."),
-                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(

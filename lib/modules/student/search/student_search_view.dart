@@ -50,8 +50,6 @@ class StudentSearchView extends GetView<StudentSearchController> {
                       controller: controller.searchController,
                       onSubmitted: (_) => controller.search(),
                       decoration: InputDecoration(
-                        hintText: 'search_properties_hint'.tr,
-                        hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                         prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.clear, size: 18, color: AppColors.textSecondary),

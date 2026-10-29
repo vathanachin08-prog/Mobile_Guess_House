@@ -522,8 +522,6 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                   TextField(
                     controller: nameCtrl,
                     decoration: InputDecoration(
-                      hintText: LanguageService.isKhmer ? "ខ. បន្ទប់ ១០១ ឬ 00006" : "e.g. Room 101 or 00006",
-                      hintStyle: const TextStyle(fontSize: 12),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -581,10 +579,6 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                     TextField(
                       controller: floorNameCtrl,
                       decoration: InputDecoration(
-                        hintText: LanguageService.isKhmer
-                            ? (availableFloors.isEmpty ? "ឧ. ជាន់ទី ១ ឬ ជាន់ផ្ទាល់ដី" : "ឧ. ជាន់ទី ${availableFloors.length + 1}")
-                            : (availableFloors.isEmpty ? "e.g. Floor 1 or Ground Floor" : "e.g. Floor ${availableFloors.length + 1}"),
-                        hintStyle: const TextStyle(fontSize: 12),
                         prefixIcon: const Icon(Icons.layers_outlined, size: 20, color: AppColors.primary),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -612,7 +606,6 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                               controller: priceCtrl,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: "50",
                                 prefixText: "\$ ",
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -633,7 +626,6 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                               controller: areaCtrl,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               decoration: InputDecoration(
-                                hintText: "18",
                                 suffixText: "m²",
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -790,8 +782,6 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                     controller: descCtrl,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      hintText: 'description_hint'.tr,
-                      hintStyle: const TextStyle(fontSize: 12),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -993,10 +983,11 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
               child: Column(
                 children: [
                   TextField(
-                    onChanged: (v) => controller.searchQuery.value = v,
+                    onChanged: (v) {
+                      controller.searchQuery.value = v;
+                      controller.resetPagination();
+                    },
                     decoration: InputDecoration(
-                      hintText: 'search_rooms_hint'.tr,
-                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                       prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                       filled: true,
                       fillColor: AppColors.background,
@@ -1036,8 +1027,8 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
             // Room List
             Expanded(
               child: Obx(() {
-                final list = controller.filteredRooms;
-                if (list.isEmpty) {
+                final allRooms = controller.filteredRooms;
+                if (allRooms.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
@@ -1062,13 +1053,90 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
-                  itemBuilder: (ctx, i) {
-                    final room = list[i];
-                    final isAvail = room.available ?? true;
-                    return Container(
+                final limit = controller.visibleLimit.value;
+                final displayedRooms = allRooms.take(limit).toList();
+                final hasMore = limit < allRooms.length;
+                final loading = controller.isLoadingMore.value;
+                final extraCount = (hasMore || allRooms.length > 5) ? 1 : 0;
+
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (scrollInfo) {
+                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 60) {
+                      controller.loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: displayedRooms.length + extraCount,
+                    itemBuilder: (ctx, i) {
+                      if (i == displayedRooms.length) {
+                        if (hasMore) {
+                          return loading
+                              ? Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          LanguageService.isKhmer ? "កំពុងទាញយកទិន្នន័យ ៥ ទៀត..." : "Loading 5 more...",
+                                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : InkWell(
+                                  onTap: controller.loadMore,
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(top: 4, bottom: 16),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.border),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.primary),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          LanguageService.isKhmer
+                                              ? "បង្ហាញ ៥ ទៀត • នៅសល់ ${allRooms.length - displayedRooms.length}"
+                                              : "Show 5 More • ${allRooms.length - displayedRooms.length} remaining",
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                        } else {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: Text(
+                                LanguageService.isKhmer
+                                    ? "បានបង្ហាញបន្ទប់ទាំងអស់ហើយ • សរុប ${allRooms.length}"
+                                    : "All rooms loaded • ${allRooms.length} total",
+                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+
+                      final room = displayedRooms[i];
+                      final isAvail = room.available ?? true;
+                      return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
@@ -1217,9 +1285,10 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       ),
                     );
                   },
-                );
-              }),
-            ),
+                ),
+              );
+            }),
+          ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -1358,7 +1427,10 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
     return Obx(() {
       final isSelected = controller.selectedFilter.value == code;
       return InkWell(
-        onTap: () => controller.selectedFilter.value = code,
+        onTap: () {
+          controller.selectedFilter.value = code;
+          controller.resetPagination();
+        },
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

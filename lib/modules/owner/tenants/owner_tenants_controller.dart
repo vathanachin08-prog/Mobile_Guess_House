@@ -5,6 +5,7 @@ import '../../../core/services/api_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../owner_main_controller.dart';
 import '../dashboard/owner_dashboard_controller.dart';
+import '../rooms/owner_rooms_controller.dart';
 
 class OwnerTenantsController extends GetxController {
   final ApiService? apiService;
@@ -147,6 +148,29 @@ class OwnerTenantsController extends GetxController {
       );
       _save();
     }
+  }
+
+  bool isRoomOccupied(String roomNumber, {int? excludeTenantId}) {
+    final cleanRoom = roomNumber.trim().toLowerCase();
+    if (cleanRoom.isEmpty) return false;
+
+    // 1. Check if another tenant already occupies this room
+    final hasTenant = tenants.any((t) =>
+        t.id != excludeTenantId &&
+        (t.roomNumber ?? '').trim().toLowerCase() == cleanRoom);
+    if (hasTenant) return true;
+
+    // 2. Check if marked unavailable in OwnerRoomsController
+    if (Get.isRegistered<OwnerRoomsController>()) {
+      final roomsCtrl = Get.find<OwnerRoomsController>();
+      final matchingRoom = roomsCtrl.rooms.firstWhereOrNull(
+          (r) => (r.roomNumber ?? '').trim().toLowerCase() == cleanRoom);
+      if (matchingRoom != null && (matchingRoom.available == false)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   void removeTenant(int? id) {

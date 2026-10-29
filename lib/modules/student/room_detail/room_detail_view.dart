@@ -347,8 +347,6 @@ class _RoomDetailViewState extends State<RoomDetailView> {
               autofocus: true,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                hintText: "https://example.com/room-photo.jpg",
-                hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 prefixIcon: const Icon(Icons.image_outlined, size: 20, color: AppColors.primary),

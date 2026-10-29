@@ -822,7 +822,6 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 controller: commentCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: LanguageService.isKhmer ? "មតិយោបល់របស់អ្នកអំពីបន្ទប់នេះ..." : "Your review about this property...",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),

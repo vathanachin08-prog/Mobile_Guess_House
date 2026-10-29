@@ -657,7 +657,6 @@ class OwnerAppBarHelper {
                   enabled: !isSaving,
                   decoration: InputDecoration(
                     labelText: 'property_name_label'.tr,
-                    hintText: LanguageService.isKhmer ? "ឧ. Rose Garden Apartment" : "e.g. Rose Garden Apartment",
                     prefixIcon: const Icon(Icons.apartment_rounded, color: AppColors.primary, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -671,7 +670,6 @@ class OwnerAppBarHelper {
                   enabled: !isSaving,
                   decoration: InputDecoration(
                     labelText: 'property_address_label'.tr,
-                    hintText: LanguageService.isKhmer ? "ឧ. ខណ្ឌដូនពេញ រាជធានីភ្នំពេញ" : "e.g. Khan Daun Penh, Phnom Penh",
                     prefixIcon: const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

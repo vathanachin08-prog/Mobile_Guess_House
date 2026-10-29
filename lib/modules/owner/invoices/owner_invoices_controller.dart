@@ -1,7 +1,10 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../models/rental/invoice_model.dart';
+import '../../../models/rental/tenant_model.dart';
+import '../../../models/rental/room_model.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../owner_main_controller.dart';
 import '../dashboard/owner_dashboard_controller.dart';
@@ -153,6 +156,131 @@ class OwnerInvoicesController extends GetxController {
       );
       _save();
     }
+  }
+
+  static String formatIssueDate([DateTime? date]) {
+    final d = date ?? DateTime.now();
+    if (LanguageService.isKhmer) {
+      final khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+      return "${d.day} ${khmerMonths[d.month - 1]} ${d.year}";
+    }
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return "${months[d.month - 1]} ${d.day}, ${d.year}";
+  }
+
+  static String formatDueDate([DateTime? date, int daysLater = 7]) {
+    final d = date != null ? date.add(Duration(days: daysLater)) : DateTime.now().add(Duration(days: daysLater));
+    if (LanguageService.isKhmer) {
+      final khmerMonths = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];
+      return "${d.day} ${khmerMonths[d.month - 1]} ${d.year}";
+    }
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return "${months[d.month - 1]} ${d.day}, ${d.year}";
+  }
+
+  InvoiceModel generateMoveInInvoice({
+    required TenantModel tenant,
+    required double rentAmount,
+    String? propertyName,
+  }) {
+    final now = DateTime.now();
+    final cleanRoom = (tenant.roomNumber ?? 'Room').replaceAll(' ', '');
+    final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
+    final effectivePropName = propertyName ??
+        (Get.isRegistered<OwnerMainController>()
+            ? Get.find<OwnerMainController>().selectedPropertyName.value
+            : "My Property");
+
+    final newInv = InvoiceModel(
+      id: DateTime.now().millisecondsSinceEpoch,
+      invoiceNo: invNo,
+      propertyName: effectivePropName,
+      tenantName: tenant.name ?? "Tenant",
+      roomNumber: tenant.roomNumber ?? "",
+      floor: tenant.floor ?? "Ground Floor",
+      issueDate: formatIssueDate(now),
+      dueDate: formatDueDate(now, 7),
+      rentAmount: rentAmount,
+      electricityUnits: 0.0,
+      electricityRate: 0.25,
+      waterUnits: 0.0,
+      waterRate: 0.35,
+      garbageFee: 2.0,
+      totalAmount: rentAmount + 2.0,
+      status: "UNPAID",
+    );
+
+    createInvoice(newInv);
+    return newInv;
+  }
+
+  int generateMonthlyInvoices({
+    required List<TenantModel> activeTenants,
+    required List<RoomModel> allRooms,
+    String? propertyName,
+    DateTime? monthTarget,
+    int dueDaysLater = 7,
+  }) {
+    final now = monthTarget ?? DateTime.now();
+    final monthStr = now.month.toString().padLeft(2, '0');
+    final yearStr = now.year.toString();
+    final effectivePropName = propertyName ??
+        (Get.isRegistered<OwnerMainController>()
+            ? Get.find<OwnerMainController>().selectedPropertyName.value
+            : "My Property");
+
+    int createdCount = 0;
+
+    for (final tenant in activeTenants) {
+      final tName = (tenant.name ?? '').trim();
+      final rNum = (tenant.roomNumber ?? '').trim();
+      if (tName.isEmpty || rNum.isEmpty) continue;
+
+      // Check if already invoiced in this month for this room
+      final alreadyInvoiced = invoices.any((inv) {
+        final sameRoom = (inv.roomNumber ?? '').trim().toLowerCase() == rNum.toLowerCase();
+        final sameTenant = (inv.tenantName ?? '').trim().toLowerCase() == tName.toLowerCase();
+        final invNo = inv.invoiceNo ?? '';
+        final sameMonthYear = invNo.contains("INV-$yearStr$monthStr");
+        return sameRoom && sameTenant && sameMonthYear;
+      });
+
+      if (alreadyInvoiced) continue;
+
+      final matchingRoom = allRooms.firstWhereOrNull(
+          (r) => (r.roomNumber ?? '').trim().toLowerCase() == rNum.toLowerCase());
+      final rent = matchingRoom?.price ?? 50.0;
+      final garbage = 2.0;
+      final total = rent + garbage;
+
+      final inv = InvoiceModel(
+        id: DateTime.now().millisecondsSinceEpoch + createdCount,
+        invoiceNo: "INV-$yearStr$monthStr-${rNum.replaceAll(' ', '')}",
+        propertyName: effectivePropName,
+        tenantName: tName,
+        roomNumber: rNum,
+        floor: tenant.floor ?? (matchingRoom?.floor != null ? "ជាន់ទី ${matchingRoom!.floor}" : "ជាន់ផ្ទាល់ដី"),
+        issueDate: formatIssueDate(now),
+        dueDate: formatDueDate(now, dueDaysLater),
+        rentAmount: rent,
+        electricityUnits: 0.0,
+        electricityRate: 0.25,
+        waterUnits: 0.0,
+        waterRate: 0.35,
+        garbageFee: garbage,
+        totalAmount: total,
+        status: "UNPAID",
+      );
+
+      invoices.insert(0, inv);
+      createdCount++;
+    }
+
+    if (createdCount > 0) {
+      _save();
+    }
+
+    return createdCount;
   }
 
   void createInvoice(InvoiceModel inv) {

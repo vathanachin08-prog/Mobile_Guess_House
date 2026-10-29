@@ -27,11 +27,57 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   final PageController _promoPageController = PageController();
   final ValueNotifier<int> _activePromoNotifier = ValueNotifier<int>(0);
   Timer? _promoAutoSlideTimer;
+  bool _isInvoiceBannerVisible = false;
+  Timer? _invoiceBannerShowTimer;
+  Timer? _invoiceBannerHideTimer;
+  Worker? _tabWorker;
 
   @override
   void initState() {
     super.initState();
     _startPromoAutoSlide();
+    _startInvoiceBannerSchedule();
+
+    if (Get.isRegistered<OwnerMainController>()) {
+      _tabWorker = ever(Get.find<OwnerMainController>().currentIndex, (int index) {
+        if (index == 0) {
+          _startInvoiceBannerSchedule();
+        } else {
+          _invoiceBannerShowTimer?.cancel();
+          _invoiceBannerHideTimer?.cancel();
+          if (mounted && _isInvoiceBannerVisible) {
+            setState(() {
+              _isInvoiceBannerVisible = false;
+            });
+          }
+        }
+      });
+    }
+  }
+
+  void _startInvoiceBannerSchedule() {
+    _invoiceBannerShowTimer?.cancel();
+    _invoiceBannerHideTimer?.cancel();
+    if (mounted && _isInvoiceBannerVisible) {
+      setState(() {
+        _isInvoiceBannerVisible = false;
+      });
+    }
+
+    // Wait 5 seconds, then show for 10 seconds, then close it
+    _invoiceBannerShowTimer = Timer(const Duration(seconds: 5), () {
+      if (!mounted) return;
+      setState(() {
+        _isInvoiceBannerVisible = true;
+      });
+
+      _invoiceBannerHideTimer = Timer(const Duration(seconds: 10), () {
+        if (!mounted) return;
+        setState(() {
+          _isInvoiceBannerVisible = false;
+        });
+      });
+    });
   }
 
   void _startPromoAutoSlide() {
@@ -49,6 +95,9 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
 
   @override
   void dispose() {
+    _tabWorker?.dispose();
+    _invoiceBannerShowTimer?.cancel();
+    _invoiceBannerHideTimer?.cancel();
     _promoAutoSlideTimer?.cancel();
     _promoPageController.dispose();
     _activePromoNotifier.dispose();
@@ -390,7 +439,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     final hasPending = controller.pendingVisitRequestsCount.value > 0;
 
     // Only show alert banner if there is a real action required (unpaid bill or pending visit)
-    // Avoid layout shifts or pop-ins when in good standing
     if (!hasUnpaid && !hasPending) {
       return const SizedBox.shrink();
     }
@@ -417,75 +465,85 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
       onTap = () => Get.toNamed(AppRouteName.ownerVisitRequests);
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF9500), Color(0xFFFF5E00)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF5E00).withValues(alpha: 0.28),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        height: 1.2,
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+      child: _isInvoiceBannerVisible
+          ? AnimatedOpacity(
+              opacity: _isInvoiceBannerVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 400),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: GestureDetector(
+                  onTap: onTap,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF9500), Color(0xFFFF5E00)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF5E00).withValues(alpha: 0.28),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  height: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 22),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 22),
-            ],
-          ),
-        ),
-      ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 
@@ -1021,9 +1079,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.receipt_long_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "វិក្កយបត្រ" : "Invoices",
-          subtitle: unpaid > 0 ? "$unpaid មិនទាន់បង់" : "ទូទាត់",
-          badgeCount: unpaid > 0 ? unpaid : null,
-          badgeColor: AppColors.accentOrange,
+          subtitle: LanguageService.isKhmer ? "ទូទាត់" : "Payments",
           onTap: () => Get.find<OwnerMainController>().changeTab(4),
         ),
 

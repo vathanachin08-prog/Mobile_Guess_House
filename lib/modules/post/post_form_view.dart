@@ -25,10 +25,10 @@ class PostFormView extends GetView<PostFormController> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             InputCustomWidget(
-              hint: "Title",
+              label: "Title",
             ),
             InputCustomWidget(
-              hint: "Description",
+              label: "Description",
             ),
             ButtonCustomWidget(
               title: "Create",
