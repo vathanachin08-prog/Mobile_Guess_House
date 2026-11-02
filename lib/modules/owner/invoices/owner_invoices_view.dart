@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/services/language_service.dart';
 import '../../../core/services/url_service.dart';
@@ -6,6 +7,7 @@ import '../../../models/rental/invoice_model.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../widgets/animated_widgets.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../tenants/owner_tenants_controller.dart';
@@ -32,6 +34,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
     controller = Get.isRegistered<OwnerInvoicesController>()
         ? Get.find<OwnerInvoicesController>()
         : Get.put(OwnerInvoicesController());
+    controller.loadInvoices();
   }
 
   void _loadMore() {
@@ -49,71 +52,452 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
     _visibleLimit.value = 5;
   }
 
-  void _confirmDeleteInvoice(InvoiceModel inv, {VoidCallback? onDeleted}) {
-    showDialog(
+  String? _findTenantPhone(InvoiceModel inv) {
+    if (Get.isRegistered<OwnerTenantsController>()) {
+      final tenants = Get.find<OwnerTenantsController>().tenants;
+      final match = tenants.firstWhereOrNull((t) {
+        final sameName = (t.name ?? '').trim().toLowerCase() == (inv.tenantName ?? '').trim().toLowerCase();
+        final sameRoom = (t.roomNumber ?? '').trim().toLowerCase() == (inv.roomNumber ?? '').trim().toLowerCase();
+        return sameName || sameRoom;
+      });
+      return match?.phoneNumber;
+    }
+    return null;
+  }
+
+  void _showAlertTenantDialog(InvoiceModel inv) {
+    final isKh = LanguageService.isKhmer;
+    final phone = _findTenantPhone(inv);
+    final tenantName = inv.tenantName ?? "Tenant";
+    final roomNumber = inv.roomNumber ?? "";
+    final amountStr = "\$${inv.totalAmount?.toStringAsFixed(2) ?? '0.00'}";
+    final dueDateStr = inv.dueDate ?? '';
+    final invoiceNo = inv.invoiceNo ?? 'INV';
+
+    final reminderText = isKh
+        ? "🔔 ការរំលឹកបង់ថ្លៃបន្ទប់ - RoomFinder KH\n\n"
+            "អ្នកជួល៖ $tenantName\n"
+            "បន្ទប់៖ $roomNumber\n"
+            "លេខវិក្កយបត្រ៖ $invoiceNo\n"
+            "ទឹកប្រាក់ត្រូវបង់៖ $amountStr\n"
+            "${dueDateStr.isNotEmpty ? 'កាលបរិច្ឆេទកំណត់៖ $dueDateStr\n' : ''}"
+            "ស្ថានភាព៖ មិនទាន់បង់ប្រាក់\n\n"
+            "សូមមេត្តាពិនិត្យ និងទូទាត់ប្រាក់ឱ្យបានទាន់ពេលវេលា។ សូមអរគុណ!"
+        : "🔔 Rent Payment Alert - RoomFinder KH\n\n"
+            "Tenant: $tenantName\n"
+            "Room: $roomNumber\n"
+            "Invoice: $invoiceNo\n"
+            "Total Due: $amountStr\n"
+            "${dueDateStr.isNotEmpty ? 'Due Date: $dueDateStr\n' : ''}"
+            "Status: UNPAID\n\n"
+            "Please complete payment on time. Thank you!";
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentOrange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.accentOrange, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'alert_tenant'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                        ),
+                        Text(
+                          isKh
+                              ? "ផ្ញើសាររំលឹកបង់ប្រាក់ទៅកាន់អ្នកជួលតាមជម្រើសខាងក្រោម"
+                              : "Send payment reminder to tenant through:",
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textSecondary),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Summary Card
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.primarySoft,
+                      child: Text(
+                        tenantName.isNotEmpty ? tenantName.substring(0, 1) : "T",
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(tenantName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text(
+                            "${'room_label_prefix'.tr} $roomNumber • $invoiceNo${phone != null && phone.isNotEmpty ? ' • $phone' : ''}",
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      amountStr,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.accentOrange),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Channel 1: In-App Notification (Instant)
+              _buildAlertOptionItem(
+                icon: Icons.notifications_rounded,
+                iconColor: AppColors.primary,
+                bgColor: AppColors.primarySoft,
+                title: 'send_in_app_alert'.tr,
+                subtitle: isKh
+                    ? "ផ្ញើការជូនដំណឹងទៅក្នុងកណ្តឹង App របស់អ្នកជួលភ្លាមៗ"
+                    : "Push instant alert to tenant's in-app notification center",
+                badgeText: isKh ? "រហ័ស" : "Fast",
+                onTap: () {
+                  controller.alertTenantForInvoice(inv);
+                  Navigator.pop(ctx);
+                  Get.snackbar(
+                    'notifications'.tr,
+                    'alert_sent_success'.trParams({'name': tenantName}),
+                    backgroundColor: Colors.white,
+                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                    margin: const EdgeInsets.all(16),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 8),
+
+              // Channel 2: Telegram Reminder
+              _buildAlertOptionItem(
+                icon: Icons.send_rounded,
+                iconColor: AppColors.accentBlue,
+                bgColor: AppColors.accentBlue.withValues(alpha: 0.12),
+                title: 'send_telegram_alert'.tr,
+                subtitle: isKh
+                    ? "ផ្ញើសាររំលឹកបង់ប្រាក់លម្អិតតាម Telegram"
+                    : "Send rich payment reminder via Telegram",
+                badgeText: "Telegram",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  UrlService.sendInvoiceToTelegram(
+                    tenantName: tenantName,
+                    roomNumber: roomNumber,
+                    totalAmount: inv.totalAmount ?? 0.0,
+                    invoiceNo: inv.invoiceNo,
+                    dueDate: inv.dueDate,
+                  );
+                },
+              ),
+
+              const SizedBox(height: 8),
+
+              // Channel 3: SMS Reminder
+              _buildAlertOptionItem(
+                icon: Icons.sms_outlined,
+                iconColor: Colors.deepPurple,
+                bgColor: Colors.deepPurple.withValues(alpha: 0.12),
+                title: 'send_sms_alert'.tr,
+                subtitle: phone != null && phone.isNotEmpty
+                    ? (isKh ? "ផ្ញើសារ SMS ទៅកាន់លេខ $phone" : "Send SMS text to $phone")
+                    : (isKh ? "ផ្ញើសារ SMS ទៅលេខទូរស័ព្ទរបស់អ្នកជួល" : "Send SMS to tenant's phone"),
+                badgeText: "SMS",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (phone != null && phone.isNotEmpty) {
+                    UrlService.sendSms(phoneNumber: phone, message: reminderText);
+                  } else {
+                    Clipboard.setData(ClipboardData(text: reminderText));
+                    Get.snackbar(
+                      'send_sms_alert'.tr,
+                      isKh
+                          ? "មិនទាន់មានលេខទូរស័ព្ទអ្នកជួលទេ អត្ថបទរំលឹកត្រូវបានចម្លងទុក"
+                          : "Tenant has no phone registered. Message copied to clipboard.",
+                      backgroundColor: Colors.white,
+                      margin: const EdgeInsets.all(16),
+                    );
+                  }
+                },
+              ),
+
+              const SizedBox(height: 8),
+
+              // Channel 4: Copy Message
+              _buildAlertOptionItem(
+                icon: Icons.copy_rounded,
+                iconColor: AppColors.textPrimary,
+                bgColor: AppColors.border.withValues(alpha: 0.5),
+                title: 'copy_reminder_msg'.tr,
+                subtitle: isKh
+                    ? "ចម្លងសាររំលឹកដើម្បីផ្ញើតាម Messenger ឬបណ្ដាញផ្សេងទៀត"
+                    : "Copy formatted text to share via Messenger or other apps",
+                badgeText: null,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Clipboard.setData(ClipboardData(text: reminderText));
+                  Get.snackbar(
+                    'copy_reminder_msg'.tr,
+                    'msg_copied'.tr,
+                    backgroundColor: Colors.white,
+                    icon: const Icon(Icons.check_circle_outline, color: AppColors.primary),
+                    margin: const EdgeInsets.all(16),
+                  );
+                },
+              ),
+
+              if (phone != null && phone.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                // Channel 5: Direct Phone Call
+                _buildAlertOptionItem(
+                  icon: Icons.phone_in_talk_rounded,
+                  iconColor: AppColors.primary,
+                  bgColor: AppColors.primarySoft,
+                  title: "${'call_tenant'.tr}: $phone",
+                  subtitle: isKh ? "ចុចដើម្បីខលទូរស័ព្ទទៅកាន់អ្នកជួលផ្ទាល់" : "Tap to place a direct phone call",
+                  badgeText: isKh ? "ខល" : "Call",
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    UrlService.makePhoneCall(phone);
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlertOptionItem({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    String? badgeText,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: bgColor,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                LanguageService.isKhmer ? "លុបវិក្កយបត្រ" : "Delete Invoice",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                      if (badgeText != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: iconColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: iconColor),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                ],
               ),
             ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
           ],
         ),
-        content: Text(
-          LanguageService.isKhmer
-              ? "តើអ្នកពិតជាចង់លុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
-              : "Are you sure you want to delete invoice ${inv.invoiceNo ?? ''}? This action cannot be undone.",
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      ),
+    );
+  }
+
+  Widget _buildBatchAlertBanner() {
+    final count = controller.unpaidCount;
+    final isKh = LanguageService.isKhmer;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.accentOrange.withValues(alpha: 0.12),
+            AppColors.accentOrangeLight.withValues(alpha: 0.4),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'cancel'.tr,
-              style: const TextStyle(color: AppColors.textSecondary),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.accentOrange.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.accentOrange.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.notifications_active_rounded, color: AppColors.accentOrange, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isKh
+                      ? "រំលឹកអ្នកជួលមិនទាន់បង់ប្រាក់ ($count)"
+                      : "Alert Unpaid Tenants ($count)",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.accentOrange),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isKh
+                      ? "ផ្ញើសាររំលឹកបង់ប្រាក់ទៅកាន់អ្នកជួលមិនទាន់បង់ទាំងអស់"
+                      : "Send payment reminders to all unpaid tenants",
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              controller.deleteInvoice(inv.id);
-              Navigator.pop(ctx);
-              onDeleted?.call();
-              Get.snackbar(
-                'delete'.tr,
-                LanguageService.isKhmer
-                    ? "បានលុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} ដោយជោគជ័យ"
-                    : "Invoice ${inv.invoiceNo ?? ''} deleted successfully",
-                backgroundColor: Colors.white,
-                margin: const EdgeInsets.all(16),
-                icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _confirmBatchAlertAllUnpaid,
+            icon: const Icon(Icons.send_rounded, size: 13),
+            label: Text(
+              isKh ? "រំលឹកទាំងអស់" : "Alert All",
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
             ),
-            child: Text(
-              LanguageService.isKhmer ? "លុប" : "Delete",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentOrange,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _confirmBatchAlertAllUnpaid() {
+    final count = controller.unpaidCount;
+    if (count == 0) return;
+
+    AppCleanDialog.showConfirmation(
+      context: context,
+      title: 'alert_all_tenants_title'.tr,
+      message: 'alert_all_confirm_msg'.trParams({'count': count.toString()}),
+      confirmText: LanguageService.isKhmer ? "ផ្ញើរំលឹក" : "Send Alerts",
+      confirmColor: AppColors.accentOrange,
+      onConfirm: () {
+        final alertedCount = controller.alertAllUnpaidTenants();
+        Get.snackbar(
+          'notifications'.tr,
+          'alert_all_sent_success'.trParams({'count': alertedCount.toString()}),
+          backgroundColor: Colors.white,
+          icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+          margin: const EdgeInsets.all(16),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteInvoice(InvoiceModel inv, {VoidCallback? onDeleted}) {
+    AppCleanDialog.showConfirmation(
+      context: context,
+      title: LanguageService.isKhmer ? "លុបវិក្កយបត្រ" : "Delete Invoice",
+      message: LanguageService.isKhmer
+          ? "តើអ្នកពិតជាចង់លុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
+          : "Are you sure you want to delete invoice ${inv.invoiceNo ?? ''}? This action cannot be undone.",
+      confirmText: LanguageService.isKhmer ? "លុប" : "Delete",
+      confirmColor: AppColors.danger,
+      onConfirm: () {
+        controller.deleteInvoice(inv.id);
+        onDeleted?.call();
+        Get.snackbar(
+          'delete'.tr,
+          LanguageService.isKhmer
+              ? "បានលុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} ដោយជោគជ័យ"
+              : "Invoice ${inv.invoiceNo ?? ''} deleted successfully",
+          backgroundColor: Colors.white,
+          margin: const EdgeInsets.all(16),
+          icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger),
+        );
+      },
     );
   }
 
@@ -273,6 +657,28 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                 ),
               ),
 
+              if (!inv.isPaid) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showAlertTenantDialog(inv);
+                    },
+                    icon: const Icon(Icons.notifications_active_rounded, size: 18, color: Colors.white),
+                    label: Text('alert_tenant'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentOrange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
 
               // Action buttons
@@ -286,6 +692,8 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                           tenantName: inv.tenantName ?? '',
                           roomNumber: inv.roomNumber ?? '',
                           totalAmount: inv.totalAmount ?? 0.0,
+                          invoiceNo: inv.invoiceNo,
+                          dueDate: inv.dueDate,
                         );
                         Get.snackbar("Telegram", 'telegram_sent_msg'.tr, backgroundColor: Colors.white);
                       },
@@ -709,198 +1117,173 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
+          return AppCleanDialog(
+            title: LanguageService.isKhmer ? "បង្កើតវិក្កយបត្រថ្មី" : "Create New Invoice",
+            subtitle: LanguageService.isKhmer ? "បញ្ចូលព័ត៌មានថ្លៃបន្ទប់ ទឹក និងភ្លើង" : "Enter room, electricity and water details",
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
+                if (tList.isNotEmpty && presetTenant == null) ...[
+                  Text(
+                    LanguageService.isKhmer ? "ជ្រើសរើសអ្នកជួល" : "Select Tenant",
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
-                  child: const Icon(Icons.receipt_long_rounded, color: AppColors.primary, size: 20),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<TenantModel>(
+                    value: selectedTenant,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    items: tList.map((t) {
+                      return DropdownMenuItem<TenantModel>(
+                        value: t,
+                        child: Text("${t.name ?? 'Tenant'} (${'room_label_prefix'.tr} ${t.roomNumber ?? ''})"),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() {
+                          selectedTenant = val;
+                          tenantCtrl.text = val.name ?? '';
+                          roomCtrl.text = val.roomNumber ?? '';
+                          currentFloor = val.floor ?? 'Ground Floor';
+                          final match = roomsCtrl.rooms.firstWhereOrNull((r) =>
+                              (r.roomNumber ?? '').trim().toLowerCase() == (val.roomNumber ?? '').trim().toLowerCase());
+                          if (match?.price != null) {
+                            rentCtrl.text = match!.price!.toStringAsFixed(2);
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  TextField(
+                    controller: tenantCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'tenant_label'.tr,
+                      prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: roomCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'room_number'.tr,
+                    prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    LanguageService.isKhmer ? "បង្កើតវិក្កយបត្រថ្មី" : "Create New Invoice",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: rentCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'rent_price_label'.tr,
+                    prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: elecCtrl,
+                        decoration: InputDecoration(
+                          labelText: "${'electricity_fee_item'.tr} (kWh)",
+                          prefixIcon: const Icon(Icons.bolt, color: AppColors.primary, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: waterCtrl,
+                        decoration: InputDecoration(
+                          labelText: "${'water_fee_item'.tr} (m³)",
+                          prefixIcon: const Icon(Icons.water_drop_outlined, color: AppColors.primary, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: garbageCtrl,
+                  decoration: InputDecoration(
+                    labelText: LanguageService.isKhmer ? "ថ្លៃសំរាម (\$)" : "Garbage Fee (\$)",
+                    prefixIcon: const Icon(Icons.delete_outline, color: AppColors.primary, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (tList.isNotEmpty && presetTenant == null) ...[
-                    Text(
-                      LanguageService.isKhmer ? "ជ្រើសរើសអ្នកជួល" : "Select Tenant",
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<TenantModel>(
-                      value: selectedTenant,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                      items: tList.map((t) {
-                        return DropdownMenuItem<TenantModel>(
-                          value: t,
-                          child: Text("${t.name ?? 'Tenant'} (${'room_label_prefix'.tr} ${t.roomNumber ?? ''})"),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            selectedTenant = val;
-                            tenantCtrl.text = val.name ?? '';
-                            roomCtrl.text = val.roomNumber ?? '';
-                            currentFloor = val.floor ?? 'Ground Floor';
-                            final match = roomsCtrl.rooms.firstWhereOrNull((r) =>
-                                (r.roomNumber ?? '').trim().toLowerCase() == (val.roomNumber ?? '').trim().toLowerCase());
-                            if (match?.price != null) {
-                              rentCtrl.text = match!.price!.toStringAsFixed(2);
-                            }
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ] else ...[
-                    TextField(
-                      controller: tenantCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'tenant_label'.tr,
-                        prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  TextField(
-                    controller: roomCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'room_number'.tr,
-                      prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: rentCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'rent_price_label'.tr,
-                      prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: elecCtrl,
-                          decoration: InputDecoration(
-                            labelText: "${'electricity_fee_item'.tr} (kWh)",
-                            prefixIcon: const Icon(Icons.bolt, color: AppColors.primary, size: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: waterCtrl,
-                          decoration: InputDecoration(
-                            labelText: "${'water_fee_item'.tr} (m³)",
-                            prefixIcon: const Icon(Icons.water_drop_outlined, color: AppColors.primary, size: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: garbageCtrl,
-                    decoration: InputDecoration(
-                      labelText: LanguageService.isKhmer ? "ថ្លៃសំរាម (\$)" : "Garbage Fee (\$)",
-                      prefixIcon: const Icon(Icons.delete_outline, color: AppColors.primary, size: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('cancel'.tr)),
-              ElevatedButton(
-                onPressed: () {
-                  final tenantName = tenantCtrl.text.trim();
-                  final roomNumber = roomCtrl.text.trim();
-                  if (tenantName.isEmpty || roomNumber.isEmpty) {
-                    Get.snackbar('error'.tr, LanguageService.isKhmer ? 'សូមបញ្ចូលឈ្មោះ និងលេខបន្ទប់' : 'Please enter name and room number', backgroundColor: Colors.red.shade50);
-                    return;
-                  }
+            confirmText: LanguageService.isKhmer ? "បង្កើតវិក្កយបត្រ" : "Create Invoice",
+            cancelText: 'cancel'.tr,
+            onConfirm: () {
+              final tenantName = tenantCtrl.text.trim();
+              final roomNumber = roomCtrl.text.trim();
+              if (tenantName.isEmpty || roomNumber.isEmpty) {
+                Get.snackbar('error'.tr, LanguageService.isKhmer ? 'សូមបញ្ចូលឈ្មោះ និងលេខបន្ទប់' : 'Please enter name and room number', backgroundColor: Colors.red.shade50);
+                return;
+              }
 
-                  final rent = double.tryParse(rentCtrl.text.trim()) ?? 50.0;
-                  final elec = double.tryParse(elecCtrl.text.trim()) ?? 0.0;
-                  final water = double.tryParse(waterCtrl.text.trim()) ?? 0.0;
-                  final garbage = double.tryParse(garbageCtrl.text.trim()) ?? 2.0;
-                  final total = rent + (elec * 0.25) + (water * 0.35) + garbage;
+              final rent = double.tryParse(rentCtrl.text.trim()) ?? 50.0;
+              final elec = double.tryParse(elecCtrl.text.trim()) ?? 0.0;
+              final water = double.tryParse(waterCtrl.text.trim()) ?? 0.0;
+              final garbage = double.tryParse(garbageCtrl.text.trim()) ?? 2.0;
+              final total = rent + (elec * 0.25) + (water * 0.35) + garbage;
 
-                  final now = DateTime.now();
-                  final cleanRoom = roomNumber.replaceAll(' ', '');
-                  final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
+              final now = DateTime.now();
+              final cleanRoom = roomNumber.replaceAll(' ', '');
+              final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
 
-                  final newInv = InvoiceModel(
-                    id: DateTime.now().millisecondsSinceEpoch,
-                    invoiceNo: invNo,
-                    propertyName: propName,
-                    tenantName: tenantName,
-                    roomNumber: roomNumber,
-                    floor: currentFloor,
-                    issueDate: OwnerInvoicesController.formatIssueDate(now),
-                    dueDate: OwnerInvoicesController.formatDueDate(now, 7),
-                    rentAmount: rent,
-                    electricityUnits: elec,
-                    electricityRate: 0.25,
-                    waterUnits: water,
-                    waterRate: 0.35,
-                    garbageFee: garbage,
-                    totalAmount: total,
-                    status: "UNPAID",
-                  );
+              final newInv = InvoiceModel(
+                id: DateTime.now().millisecondsSinceEpoch,
+                invoiceNo: invNo,
+                propertyName: propName,
+                tenantName: tenantName,
+                roomNumber: roomNumber,
+                floor: currentFloor,
+                issueDate: OwnerInvoicesController.formatIssueDate(now),
+                dueDate: OwnerInvoicesController.formatDueDate(now, 7),
+                rentAmount: rent,
+                electricityUnits: elec,
+                electricityRate: 0.25,
+                waterUnits: water,
+                waterRate: 0.35,
+                garbageFee: garbage,
+                totalAmount: total,
+                status: "UNPAID",
+              );
 
-                  controller.createInvoice(newInv);
-                  Navigator.pop(ctx);
-                  Get.snackbar(
-                    'success'.tr,
-                    "${newInv.invoiceNo} - \$${total.toStringAsFixed(2)}",
-                    backgroundColor: Colors.green.shade50,
-                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                child: Text('save'.tr),
-              ),
-            ],
+              controller.createInvoice(newInv);
+              Navigator.pop(ctx);
+              Get.snackbar(
+                'success'.tr,
+                "${newInv.invoiceNo} - \$${total.toStringAsFixed(2)}",
+                backgroundColor: Colors.green.shade50,
+                icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+              );
+            },
           );
         },
       ),
@@ -936,6 +1319,10 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
             children: [
               // Auto-Generate Monthly Invoices Banner
               _buildAutoGenerateBanner(),
+
+              // Batch Alert Banner when unpaid invoices exist
+              if (controller.unpaidCount > 0)
+                _buildBatchAlertBanner(),
 
               // 2x2 Dynamic Metric Cards Grid
               GridView.count(
@@ -983,7 +1370,7 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
 
               const SizedBox(height: 16),
 
-              // Filter Tabs
+              // Filter Tabs & Date Filter Button
               Row(
                 children: [
                   _buildFilterTab("ALL", 'all'.tr, controller.selectedFilter.value),
@@ -991,8 +1378,16 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                   _buildFilterTab("UNPAID", 'unpaid_status'.tr, controller.selectedFilter.value),
                   const SizedBox(width: 6),
                   _buildFilterTab("PAID", 'paid_status'.tr, controller.selectedFilter.value),
+                  const Spacer(),
+                  _buildDateFilterButton(),
                 ],
               ),
+
+              // Active Date Filter Banner if filtered
+              if (controller.isDateFilterActive) ...[
+                const SizedBox(height: 10),
+                _buildActiveDateFilterChip(),
+              ],
 
               const SizedBox(height: 14),
 
@@ -1095,6 +1490,32 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                           ),
                                         ),
                                       ),
+                                      if (!isPaid) ...[
+                                        const SizedBox(height: 4),
+                                        InkWell(
+                                          onTap: () => _showAlertTenantDialog(inv),
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primarySoft,
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.notifications_active_rounded, size: 10.5, color: AppColors.primary),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  'alert_tenant'.tr,
+                                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(width: 4),
@@ -1105,6 +1526,8 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                     onSelected: (val) {
                                       if (val == 'details') {
                                         _showInvoiceDetailModal(inv);
+                                      } else if (val == 'alert') {
+                                        _showAlertTenantDialog(inv);
                                       } else if (val == 'toggle_status') {
                                         if (isPaid) {
                                           controller.markAsUnpaid(inv.id);
@@ -1126,6 +1549,20 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                           ],
                                         ),
                                       ),
+                                      if (!isPaid)
+                                        PopupMenuItem(
+                                          value: 'alert',
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.notifications_active_rounded, size: 18, color: AppColors.accentOrange),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'alert_tenant'.tr,
+                                                style: const TextStyle(color: AppColors.accentOrange, fontWeight: FontWeight.bold),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       PopupMenuItem(
                                         value: 'toggle_status',
                                         child: Row(
@@ -1276,6 +1713,365 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
             color: isSelected ? Colors.white : AppColors.textSecondary,
           ),
           child: Text(label),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterButton() {
+    final isActive = controller.isDateFilterActive;
+    return InkWell(
+      onTap: _showDateFilterSheet,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primarySoft : AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? AppColors.primary : AppColors.border,
+            width: isActive ? 1.4 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_month_rounded,
+              size: 15,
+              color: isActive ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              controller.dateFilterLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive ? AppColors.primary : AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (isActive)
+              GestureDetector(
+                onTap: () {
+                  controller.clearDateFilter();
+                  _resetPagination();
+                },
+                child: const Padding(
+                  padding: EdgeInsets.only(left: 2),
+                  child: Icon(Icons.close_rounded, size: 14, color: AppColors.primary),
+                ),
+              )
+            else
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveDateFilterChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primarySoft.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.filter_alt_outlined, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              LanguageService.isKhmer
+                  ? "កំពុងចម្រាញ់តាមកាលបរិច្ឆេទ: ${controller.dateFilterLabel} (${controller.filteredInvoices.length} វិក្កយបត្រ)"
+                  : "Filtered by date: ${controller.dateFilterLabel} (${controller.filteredInvoices.length} invoices)",
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.primary),
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              controller.clearDateFilter();
+              _resetPagination();
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.close_rounded, size: 13, color: AppColors.primary),
+                  const SizedBox(width: 2),
+                  Text(
+                    LanguageService.isKhmer ? "សម្អាត" : "Clear",
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDateFilterSheet() {
+    final now = DateTime.now();
+    final isKh = LanguageService.isKhmer;
+    final currentType = controller.selectedDateFilterType.value;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: AppColors.surface,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(ctx).height * 0.85,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top drag indicator
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.calendar_month_rounded, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isKh ? "ចម្រាញ់តាមកាលបរិច្ឆេទ" : "Filter by Date",
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            ),
+                            Text(
+                              isKh ? "ជ្រើសរើសខែ ឬចន្លោះកាលបរិច្ឆេទសម្រាប់វិក្កយបត្រ" : "Select month or date range for invoices",
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textSecondary),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 8),
+
+                  // Option: All Dates
+                  _buildDateOptionTile(
+                    title: isKh ? "កាលបរិច្ឆេទទាំងអស់" : "All Dates",
+                    subtitle: "${controller.invoices.length} ${isKh ? 'វិក្កយបត្រសរុប' : 'total invoices'}",
+                    icon: Icons.all_inclusive_rounded,
+                    isSelected: currentType == "ALL",
+                    onTap: () {
+                      controller.clearDateFilter();
+                      _resetPagination();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+
+                  // Option: This Month
+                  _buildDateOptionTile(
+                    title: isKh ? "ខែនេះ" : "This Month",
+                    subtitle: isKh
+                        ? "ខែ ${['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'][now.month - 1]} ${now.year} • ${controller.getInvoiceCountForDateFilter('THIS_MONTH')} វិក្កយបត្រ"
+                        : "${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][now.month - 1]} ${now.year} • ${controller.getInvoiceCountForDateFilter('THIS_MONTH')} invoices",
+                    icon: Icons.calendar_today_rounded,
+                    isSelected: currentType == "THIS_MONTH",
+                    onTap: () {
+                      controller.setDateFilterType("THIS_MONTH");
+                      _resetPagination();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+
+                  // Option: Last Month
+                  _buildDateOptionTile(
+                    title: isKh ? "ខែមុន" : "Last Month",
+                    subtitle: isKh
+                        ? "ខែ ${['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'][(now.month - 2 + 12) % 12]} • ${controller.getInvoiceCountForDateFilter('LAST_MONTH')} វិក្កយបត្រ"
+                        : "${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][(now.month - 2 + 12) % 12]} • ${controller.getInvoiceCountForDateFilter('LAST_MONTH')} invoices",
+                    icon: Icons.history_rounded,
+                    isSelected: currentType == "LAST_MONTH",
+                    onTap: () {
+                      controller.setDateFilterType("LAST_MONTH");
+                      _resetPagination();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+
+                  // Option: Today
+                  _buildDateOptionTile(
+                    title: isKh ? "ថ្ងៃនេះ" : "Today",
+                    subtitle: "${controller.getInvoiceCountForDateFilter('TODAY')} ${isKh ? 'វិក្កយបត្រ' : 'invoices'}",
+                    icon: Icons.today_rounded,
+                    isSelected: currentType == "TODAY",
+                    onTap: () {
+                      controller.setDateFilterType("TODAY");
+                      _resetPagination();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+
+                  const Divider(height: 14, color: AppColors.border),
+
+                  // Option: Pick Specific Date
+                  _buildDateOptionTile(
+                    title: isKh ? "ជ្រើសរើសថ្ងៃជាក់លាក់..." : "Pick a Specific Date...",
+                    subtitle: currentType == "CUSTOM_DATE" && controller.selectedCustomDate.value != null
+                        ? (isKh
+                            ? "បានជ្រើស: ${controller.selectedCustomDate.value!.day}/${controller.selectedCustomDate.value!.month}/${controller.selectedCustomDate.value!.year}"
+                            : "Selected: ${controller.selectedCustomDate.value!.day}/${controller.selectedCustomDate.value!.month}/${controller.selectedCustomDate.value!.year}")
+                        : (isKh ? "ជ្រើសរើសថ្ងៃណាមួយពីប្រតិទិន" : "Pick any day from calendar"),
+                    icon: Icons.event_available_rounded,
+                    isSelected: currentType == "CUSTOM_DATE",
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: controller.selectedCustomDate.value ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2035),
+                        builder: (context, child) => Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) {
+                        controller.setCustomDate(picked);
+                        _resetPagination();
+                      }
+                    },
+                  ),
+
+                  // Option: Pick Date Range
+                  _buildDateOptionTile(
+                    title: isKh ? "ជ្រើសរើសចន្លោះកាលបរិច្ឆេទ..." : "Pick Date Range...",
+                    subtitle: currentType == "CUSTOM_RANGE" && controller.selectedCustomRange.value != null
+                        ? "${controller.selectedCustomRange.value!.start.day}/${controller.selectedCustomRange.value!.start.month} - ${controller.selectedCustomRange.value!.end.day}/${controller.selectedCustomRange.value!.end.month}/${controller.selectedCustomRange.value!.end.year}"
+                        : (isKh ? "ជ្រើសរើសថ្ងៃចាប់ផ្ដើម និងថ្ងៃបញ្ចប់" : "Pick start and end dates"),
+                    icon: Icons.date_range_rounded,
+                    isSelected: currentType == "CUSTOM_RANGE",
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final pickedRange = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2035),
+                        initialDateRange: controller.selectedCustomRange.value ?? DateTimeRange(
+                          start: DateTime.now().subtract(const Duration(days: 30)),
+                          end: DateTime.now(),
+                        ),
+                        builder: (context, child) => Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (pickedRange != null) {
+                        controller.setCustomDateRange(pickedRange);
+                        _resetPagination();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateOptionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primarySoft.withValues(alpha: 0.6) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected ? AppColors.primary.withValues(alpha: 0.8) : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
+          ],
         ),
       ),
     );

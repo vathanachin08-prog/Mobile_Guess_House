@@ -54,18 +54,41 @@ class UrlService {
     }
   }
 
-  /// Sends invoice details via Telegram
+  /// Sends invoice payment alert / reminder via Telegram
   static Future<bool> sendInvoiceToTelegram({
     required String tenantName,
     required String roomNumber,
     required double totalAmount,
+    String? invoiceNo,
+    String? dueDate,
   }) async {
-    final message = "RoomFinder KH - Invoice Reminder\n"
-        "Tenant: $tenantName\n"
-        "Room: $roomNumber\n"
-        "Total: \$${totalAmount.toStringAsFixed(2)}";
+    final message = "🔔 RoomFinder KH - Invoice Payment Alert\n\n"
+        "👤 Tenant: $tenantName\n"
+        "🚪 Room: $roomNumber\n"
+        "${invoiceNo != null && invoiceNo.isNotEmpty ? '🧾 Invoice: $invoiceNo\n' : ''}"
+        "💰 Total Due: \$${totalAmount.toStringAsFixed(2)}\n"
+        "${dueDate != null && dueDate.isNotEmpty ? '📅 Due Date: $dueDate\n' : ''}"
+        "⚠️ Status: UNPAID\n\n"
+        "Please complete the payment on time. Thank you!";
     final encoded = Uri.encodeComponent(message);
     final targetUrl = "${ConstantUri.telegramSupportUrl}?text=$encoded";
     return openTelegram(targetUrl);
+  }
+
+  /// Sends an SMS payment reminder to tenant's phone number
+  static Future<bool> sendSms({
+    required String phoneNumber,
+    required String message,
+  }) async {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final uriStr = "sms:$cleanPhone?body=${Uri.encodeComponent(message)}";
+    return launchExternalUrl(uriStr);
+  }
+
+  /// Initiates a phone call to tenant
+  static Future<bool> makePhoneCall(String phoneNumber) async {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final uriStr = "tel:$cleanPhone";
+    return launchExternalUrl(uriStr);
   }
 }

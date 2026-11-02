@@ -44,6 +44,72 @@ class InvoiceModel {
   double get electricityTotal => (electricityUnits ?? 0) * (electricityRate ?? 0.12);
   double get waterTotal => (waterUnits ?? 0) * (waterRate ?? 1.5);
 
+  /// Returns parsed DateTime from issueDate, invoiceNo, or timestamp ID
+  DateTime? get parsedIssueDate {
+    if (issueDate != null && issueDate!.trim().isNotEmpty) {
+      final str = issueDate!.trim();
+      final direct = DateTime.tryParse(str);
+      if (direct != null) return direct;
+
+      // Normalize Khmer numerals to arabic
+      final khmerDigits = {'១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9', '០': '0'};
+      String norm = str;
+      khmerDigits.forEach((k, v) => norm = norm.replaceAll(k, v));
+
+      // English months: "Nov 2, 2026" or "2 Nov 2026"
+      final engMonths = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+      };
+      final lower = norm.toLowerCase();
+      for (final entry in engMonths.entries) {
+        if (lower.contains(entry.key)) {
+          final nums = RegExp(r'\d+').allMatches(norm).map((m) => int.parse(m.group(0)!)).toList();
+          if (nums.isNotEmpty) {
+            final year = nums.firstWhere((n) => n >= 2000, orElse: () => DateTime.now().year);
+            final day = nums.firstWhere((n) => n < 2000 && n <= 31, orElse: () => 1);
+            return DateTime(year, entry.value, day);
+          }
+        }
+      }
+
+      // Khmer months: "2 វិច្ឆិកា 2026"
+      final khmerMonths = {
+        'មករា': 1, 'កុម្ភៈ': 2, 'មីនា': 3, 'មេសា': 4, 'ឧសភា': 5, 'មិថុនា': 6,
+        'កក្កដា': 7, 'សីហា': 8, 'កញ្ញា': 9, 'តុលា': 10, 'វិច្ឆិកា': 11, 'ធ្នូ': 12,
+      };
+      for (final entry in khmerMonths.entries) {
+        if (norm.contains(entry.key)) {
+          final nums = RegExp(r'\d+').allMatches(norm).map((m) => int.parse(m.group(0)!)).toList();
+          if (nums.isNotEmpty) {
+            final year = nums.firstWhere((n) => n >= 2000, orElse: () => DateTime.now().year);
+            final day = nums.firstWhere((n) => n < 2000 && n <= 31, orElse: () => 1);
+            return DateTime(year, entry.value, day);
+          }
+        }
+      }
+    }
+
+    // Extract year & month from invoiceNo: INV-YYYYMM-...
+    if (invoiceNo != null) {
+      final match = RegExp(r'INV-(\d{4})(\d{2})').firstMatch(invoiceNo!);
+      if (match != null) {
+        final y = int.tryParse(match.group(1) ?? '');
+        final m = int.tryParse(match.group(2) ?? '');
+        if (y != null && m != null) {
+          return DateTime(y, m, 1);
+        }
+      }
+    }
+
+    // Fallback from timestamp in id
+    if (id != null && id! > 1000000000000) {
+      return DateTime.fromMillisecondsSinceEpoch(id!);
+    }
+
+    return null;
+  }
+
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
     return InvoiceModel(
       id: json['id'],

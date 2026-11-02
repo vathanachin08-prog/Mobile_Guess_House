@@ -10,6 +10,7 @@ import '../data/local/token_store_local.dart';
 import '../modules/owner/owner_main_controller.dart';
 import '../routes/app_route_name.dart';
 import 'animated_widgets.dart';
+import 'app_clean_dialog.dart';
 import 'app_colors.dart';
 
 class OwnerAppBarHelper {
@@ -282,77 +283,34 @@ class OwnerAppBarHelper {
     final propId = item['id'];
     final propName = item['name']?.toString() ?? 'អគារ';
 
-    showDialog(
+    AppCleanDialog.showConfirmation(
       context: context,
-      builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.delete_forever_rounded, color: Colors.red.shade600, size: 22),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                LanguageService.isKhmer ? "លុបអគារ" : "Delete Property",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          LanguageService.isKhmer
-              ? "តើអ្នកប្រាកដជាចង់លុប '$propName' នេះមែនទេ? រាល់បន្ទប់ ជាន់ និងទិន្នន័យទាំងអស់នៃអគារនេះនឹងត្រូវលុបចេញពីប្រព័ន្ធ។"
-              : "Are you sure you want to delete '$propName'? All rooms, floors, and associated data will be permanently removed.",
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlgCtx),
-            child: Text(
-              LanguageService.isKhmer ? "បោះបង់" : "Cancel",
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () async {
-              Navigator.pop(dlgCtx);
-              if (propId != null) {
-                final id = propId is int ? propId : int.tryParse(propId.toString());
-                if (id != null) {
-                  await ctrl.deleteProperty(id);
-                  Get.snackbar(
-                    LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
-                    LanguageService.isKhmer
-                        ? "បានលុប '$propName' រួចរាល់!"
-                        : "Property '$propName' deleted successfully!",
-                    snackPosition: SnackPosition.BOTTOM,
-                    margin: const EdgeInsets.all(16),
-                    backgroundColor: Colors.white,
-                    colorText: AppColors.textPrimary,
-                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                  );
-                }
-              }
-            },
-            child: Text(
-              LanguageService.isKhmer ? "យល់ព្រមលុប" : "Delete",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: LanguageService.isKhmer ? "លុបអគារ" : "Delete Property",
+      message: LanguageService.isKhmer
+          ? "តើអ្នកប្រាកដជាចង់លុប '$propName' នេះមែនទេ? រាល់បន្ទប់ ជាន់ និងទិន្នន័យទាំងអស់នៃអគារនេះនឹងត្រូវលុបចេញពីប្រព័ន្ធ។"
+          : "Are you sure you want to delete '$propName'? All rooms, floors, and associated data will be permanently removed.",
+      confirmText: LanguageService.isKhmer ? "យល់ព្រមលុប" : "Delete",
+      cancelText: LanguageService.isKhmer ? "បោះបង់" : "Cancel",
+      confirmColor: AppColors.danger,
+      onConfirm: () async {
+        if (propId != null) {
+          final id = propId is int ? propId : int.tryParse(propId.toString());
+          if (id != null) {
+            await ctrl.deleteProperty(id);
+            Get.snackbar(
+              LanguageService.isKhmer ? "ជោគជ័យ" : "Success",
+              LanguageService.isKhmer
+                  ? "បានលុប '$propName' រួចរាល់!"
+                  : "Property '$propName' deleted successfully!",
+              snackPosition: SnackPosition.BOTTOM,
+              margin: const EdgeInsets.all(16),
+              backgroundColor: Colors.white,
+              colorText: AppColors.textPrimary,
+              icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+            );
+          }
+        }
+      },
     );
   }
 
@@ -504,24 +462,16 @@ class OwnerAppBarHelper {
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (dialogCtx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          title: Row(
+        builder: (dialogCtx, setDialogState) => AppCleanDialog(
+          title: 'add_new_property_btn'.tr,
+          subtitle: LanguageService.isKhmer
+              ? "បញ្ចូលព័ត៌មាន និងរូបភាពនៃអគារស្នាក់នៅ"
+              : "Enter details and photo for new property",
+          isConfirmLoading: isSaving,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.add_business_rounded, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'add_new_property_btn'.tr,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 // Image Picker Container
                 InkWell(
                   onTap: isSaving
@@ -677,110 +627,89 @@ class OwnerAppBarHelper {
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
-              child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: isSaving
-                  ? null
-                  : () async {
-                      final name = nameCtrl.text.trim();
-                      final addr = addressCtrl.text.trim();
-                      if (name.isEmpty) {
-                        Get.snackbar(
-                          'confirm'.tr,
-                          'please_enter_property_name'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: Colors.white,
-                          colorText: AppColors.danger,
-                          margin: const EdgeInsets.all(16),
-                        );
-                        return;
-                      }
+          confirmText: 'save'.tr,
+          cancelText: 'cancel'.tr,
+          onCancel: isSaving ? null : () => Navigator.pop(dialogCtx),
+          onConfirm: () async {
+            final name = nameCtrl.text.trim();
+            final addr = addressCtrl.text.trim();
+            if (name.isEmpty) {
+              Get.snackbar(
+                'confirm'.tr,
+                'please_enter_property_name'.tr,
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.white,
+                colorText: AppColors.danger,
+                margin: const EdgeInsets.all(16),
+              );
+              return;
+            }
 
-                      setDialogState(() => isSaving = true);
+            setDialogState(() => isSaving = true);
 
-                      String? uploadedImageUrl;
+            String? uploadedImageUrl;
 
-                      if (pickedFile != null && pickedBytes != null) {
-                        try {
-                          final uri = Uri.parse("${ConstantUri.baseUri}/app/public/v1/image/upload");
-                          final req = http.MultipartRequest("POST", uri);
-                          if (kIsWeb) {
-                            req.files.add(http.MultipartFile.fromBytes('File', pickedBytes!, filename: pickedFile!.name));
-                          } else {
-                            req.files.add(await http.MultipartFile.fromPath('File', pickedFile!.path));
-                          }
-                          final token = TokenStoreLocal.getAccessToken();
-                          if (token.isNotEmpty) {
-                            req.headers['Authorization'] = 'Bearer $token';
-                          }
-                          final streamed = await req.send().timeout(const Duration(seconds: 15));
-                          final res = await http.Response.fromStream(streamed);
-                          if (res.statusCode == 200 || res.statusCode == 201) {
-                            final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-                            final data = decoded['data'];
-                            String? fileName;
-                            if (data is Map) {
-                              fileName = data['fileName']?.toString() ??
-                                  data['data']?.toString() ??
-                                  data['filename']?.toString();
-                            } else if (data is String) {
-                              fileName = data;
-                            }
-                            if (fileName != null && fileName.isNotEmpty) {
-                              uploadedImageUrl = "${ConstantUri.baseUri}/api/public/view/image?filename=$fileName";
-                            }
-                          }
-                        } catch (e) {
-                          debugPrint("Error uploading property image: $e");
-                        }
+            if (pickedFile != null && pickedBytes != null) {
+              try {
+                final uri = Uri.parse("${ConstantUri.baseUri}/app/public/v1/image/upload");
+                final req = http.MultipartRequest("POST", uri);
+                if (kIsWeb) {
+                  req.files.add(http.MultipartFile.fromBytes('File', pickedBytes!, filename: pickedFile!.name));
+                } else {
+                  req.files.add(await http.MultipartFile.fromPath('File', pickedFile!.path));
+                }
+                final token = TokenStoreLocal.getAccessToken();
+                if (token.isNotEmpty) {
+                  req.headers['Authorization'] = 'Bearer $token';
+                }
+                final streamed = await req.send().timeout(const Duration(seconds: 15));
+                final res = await http.Response.fromStream(streamed);
+                if (res.statusCode == 200 || res.statusCode == 201) {
+                  final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+                  final data = decoded['data'];
+                  String? fileName;
+                  if (data is Map) {
+                    fileName = data['fileName']?.toString() ??
+                        data['data']?.toString() ??
+                        data['filename']?.toString();
+                  } else if (data is String) {
+                    fileName = data;
+                  }
+                  if (fileName != null && fileName.isNotEmpty) {
+                    uploadedImageUrl = "${ConstantUri.baseUri}/api/public/view/image?filename=$fileName";
+                  }
+                }
+              } catch (e) {
+                debugPrint("Error uploading property image: $e");
+              }
 
-                        // Fallback to base64 so image preview is never lost
-                        uploadedImageUrl ??= "data:image/jpeg;base64,${base64Encode(pickedBytes!)}";
-                      }
+              // Fallback to base64 so image preview is never lost
+              uploadedImageUrl ??= "data:image/jpeg;base64,${base64Encode(pickedBytes!)}";
+            }
 
-                      await ctrl.addNewProperty(
-                        name,
-                        addr.isNotEmpty ? addr : "Phnom Penh",
-                        mainImage: uploadedImageUrl,
-                      );
+            await ctrl.addNewProperty(
+              name,
+              addr.isNotEmpty ? addr : "Phnom Penh",
+              mainImage: uploadedImageUrl,
+            );
 
-                      if (dialogCtx.mounted) {
-                        Navigator.pop(dialogCtx);
-                      }
-                      if (sheetContext.mounted) {
-                        Navigator.pop(sheetContext);
-                      }
+            if (dialogCtx.mounted) {
+              Navigator.pop(dialogCtx);
+            }
+            if (sheetContext.mounted) {
+              Navigator.pop(sheetContext);
+            }
 
-                      Get.snackbar(
-                        'success'.tr,
-                        'property_created_success'.tr,
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.white,
-                        colorText: AppColors.textPrimary,
-                        icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                        margin: const EdgeInsets.all(16),
-                      );
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text('save'.tr),
-            ),
-          ],
+            Get.snackbar(
+              'success'.tr,
+              'property_created_success'.tr,
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.white,
+              colorText: AppColors.textPrimary,
+              icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+              margin: const EdgeInsets.all(16),
+            );
+          },
         ),
       ),
     );
@@ -1113,7 +1042,7 @@ class OwnerAppBarHelper {
   }
 
   /// Standard owner action widgets (Language + Notification + Account)
-  static List<Widget> buildStandardActions(BuildContext context, {bool showLanguage = true}) {
+  static List<Widget> buildStandardActions(BuildContext context, {bool showLanguage = false}) {
     return [
       if (showLanguage) buildLanguageAction(context),
       buildNotificationAction(context),

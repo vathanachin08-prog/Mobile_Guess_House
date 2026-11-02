@@ -5,6 +5,7 @@ import '../../../constants/constant_uri.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../routes/app_route_name.dart';
 import '../../../widgets/animated_widgets.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/facility_chip.dart';
 import '../../../widgets/room_card.dart';
@@ -798,9 +799,10 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('write_review'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        builder: (ctx, setState) => AppCleanDialog(
+          title: 'write_review'.tr,
+          subtitle: LanguageService.isKhmer ? "ចែករំលែកបទពិសោធន៍របស់អ្នក" : "Share your experience",
+          maxWidth: 400,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -822,25 +824,19 @@ class PropertyDetailView extends GetView<PropertyDetailController> {
                 controller: commentCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
+                  hintText: LanguageService.isKhmer ? "សរសេរមតិយោបល់នៅទីនេះ..." : "Write your review here...",
+                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('cancel'.tr),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final success = await controller.submitReview(rating, commentCtrl.text.trim());
-                if (success) Get.back();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-              child: Text('post'.tr),
-            ),
-          ],
+          confirmText: 'post'.tr,
+          cancelText: 'cancel'.tr,
+          onConfirm: () async {
+            final success = await controller.submitReview(rating, commentCtrl.text.trim());
+            if (success) Navigator.pop(ctx);
+          },
         ),
       ),
     );

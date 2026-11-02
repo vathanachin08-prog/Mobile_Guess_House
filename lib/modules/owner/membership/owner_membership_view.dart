@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../core/services/language_service.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../data/local/token_store_local.dart';
@@ -33,33 +34,30 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
   void _upgradePlan(String planKey, String planTitle) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.workspace_premium, color: AppColors.primary, size: 24),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                "${'upgrade_plan'.tr} $planTitle",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+      builder: (ctx) => AppCleanDialog(
+        title: "${'upgrade_plan'.tr} $planTitle",
+        subtitle: LanguageService.isKhmer ? "ទូទាត់ដើម្បីដំឡើងគម្រោងរបស់អ្នក" : "Proceed with payment to activate plan",
+        icon: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Center(
+            child: Icon(Icons.workspace_premium, color: AppColors.primary, size: 28),
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('upgrade_confirm_msg'.trParams({'plan': planTitle})),
-            const SizedBox(height: 12),
+            Text(
+              'upgrade_confirm_msg'.trParams({'plan': planTitle}),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+            ),
+            const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -82,34 +80,22 @@ class _OwnerMembershipViewState extends State<OwnerMembershipView> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              final amount = planKey == "PREMIUM" ? 19.99 : 9.99;
-              BakongKhqrDialog.show(
-                context: context,
-                planKey: planKey,
-                planTitle: planTitle,
-                amountUsd: amount,
-                onPaymentSuccess: () {
-                  _executeUpgrade(planKey, planTitle);
-                },
-              );
+        confirmText: LanguageService.isKhmer ? "ទូទាត់តាម Bakong KHQR" : "Pay via Bakong KHQR",
+        confirmColor: const Color(0xFFE1251B),
+        cancelText: 'cancel'.tr,
+        onConfirm: () {
+          Navigator.pop(ctx);
+          final amount = planKey == "PREMIUM" ? 19.99 : 9.99;
+          BakongKhqrDialog.show(
+            context: context,
+            planKey: planKey,
+            planTitle: planTitle,
+            amountUsd: amount,
+            onPaymentSuccess: () {
+              _executeUpgrade(planKey, planTitle);
             },
-            icon: const Icon(Icons.qr_code_2, size: 18),
-            label: Text(LanguageService.isKhmer ? "ទូទាត់តាម Bakong KHQR" : "Pay via Bakong KHQR"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE1251B),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

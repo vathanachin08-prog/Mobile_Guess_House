@@ -50,11 +50,14 @@ class StudentHomeView extends GetView<StudentHomeController> {
           ],
         ),
         actions: [
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: AnimatedLanguageToggle(),
+          IconButton(
+            tooltip: LanguageService.isKhmer ? "ជ្រើសរើសភាសា" : "Select Language",
+            icon: const Icon(
+              Icons.public_rounded,
+              color: AppColors.textPrimary,
+              size: 22,
             ),
+            onPressed: () => LanguageService.showLanguageSelector(context),
           ),
           Obx(() {
             final chatUnread = Get.isRegistered<ChatService>() ? ChatService.to.totalUnreadCount : 0;

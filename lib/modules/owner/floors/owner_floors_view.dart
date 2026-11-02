@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import 'owner_floors_controller.dart';
@@ -37,84 +38,60 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
     final floorNameCtrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('add_new_floor'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text('enter_floor_name'.tr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, size: 20),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-          ],
-        ),
+      builder: (ctx) => AppCleanDialog(
+        title: 'add_new_floor'.tr,
+        subtitle: 'enter_floor_name'.tr,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('floor_name'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+            Text(
+              'floor_name'.tr,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: floorNameCtrl,
+              autofocus: true,
               decoration: InputDecoration(
+                hintText: LanguageService.isKhmer ? 'ឧ. ជាន់ទី១, ជាន់ផ្ទាល់ដី' : 'e.g. Floor 1, Ground Floor',
+                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  final text = floorNameCtrl.text.trim();
-                  if (text.isNotEmpty) {
-                    AppFirebaseService.logAddFloorForm(
-                      floorName: text,
-                      success: true,
-                    );
-                    controller.addFloor(text);
-                    Navigator.pop(ctx);
-                    Get.snackbar(
-                      'success'.tr,
-                      "$text: ${'floor_created_success'.tr}",
-                      backgroundColor: AppColors.primary,
-                      colorText: Colors.white,
-                      snackPosition: SnackPosition.BOTTOM,
-                      margin: const EdgeInsets.all(16),
-                    );
-                  } else {
-                    AppFirebaseService.logAddFloorForm(
-                      floorName: '',
-                      success: false,
-                      errorMessage: "Validation: Empty floor name",
-                    );
-                    Get.snackbar('error'.tr, 'please_enter_floor_name'.tr);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('add_floor'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
               ),
             ),
           ],
         ),
+        confirmText: 'add_floor'.tr,
+        cancelText: 'cancel'.tr,
+        onConfirm: () {
+          final text = floorNameCtrl.text.trim();
+          if (text.isNotEmpty) {
+            AppFirebaseService.logAddFloorForm(
+              floorName: text,
+              success: true,
+            );
+            controller.addFloor(text);
+            Navigator.pop(ctx);
+            Get.snackbar(
+              'success'.tr,
+              "$text: ${'floor_created_success'.tr}",
+              backgroundColor: AppColors.primary,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: const EdgeInsets.all(16),
+            );
+          } else {
+            AppFirebaseService.logAddFloorForm(
+              floorName: '',
+              success: false,
+              errorMessage: "Validation: Empty floor name",
+            );
+            Get.snackbar('error'.tr, 'please_enter_floor_name'.tr);
+          }
+        },
       ),
     );
   }
@@ -230,14 +207,25 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                             icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
                             onSelected: (val) {
                               if (val == 'delete') {
-                                controller.deleteFloor(i);
-                                Get.snackbar(
-                                  'delete'.tr,
-                                  floor.name,
-                                  backgroundColor: AppColors.surface,
-                                  colorText: AppColors.textPrimary,
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  margin: const EdgeInsets.all(16),
+                                AppCleanDialog.showConfirmation(
+                                  context: context,
+                                  title: LanguageService.isKhmer ? "លុបជាន់" : "Delete Floor",
+                                  message: LanguageService.isKhmer
+                                      ? "តើអ្នកប្រាកដជាចង់លុប '${floor.name}' នេះមែនទេ? បន្ទប់ទាំងអស់ក្នុងជាន់នេះនឹងត្រូវលុបផងដែរ។"
+                                      : "Are you sure you want to delete '${floor.name}'? All rooms on this floor will also be affected.",
+                                  confirmText: 'delete'.tr,
+                                  confirmColor: AppColors.danger,
+                                  onConfirm: () {
+                                    controller.deleteFloor(i);
+                                    Get.snackbar(
+                                      'delete'.tr,
+                                      floor.name,
+                                      backgroundColor: AppColors.surface,
+                                      colorText: AppColors.textPrimary,
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      margin: const EdgeInsets.all(16),
+                                    );
+                                  },
                                 );
                               }
                             },

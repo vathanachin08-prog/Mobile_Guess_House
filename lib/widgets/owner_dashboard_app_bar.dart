@@ -153,46 +153,6 @@ class OwnerDashboardAppBar extends StatelessWidget implements PreferredSizeWidge
                       icon: Icons.apartment_rounded,
                       onTap: () => OwnerAppBarHelper.showPropertyPicker(context),
                     ),
-
-                    const SizedBox(width: 6),
-
-                    // Language Toggle
-                    GestureDetector(
-                      onTap: () => LanguageService.toggleLanguage(showSnackbar: true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              LanguageService.isKhmer ? "🇰🇭" : "🇺🇸",
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              LanguageService.isKhmer ? "KH" : "EN",
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ],

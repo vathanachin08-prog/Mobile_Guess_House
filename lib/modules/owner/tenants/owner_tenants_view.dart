@@ -5,6 +5,7 @@ import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../models/rental/invoice_model.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../floors/owner_floors_controller.dart';
@@ -50,6 +51,7 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
     controller = Get.isRegistered<OwnerTenantsController>()
         ? Get.find<OwnerTenantsController>()
         : Get.put(OwnerTenantsController());
+    controller.loadTenants();
     searchController.addListener(() {
       controller.searchQuery.value = searchController.text;
       _resetPagination();
@@ -142,17 +144,28 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
               leading: const Icon(Icons.delete_outline, color: AppColors.danger),
               title: Text('delete'.tr, style: const TextStyle(color: AppColors.danger)),
               onTap: () {
-                final roomNum = tenant.roomNumber;
-                controller.removeTenant(tenant.id);
-                if (roomNum != null && Get.isRegistered<OwnerRoomsController>()) {
-                  final hasOther = controller.tenants.any((t) =>
-                      (t.roomNumber ?? '').trim().toLowerCase() == roomNum.trim().toLowerCase());
-                  if (!hasOther) {
-                    Get.find<OwnerRoomsController>().setRoomAvailability(roomNum, true);
-                  }
-                }
                 Navigator.pop(ctx);
-                Get.snackbar('delete'.tr, "${tenant.name}", backgroundColor: Colors.white, margin: const EdgeInsets.all(16));
+                AppCleanDialog.showConfirmation(
+                  context: context,
+                  title: LanguageService.isKhmer ? "លុបអ្នកជួល" : "Delete Tenant",
+                  message: LanguageService.isKhmer
+                      ? "តើអ្នកប្រាកដជាចង់លុប '${tenant.name}' នេះមែនទេ? បន្ទប់ ${tenant.roomNumber ?? ''} នឹងត្រូវបើកឱ្យទំនេរវិញ។"
+                      : "Are you sure you want to delete '${tenant.name}'? Room ${tenant.roomNumber ?? ''} will become available.",
+                  confirmText: 'delete'.tr,
+                  confirmColor: AppColors.danger,
+                  onConfirm: () {
+                    final roomNum = tenant.roomNumber;
+                    controller.removeTenant(tenant.id);
+                    if (roomNum != null && Get.isRegistered<OwnerRoomsController>()) {
+                      final hasOther = controller.tenants.any((t) =>
+                          (t.roomNumber ?? '').trim().toLowerCase() == roomNum.trim().toLowerCase());
+                      if (!hasOther) {
+                        Get.find<OwnerRoomsController>().setRoomAvailability(roomNum, true);
+                      }
+                    }
+                    Get.snackbar('delete'.tr, "${tenant.name}", backgroundColor: Colors.white, margin: const EdgeInsets.all(16));
+                  },
+                );
               },
             ),
           ],
@@ -391,66 +404,26 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
   }
 
   void _confirmDeleteInvoice(InvoiceModel inv, OwnerInvoicesController invoicesCtrl) {
-    showDialog(
+    AppCleanDialog.showConfirmation(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                LanguageService.isKhmer ? "លុបវិក្កយបត្រ" : "Delete Invoice",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
+      title: LanguageService.isKhmer ? "លុបវិក្កយបត្រ" : "Delete Invoice",
+      message: LanguageService.isKhmer
+          ? "តើអ្នកពិតជាចង់លុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
+          : "Are you sure you want to delete invoice ${inv.invoiceNo ?? ''}? This action cannot be undone.",
+      confirmText: LanguageService.isKhmer ? "លុប" : "Delete",
+      confirmColor: AppColors.danger,
+      onConfirm: () {
+        invoicesCtrl.deleteInvoice(inv.id);
+        Get.snackbar(
+          'delete'.tr,
           LanguageService.isKhmer
-              ? "តើអ្នកពិតជាចង់លុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} នេះមែនទេ?"
-              : "Are you sure you want to delete invoice ${inv.invoiceNo ?? ''}?",
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              invoicesCtrl.deleteInvoice(inv.id);
-              Navigator.pop(ctx);
-              Get.snackbar(
-                'delete'.tr,
-                LanguageService.isKhmer
-                    ? "បានលុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} ដោយជោគជ័យ"
-                    : "Invoice ${inv.invoiceNo ?? ''} deleted successfully",
-                backgroundColor: Colors.white,
-                margin: const EdgeInsets.all(16),
-                icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text(
-              LanguageService.isKhmer ? "លុប" : "Delete",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+              ? "បានលុបវិក្កយបត្រ ${inv.invoiceNo ?? ''} ដោយជោគជ័យ"
+              : "Invoice ${inv.invoiceNo ?? ''} deleted successfully",
+          backgroundColor: Colors.white,
+          margin: const EdgeInsets.all(16),
+          icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger),
+        );
+      },
     );
   }
 
@@ -482,170 +455,138 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
+          return AppCleanDialog(
+            title: LanguageService.isKhmer ? "ចេញវិក្កយបត្រថ្មី" : "Create New Invoice",
+            subtitle: "${tenant.name ?? ''} • ${'room_label_prefix'.tr} ${tenant.roomNumber ?? ''}",
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'tenant_label'.tr,
+                    prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
-                  child: const Icon(Icons.receipt_long_rounded, color: AppColors.primary, size: 20),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    LanguageService.isKhmer ? "ចេញវិក្កយបត្រថ្មី" : "Create New Invoice",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: roomCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'room_number'.tr,
+                    prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: rentCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'rent_price_label'.tr,
+                    prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: elecCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: LanguageService.isKhmer ? "ភ្លើង kWh" : "Elec kWh",
+                          prefixIcon: const Icon(Icons.bolt, color: AppColors.primary, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: waterCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: LanguageService.isKhmer ? "ទឹក m³" : "Water m³",
+                          prefixIcon: const Icon(Icons.water_drop_outlined, color: AppColors.primary, size: 18),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: garbageCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: LanguageService.isKhmer ? "ថ្លៃសំរាម" : "Garbage Fee",
+                    prefixIcon: const Icon(Icons.delete_outline, color: AppColors.primary, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'tenant_label'.tr,
-                      prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: roomCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'room_number'.tr,
-                      prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: rentCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'rent_price_label'.tr,
-                      prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: elecCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: LanguageService.isKhmer ? "ភ្លើង kWh" : "Elec kWh",
-                            prefixIcon: const Icon(Icons.bolt, color: AppColors.primary, size: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: waterCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: LanguageService.isKhmer ? "ទឹក m³" : "Water m³",
-                            prefixIcon: const Icon(Icons.water_drop_outlined, color: AppColors.primary, size: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: garbageCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: LanguageService.isKhmer ? "ថ្លៃសំរាម" : "Garbage Fee",
-                      prefixIcon: const Icon(Icons.delete_outline, color: AppColors.primary, size: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final tName = nameCtrl.text.trim();
-                  final rNum = roomCtrl.text.trim();
-                  if (tName.isEmpty || rNum.isEmpty) {
-                    Get.snackbar(
-                      'error'.tr,
-                      LanguageService.isKhmer ? "សូមបញ្ចូលឈ្មោះ និងលេខបន្ទប់" : "Please enter name and room",
-                      backgroundColor: Colors.red.shade50,
-                    );
-                    return;
-                  }
+            confirmText: LanguageService.isKhmer ? "បង្កើតវិក្កយបត្រ" : "Create Invoice",
+            cancelText: 'cancel'.tr,
+            onConfirm: () {
+              final tName = nameCtrl.text.trim();
+              final rNum = roomCtrl.text.trim();
+              if (tName.isEmpty || rNum.isEmpty) {
+                Get.snackbar(
+                  'error'.tr,
+                  LanguageService.isKhmer ? "សូមបញ្ចូលឈ្មោះ និងលេខបន្ទប់" : "Please enter name and room",
+                  backgroundColor: Colors.red.shade50,
+                );
+                return;
+              }
 
-                  final rent = double.tryParse(rentCtrl.text.trim()) ?? defaultRent;
-                  final elec = double.tryParse(elecCtrl.text.trim()) ?? 0.0;
-                  final water = double.tryParse(waterCtrl.text.trim()) ?? 0.0;
-                  final garbage = double.tryParse(garbageCtrl.text.trim()) ?? 2.0;
-                  final total = rent + (elec * 0.25) + (water * 0.35) + garbage;
+              final rent = double.tryParse(rentCtrl.text.trim()) ?? defaultRent;
+              final elec = double.tryParse(elecCtrl.text.trim()) ?? 0.0;
+              final water = double.tryParse(waterCtrl.text.trim()) ?? 0.0;
+              final garbage = double.tryParse(garbageCtrl.text.trim()) ?? 2.0;
+              final total = rent + (elec * 0.25) + (water * 0.35) + garbage;
 
-                  final now = DateTime.now();
-                  final cleanRoom = rNum.replaceAll(' ', '');
-                  final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
+              final now = DateTime.now();
+              final cleanRoom = rNum.replaceAll(' ', '');
+              final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
 
-                  final inv = InvoiceModel(
-                    id: DateTime.now().millisecondsSinceEpoch,
-                    invoiceNo: invNo,
-                    propertyName: propName,
-                    tenantName: tName,
-                    roomNumber: rNum,
-                    floor: tenant.floor ?? "Ground Floor",
-                    issueDate: OwnerInvoicesController.formatIssueDate(now),
-                    dueDate: OwnerInvoicesController.formatDueDate(now, 7),
-                    rentAmount: rent,
-                    electricityUnits: elec,
-                    electricityRate: 0.25,
-                    waterUnits: water,
-                    waterRate: 0.35,
-                    garbageFee: garbage,
-                    totalAmount: total,
-                    status: "UNPAID",
-                  );
+              final inv = InvoiceModel(
+                id: DateTime.now().millisecondsSinceEpoch,
+                invoiceNo: invNo,
+                propertyName: propName,
+                tenantName: tName,
+                roomNumber: rNum,
+                floor: tenant.floor ?? "Ground Floor",
+                issueDate: OwnerInvoicesController.formatIssueDate(now),
+                dueDate: OwnerInvoicesController.formatDueDate(now, 7),
+                rentAmount: rent,
+                electricityUnits: elec,
+                electricityRate: 0.25,
+                waterUnits: water,
+                waterRate: 0.35,
+                garbageFee: garbage,
+                totalAmount: total,
+                status: "UNPAID",
+              );
 
-                  invoicesCtrl.createInvoice(inv);
-                  Navigator.pop(ctx);
-                  Get.snackbar(
-                    'success'.tr,
-                    "${inv.invoiceNo} • \$${total.toStringAsFixed(2)}",
-                    backgroundColor: Colors.green.shade50,
-                    icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('confirm'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
+              invoicesCtrl.createInvoice(inv);
+              Navigator.pop(ctx);
+              Get.snackbar(
+                'success'.tr,
+                "${inv.invoiceNo} • \$${total.toStringAsFixed(2)}",
+                backgroundColor: Colors.green.shade50,
+                icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+              );
+            },
           );
         },
       ),
@@ -674,26 +615,26 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
     final floorOptions = <_FloorOption>[];
     final seenFloors = <int>{};
 
-    if (floorsCtrl != null) {
+    if (floorsCtrl != null && floorsCtrl.floors.isNotEmpty) {
       for (var f in floorsCtrl.floors) {
         final fNum = f.floorNumber;
         if (!seenFloors.contains(fNum)) {
           seenFloors.add(fNum);
           floorOptions.add(_FloorOption(
             floorNumber: fNum,
-            displayName: f.name.isNotEmpty ? f.name : _formatFloorName(fNum),
+            displayName: OwnerTenantsController.formatFloorDisplayName(f.name.isNotEmpty ? f.name : _formatFloorName(fNum)),
           ));
         }
       }
-    }
-
-    for (var r in roomsCtrl.rooms) {
-      if (r.floor != null && !seenFloors.contains(r.floor!)) {
-        seenFloors.add(r.floor!);
-        floorOptions.add(_FloorOption(
-          floorNumber: r.floor!,
-          displayName: r.floorDisplayName,
-        ));
+    } else {
+      for (var r in roomsCtrl.rooms) {
+        if (r.floor != null && !seenFloors.contains(r.floor!)) {
+          seenFloors.add(r.floor!);
+          floorOptions.add(_FloorOption(
+            floorNumber: r.floor!,
+            displayName: OwnerTenantsController.formatFloorDisplayName(r.floorDisplayName),
+          ));
+        }
       }
     }
 
@@ -717,9 +658,20 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
     // Initial floor
     int selectedFloorNumber = floorOptions.first.floorNumber;
     if (tenantToEdit?.floor != null) {
+      final tKey = OwnerTenantsController.getCanonicalFloorKey(tenantToEdit!.floor);
       final match = floorOptions.firstWhereOrNull((f) =>
-          f.displayName.toLowerCase() == tenantToEdit!.floor!.toLowerCase() ||
-          tenantToEdit.floor!.contains(f.floorNumber.toString()));
+          OwnerTenantsController.getCanonicalFloorKey(f.displayName) == tKey ||
+          (f.floorNumber == 1 && tKey == "FLOOR_G") ||
+          (f.floorNumber > 1 && tKey == "FLOOR_${f.floorNumber - 1}"));
+      if (match != null) {
+        selectedFloorNumber = match.floorNumber;
+      }
+    } else if (controller.selectedFloorFilter.value != "ALL") {
+      final selKey = OwnerTenantsController.getCanonicalFloorKey(controller.selectedFloorFilter.value);
+      final match = floorOptions.firstWhereOrNull((f) =>
+          OwnerTenantsController.getCanonicalFloorKey(f.displayName) == selKey ||
+          (f.floorNumber == 1 && selKey == "FLOOR_G") ||
+          (f.floorNumber > 1 && selKey == "FLOOR_${f.floorNumber - 1}"));
       if (match != null) {
         selectedFloorNumber = match.floorNumber;
       }
@@ -762,46 +714,20 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
             orElse: () => floorOptions.first,
           );
 
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-            contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-            title: Row(
+          return AppCleanDialog(
+            title: isEdit
+                ? (LanguageService.isKhmer ? 'កែសម្រួលអ្នកជួល' : 'Edit Tenant')
+                : 'add_tenant'.tr,
+            subtitle: LanguageService.isKhmer ? "បញ្ចូលព័ត៌មានអ្នកជួល និងបន្ទប់ស្នាក់នៅ" : "Enter tenant details and room",
+            maxWidth: 460,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.person_add_rounded, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    isEdit
-                        ? (LanguageService.isKhmer ? 'កែសម្រួលអ្នកជួល' : 'Edit Tenant')
-                        : 'add_tenant'.tr,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textSecondary),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 440,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Full Name
-                    TextField(
-                      controller: nameCtrl,
-                      decoration: InputDecoration(
+                // Full Name
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
                         labelText: 'full_name'.tr,
                         prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -1040,16 +966,10 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                     ],
                   ],
                 ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final tenantName = nameCtrl.text.trim();
+            confirmText: isEdit ? 'save'.tr : 'confirm'.tr,
+            cancelText: 'cancel'.tr,
+            onConfirm: () {
+              final tenantName = nameCtrl.text.trim();
                   final phone = phoneCtrl.text.trim();
                   final roomNumber = isCustomRoom
                       ? customRoomCtrl.text.trim()
@@ -1166,15 +1086,6 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                     icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text('confirm'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
           );
         },
       ),
@@ -1198,7 +1109,7 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
             : null,
         body: Column(
           children: [
-            // Filter header (Photo 6)
+            // Filter header with Search & Reactive Floor Selector Dropdown
             Container(
               color: AppColors.surface,
               padding: const EdgeInsets.all(16),
@@ -1206,52 +1117,204 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                 children: [
                   TextField(
                     controller: searchController,
+                    onChanged: (val) {
+                      controller.searchQuery.value = val;
+                      controller.resetPagination();
+                    },
                     decoration: InputDecoration(
+                      hintText: LanguageService.isKhmer ? "ស្វែងរកឈ្មោះ លេខបន្ទប់ ឬលេខទូរស័ព្ទ..." : "Search name, room or phone...",
+                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                       prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                      suffixIcon: Obx(() {
+                        if (controller.searchQuery.value.trim().isEmpty) return const SizedBox.shrink();
+                        return IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textSecondary),
+                          onPressed: () {
+                            searchController.clear();
+                            controller.searchQuery.value = '';
+                            controller.resetPagination();
+                          },
+                        );
+                      }),
                       filled: true,
                       fillColor: AppColors.background,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('all'.tr, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-                        const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
-                      ],
-                    ),
-                  ),
+
+                  // Floor Selector Dropdown
+                  Obx(() {
+                    final selected = controller.selectedFloorFilter.value;
+                    final floors = controller.availableFloorNames;
+                    final totalCount = controller.tenants.length;
+
+                    // Match currentValue either directly or through canonical key across language changes
+                    String currentValue = "ALL";
+                    if (selected != "ALL") {
+                      if (floors.contains(selected)) {
+                        currentValue = selected;
+                      } else {
+                        final selKey = OwnerTenantsController.getCanonicalFloorKey(selected);
+                        final match = floors.firstWhereOrNull(
+                          (f) => OwnerTenantsController.getCanonicalFloorKey(f) == selKey,
+                        );
+                        if (match != null) {
+                          currentValue = match;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            controller.selectedFloorFilter.value = match;
+                          });
+                        }
+                      }
+                    }
+
+                    return Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: currentValue,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                          dropdownColor: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: "ALL",
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.apartment_rounded, size: 18, color: AppColors.primary),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'all'.tr,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: currentValue == "ALL" ? FontWeight.bold : FontWeight.w500,
+                                          color: currentValue == "ALL" ? AppColors.primary : AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySoft,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      "$totalCount",
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ...floors.map((floor) {
+                              final count = controller.getTenantCountForFloor(floor);
+                              final isCurrent = currentValue == floor;
+                              return DropdownMenuItem<String>(
+                                value: floor,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.layers_outlined, size: 16, color: AppColors.primary),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          floor,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                            color: isCurrent ? AppColors.primary : AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: count > 0 ? AppColors.primarySoft : AppColors.border.withValues(alpha: 0.35),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        "$count",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: count > 0 ? AppColors.primary : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              controller.selectedFloorFilter.value = val;
+                              controller.resetPagination();
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
             const Divider(height: 1, color: AppColors.border),
 
-            // Tenants List (Photo 6)
+            // Tenants List Grouped By Floor
             Expanded(
               child: Obx(() {
                 final allTenants = controller.filteredTenants;
-                if (allTenants.isEmpty) {
+                final selectedFilter = controller.selectedFloorFilter.value;
+
+                if (controller.tenants.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
+                          Icon(Icons.people_outline_rounded, size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
+                          const SizedBox(height: 14),
                           Text(
-                            'no_data'.tr,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                            LanguageService.isKhmer ? "មិនទាន់មានអ្នកជួលនៅឡើយទេ" : "No Tenants Yet",
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            LanguageService.isKhmer
+                                ? "ចុចប៊ូតុង + ខាងក្រោម ដើម្បីបន្ថែមអ្នកជួលតាមជាន់នីមួយៗ"
+                                : "Tap the + button below to add tenants by floor",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _showAddTenantDialog,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text(LanguageService.isKhmer ? "បន្ថែមអ្នកជួល" : "Add Tenant"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
                         ],
                       ),
@@ -1259,150 +1322,64 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                   );
                 }
 
-                final limit = _visibleLimit.value;
-                final displayedTenants = allTenants.take(limit).toList();
-                final hasMore = limit < allTenants.length;
-                final loading = _isLoadingMore.value;
-                final extraCount = (hasMore || allTenants.length > 5) ? 1 : 0;
-
-                return NotificationListener<ScrollNotification>(
-                  onNotification: (scrollInfo) {
-                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 60) {
-                      _loadMore();
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: displayedTenants.length + extraCount,
-                    itemBuilder: (ctx, i) {
-                      if (i == displayedTenants.length) {
-                        if (hasMore) {
-                          return loading
-                              ? Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          LanguageService.isKhmer ? "កំពុងទាញយកទិន្នន័យ ៥ ទៀត..." : "Loading 5 more...",
-                                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : InkWell(
-                                  onTap: _loadMore,
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(top: 4, bottom: 16),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: AppColors.border),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.primary),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          LanguageService.isKhmer
-                                              ? "បង្ហាញ ៥ ទៀត • នៅសល់ ${allTenants.length - displayedTenants.length}"
-                                              : "Show 5 More • ${allTenants.length - displayedTenants.length} remaining",
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                        } else {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            child: Center(
-                              child: Text(
-                                LanguageService.isKhmer
-                                    ? "បានបង្ហាញអ្នកជួលទាំងអស់ហើយ • សរុប ${allTenants.length}"
-                                    : "All tenants loaded • ${allTenants.length} total",
-                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                if (allTenants.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.filter_list_off_rounded, size: 50, color: AppColors.textMuted.withValues(alpha: 0.5)),
+                          const SizedBox(height: 14),
+                          Text(
+                            selectedFilter != "ALL"
+                                ? (LanguageService.isKhmer ? "មិនមានអ្នកជួលនៅលើ $selectedFilter ទេ" : "No tenants on $selectedFilter")
+                                : (LanguageService.isKhmer ? "រកមិនឃើញអ្នកជួលតាមការស្វែងរកទេ" : "No matching tenants found"),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () {
+                                  searchController.clear();
+                                  controller.searchQuery.value = '';
+                                  controller.selectedFloorFilter.value = 'ALL';
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: AppColors.border),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: Text(
+                                  LanguageService.isKhmer ? "បង្ហាញទាំងអស់" : "Show All",
+                                  style: const TextStyle(color: AppColors.primary, fontSize: 12.5),
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                      }
+                              const SizedBox(width: 8),
+                              ElevatedButton.icon(
+                                onPressed: _showAddTenantDialog,
+                                icon: const Icon(Icons.add, size: 16),
+                                label: Text(LanguageService.isKhmer ? "បន្ថែមអ្នកជួល" : "Add Tenant"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
 
-                      final t = displayedTenants[i];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: AppColors.primarySoft,
-                                  child: Text(
-                                    (t.name != null && t.name!.isNotEmpty) ? t.name!.substring(0, 1) : "T",
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        t.name ?? "Tenant",
-                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "${t.floor ?? ''} • ${t.roomNumber ?? ''}",
-                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
-                                  onPressed: () => _showActionSheet(t),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const Divider(height: 1, color: AppColors.border),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                const Icon(Icons.email_outlined, size: 14, color: AppColors.textSecondary),
-                                const SizedBox(width: 6),
-                                Text(t.email ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                                const Spacer(),
-                                const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
-                                const SizedBox(width: 6),
-                                Text(t.phoneNumber ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                  itemCount: allTenants.length,
+                  itemBuilder: (ctx, idx) => _buildTenantCard(allTenants[idx]),
                 );
               }),
             ),
@@ -1415,5 +1392,134 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
         ),
       );
     });
+  }
+
+  Widget _buildTenantCard(TenantModel t) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 19,
+                backgroundColor: AppColors.primarySoft,
+                child: Text(
+                  (t.name != null && t.name!.isNotEmpty) ? t.name!.substring(0, 1).toUpperCase() : "T",
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.name ?? "Tenant",
+                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.meeting_room_outlined, size: 12, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                "${'room_label_prefix'.tr} ${t.roomNumber ?? ''}",
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (t.floor != null && t.floor!.trim().isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.layers_outlined, size: 12, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  OwnerTenantsController.formatFloorDisplayName(t.floor!),
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
+                onPressed: () => _showActionSheet(t),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              if (t.phoneNumber != null && t.phoneNumber!.isNotEmpty) ...[
+                const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  t.phoneNumber!,
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                ),
+              ],
+              const Spacer(),
+              // Quick Invoice Action Button
+              InkWell(
+                onTap: () => _showCreateInvoiceForTenant(t),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.receipt_long_rounded, size: 13, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        LanguageService.isKhmer ? "ចេញវិក្កយបត្រ" : "Invoice",
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

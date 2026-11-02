@@ -96,13 +96,29 @@ class TokenStoreLocal {
   }
 
   static bool isOwner() {
-    final role = getUserRole();
-    return role == "ROLE_OWNER" || role == "OWNER";
+    final role = getUserRole().trim().toUpperCase();
+    if (role == "ROLE_OWNER" || role == "OWNER") return true;
+    final user = getUser();
+    if (user != null && user['roles'] != null) {
+      for (final r in (user['roles'] as List)) {
+        final rName = (r is Map ? (r['name'] ?? '') : r.toString()).toString().trim().toUpperCase();
+        if (rName == "ROLE_OWNER" || rName == "OWNER") return true;
+      }
+    }
+    return false;
   }
 
   static bool isStudent() {
-    final role = getUserRole();
-    return role == "ROLE_STUDENT" || role == "STUDENT";
+    final role = getUserRole().trim().toUpperCase();
+    if (role == "ROLE_STUDENT" || role == "STUDENT") return true;
+    final user = getUser();
+    if (user != null && user['roles'] != null) {
+      for (final r in (user['roles'] as List)) {
+        final rName = (r is Map ? (r['name'] ?? '') : r.toString()).toString().trim().toUpperCase();
+        if (rName == "ROLE_STUDENT" || rName == "STUDENT") return true;
+      }
+    }
+    return false;
   }
 
   static String? getCurrentUserProfileImage() {

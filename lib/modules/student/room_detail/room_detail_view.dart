@@ -11,6 +11,7 @@ import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../routes/app_route_name.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/facility_chip.dart';
 import '../../../widgets/room_image_widget.dart';
@@ -312,41 +313,23 @@ class _RoomDetailViewState extends State<RoomDetailView> {
     final urlCtrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.link_rounded, color: AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              LanguageService.isKhmer ? "បញ្ចូលតំណរូបភាព (URL)" : "Enter Image URL",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+      builder: (ctx) => AppCleanDialog(
+        title: LanguageService.isKhmer ? "បញ្ចូលតំណរូបភាព" : "Enter Image URL",
+        subtitle: LanguageService.isKhmer
+            ? "អ្នកអាចចម្លង និងបិទភ្ជាប់តំណភ្ជាប់រូបភាព (jpg, png, webp)"
+            : "Paste any direct image URL (jpg, png, webp, unsplash, etc.)",
+        maxWidth: 420,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              LanguageService.isKhmer
-                  ? "អ្នកអាចចម្លង និងបិទភ្ជាប់តំណភ្ជាប់រូបភាពពីអ៊ីនធឺណិត (jpg, png, webp)"
-                  : "Paste any direct image URL (jpg, png, webp, unsplash, etc.)",
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
             TextField(
               controller: urlCtrl,
               autofocus: true,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
+                hintText: "https://example.com/photo.jpg",
+                hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 prefixIcon: const Icon(Icons.image_outlined, size: 20, color: AppColors.primary),
@@ -354,29 +337,17 @@ class _RoomDetailViewState extends State<RoomDetailView> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(LanguageService.isKhmer ? "បោះបង់" : "Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = urlCtrl.text.trim();
-              if (text.isNotEmpty) {
-                Navigator.pop(ctx);
-                final current = List<String>.from(room.imageList);
-                current.insert(0, text);
-                _updateRoomImages(current);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text(LanguageService.isKhmer ? "បញ្ចូលរូបភាព" : "Apply Image"),
-          ),
-        ],
+        confirmText: LanguageService.isKhmer ? "បញ្ចូលរូបភាព" : "Apply Image",
+        cancelText: LanguageService.isKhmer ? "បោះបង់" : "Cancel",
+        onConfirm: () {
+          final text = urlCtrl.text.trim();
+          if (text.isNotEmpty) {
+            Navigator.pop(ctx);
+            final current = List<String>.from(room.imageList);
+            current.insert(0, text);
+            _updateRoomImages(current);
+          }
+        },
       ),
     );
   }
@@ -526,17 +497,16 @@ class _RoomDetailViewState extends State<RoomDetailView> {
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    Get.defaultDialog(
+                    AppCleanDialog.showConfirmation(
+                      context: context,
                       title: LanguageService.isKhmer ? "បញ្ជាក់ការលុប" : "Confirm Clear",
-                      middleText: LanguageService.isKhmer
+                      message: LanguageService.isKhmer
                           ? "តើអ្នកពិតជាចង់លុបរូបថតទាំងអស់នៃបន្ទប់នេះមែនទេ?"
                           : "Are you sure you want to clear photos for this room?",
-                      textConfirm: LanguageService.isKhmer ? "លុបចេញ" : "Clear",
-                      textCancel: LanguageService.isKhmer ? "បោះបង់" : "Cancel",
-                      confirmTextColor: Colors.white,
-                      buttonColor: AppColors.danger,
+                      confirmText: LanguageService.isKhmer ? "លុបចេញ" : "Clear",
+                      cancelText: LanguageService.isKhmer ? "បោះបង់" : "Cancel",
+                      confirmColor: AppColors.danger,
                       onConfirm: () {
-                        Get.back();
                         _updateRoomImages([]);
                       },
                     );

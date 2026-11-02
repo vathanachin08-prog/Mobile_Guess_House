@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'app_route_name.dart';
+import '../core/middleware/auth_middleware.dart';
 
 // Splash & Auth
 import '../modules/splash/splash_binding.dart';
@@ -58,11 +59,13 @@ class AppRoute {
         name: AppRouteName.login,
         page: () => const LoginView(),
         binding: LoginBinding(),
+        middlewares: [GuestGuard()],
       ),
       GetPage(
         name: AppRouteName.register,
         page: () => const RegisterView(),
         binding: RegisterBinding(),
+        middlewares: [GuestGuard()],
       ),
 
       // Student Experience
@@ -70,42 +73,51 @@ class AppRoute {
         name: AppRouteName.studentMain,
         page: () => const StudentMainView(),
         binding: StudentMainBinding(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.home,
         page: () => const StudentMainView(),
         binding: StudentMainBinding(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.propertyDetail,
         page: () => const PropertyDetailView(),
         binding: PropertyDetailBinding(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.roomDetail,
         page: () => const RoomDetailView(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.favorites,
         page: () => const FavoritesView(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.visitRequests,
         page: () => const VisitRequestsView(),
+        middlewares: [StudentGuard()],
       ),
       GetPage(
         name: AppRouteName.profile,
         page: () => const StudentProfileView(),
+        middlewares: [StudentGuard()],
       ),
 
       // Chat
       GetPage(
         name: AppRouteName.chatList,
         page: () => const ChatListView(),
+        middlewares: [AuthGuard()],
       ),
       GetPage(
         name: AppRouteName.chatDetail,
         page: () => const ChatDetailView(),
+        middlewares: [AuthGuard()],
       ),
 
       // Owner Experience
@@ -113,43 +125,53 @@ class AppRoute {
         name: AppRouteName.ownerMain,
         page: () => const OwnerMainView(),
         binding: OwnerMainBinding(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerDashboard,
         page: () => const OwnerDashboardView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerFloors,
         page: () => const OwnerFloorsView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerRooms,
         page: () => const OwnerRoomsView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerTenants,
         page: () => const OwnerTenantsView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerInvoices,
         page: () => const OwnerInvoicesView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerPricing,
         page: () => const OwnerPricingView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerMembership,
         page: () => const OwnerMembershipView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerProfile,
         page: () => const OwnerProfileView(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.ownerVisitRequests,
         page: () => const OwnerVisitRequestsView(),
         binding: OwnerVisitRequestsBinding(),
+        middlewares: [OwnerGuard()],
       ),
 
       // Legacy Demo
@@ -157,11 +179,13 @@ class AppRoute {
         name: AppRouteName.adminPost,
         page: () => PostView(),
         binding: PostBinding(),
+        middlewares: [OwnerGuard()],
       ),
       GetPage(
         name: AppRouteName.adminPostForm,
         page: () => PostFormView(),
         binding: PostFormBinding(),
+        middlewares: [OwnerGuard()],
       ),
     ];
   }

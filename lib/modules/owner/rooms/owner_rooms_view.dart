@@ -7,6 +7,7 @@ import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../models/rental/facility_preset.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/room_image_widget.dart';
@@ -185,41 +186,15 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        builder: (ctx, setState) => AppCleanDialog(
+          title: isEdit ? 'edit_room'.tr : 'create_room'.tr,
+          subtitle: isEdit ? 'edit_room_desc'.tr : 'create_room_desc'.tr,
+          maxWidth: 480,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isEdit ? 'edit_room'.tr : 'create_room'.tr,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isEdit ? 'edit_room_desc'.tr : 'create_room_desc'.tr,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 480,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 0. Room Photo Uploader (Multi-Photo)
+              // 0. Room Photo Uploader (Multi-Photo)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -786,102 +761,79 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // 7. Save / Update Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final number = nameCtrl.text.trim();
-                        final price = double.tryParse(priceCtrl.text.trim()) ?? 50.0;
-                        final area = double.tryParse(areaCtrl.text.trim()) ?? 18.0;
-
-                        if (number.isNotEmpty) {
-                          if (!isEdit && !controller.canAddMoreRooms) {
-                            Navigator.pop(ctx);
-                            _showPlanLimitDialog(context);
-                            return;
-                          }
-                          int floorToAssign = 1;
-                          if (isCreatingNewFloor) {
-                            final enteredName = floorNameCtrl.text.trim().isNotEmpty
-                                ? floorNameCtrl.text.trim()
-                                : (LanguageService.isKhmer ? "ជាន់ទី ១" : "Floor 1");
-                            floorsCtrl?.addFloor(enteredName);
-
-                            final khmerDigits = {'១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9', '០': '0'};
-                            String s = enteredName;
-                            khmerDigits.forEach((k, v) => s = s.replaceAll(k, v));
-                            final match = RegExp(r'\d+').firstMatch(s);
-                            floorToAssign = match != null ? (int.tryParse(match.group(0) ?? '') ?? 1) : 1;
-                          } else {
-                            floorToAssign = selectedFloor ?? 1;
-                          }
-
-                          final String? finalImage = pickedImages.isEmpty
-                              ? null
-                              : (pickedImages.length == 1 ? pickedImages.first : jsonEncode(pickedImages));
-
-                          if (isEdit) {
-                            controller.updateRoom(
-                              room: roomToEdit,
-                              number: number,
-                              floor: floorToAssign,
-                              price: price,
-                              area: area,
-                              roomType: selectedRoomType,
-                              genderPreference: selectedGender,
-                              facilityIds: selectedFacilities.toList(),
-                              desc: descCtrl.text.trim(),
-                              image: finalImage,
-                            );
-                          } else {
-                            controller.addRoom(
-                              number: number,
-                              floor: floorToAssign,
-                              price: price,
-                              area: area,
-                              roomType: selectedRoomType,
-                              genderPreference: selectedGender,
-                              facilityIds: selectedFacilities.toList(),
-                              desc: descCtrl.text.trim(),
-                              image: finalImage,
-                            );
-                          }
-                          Navigator.pop(ctx);
-                        } else {
-                          AppFirebaseService.logAddRoomForm(
-                            roomNumber: '',
-                            floor: selectedFloor ?? 1,
-                            price: price,
-                            success: false,
-                            errorMessage: "Validation: Empty room number",
-                          );
-                          Get.snackbar('error'.tr, 'please_enter_room_num'.tr);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        elevation: 0,
-                      ),
-                      child: Text('save'.tr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('cancel'.tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    ),
-                  ),
                 ],
               ),
-            ),
-          ),
+          confirmText: 'save'.tr,
+          cancelText: 'cancel'.tr,
+          onConfirm: () {
+            final number = nameCtrl.text.trim();
+            final price = double.tryParse(priceCtrl.text.trim()) ?? 50.0;
+            final area = double.tryParse(areaCtrl.text.trim()) ?? 18.0;
+
+            if (number.isNotEmpty) {
+              if (!isEdit && !controller.canAddMoreRooms) {
+                Navigator.pop(ctx);
+                _showPlanLimitDialog(context);
+                return;
+              }
+              int floorToAssign = 1;
+              if (isCreatingNewFloor) {
+                final enteredName = floorNameCtrl.text.trim().isNotEmpty
+                    ? floorNameCtrl.text.trim()
+                    : (LanguageService.isKhmer ? "ជាន់ទី ១" : "Floor 1");
+                floorsCtrl?.addFloor(enteredName);
+
+                final khmerDigits = {'១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9', '០': '0'};
+                String s = enteredName;
+                khmerDigits.forEach((k, v) => s = s.replaceAll(k, v));
+                final match = RegExp(r'\d+').firstMatch(s);
+                floorToAssign = match != null ? (int.tryParse(match.group(0) ?? '') ?? 1) : 1;
+              } else {
+                floorToAssign = selectedFloor ?? 1;
+              }
+
+              final String? finalImage = pickedImages.isEmpty
+                  ? null
+                  : (pickedImages.length == 1 ? pickedImages.first : jsonEncode(pickedImages));
+
+              if (isEdit) {
+                controller.updateRoom(
+                  room: roomToEdit,
+                  number: number,
+                  floor: floorToAssign,
+                  price: price,
+                  area: area,
+                  roomType: selectedRoomType,
+                  genderPreference: selectedGender,
+                  facilityIds: selectedFacilities.toList(),
+                  desc: descCtrl.text.trim(),
+                  image: finalImage,
+                );
+              } else {
+                controller.addRoom(
+                  number: number,
+                  floor: floorToAssign,
+                  price: price,
+                  area: area,
+                  roomType: selectedRoomType,
+                  genderPreference: selectedGender,
+                  facilityIds: selectedFacilities.toList(),
+                  desc: descCtrl.text.trim(),
+                  image: finalImage,
+                );
+              }
+              Navigator.pop(ctx);
+            } else {
+              AppFirebaseService.logAddRoomForm(
+                roomNumber: '',
+                floor: selectedFloor ?? 1,
+                price: price,
+                success: false,
+                errorMessage: "Validation: Empty room number",
+              );
+              Get.snackbar('error'.tr, 'please_enter_room_num'.tr);
+            }
+          },
         ),
       ),
     );
@@ -938,17 +890,13 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
               title: Text('delete_room'.tr, style: const TextStyle(color: AppColors.danger)),
               onTap: () {
                 Navigator.pop(ctx);
-                Get.defaultDialog(
+                AppCleanDialog.showConfirmation(
+                  context: context,
                   title: 'delete_room'.tr,
-                  middleText: 'delete_room_confirm'.tr,
-                  textConfirm: 'delete'.tr,
-                  textCancel: 'cancel'.tr,
-                  confirmTextColor: Colors.white,
-                  buttonColor: AppColors.danger,
-                  onConfirm: () {
-                    Get.back();
-                    controller.deleteRoom(room);
-                  },
+                  message: 'delete_room_confirm'.tr,
+                  confirmText: 'delete'.tr,
+                  confirmColor: AppColors.danger,
+                  onConfirm: () => controller.deleteRoom(room),
                 );
               },
             ),
@@ -1355,70 +1303,27 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
     final maxRooms = controller.maxAllowedRooms;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 26),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                LanguageService.isKhmer ? "ដល់ដែនកំណត់បន្ទប់" : "Room Limit Reached",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              LanguageService.isKhmer
-                  ? "គម្រោងបច្ចុប្បន្នរបស់អ្នក ($planName) អនុញ្ញាតអតិបរមាត្រឹម $maxRooms បន្ទប់ប៉ុណ្ណោះ។"
-                  : "Your current plan ($planName) allows a maximum of $maxRooms rooms.",
-              style: const TextStyle(fontSize: 13, height: 1.4),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              LanguageService.isKhmer
-                  ? "សូមដំឡើងទៅកាន់ កញ្ចប់ស្តង់ដារ (Standard) ឬ កញ្ចប់ពិសេស (Premium) ដើម្បីអាចបង្កើត និងគ្រប់គ្រងបន្ទប់បន្ថែមបាន។"
-                  : "Please upgrade to Standard (up to 20 rooms) or Premium (unlimited rooms) to create and manage more rooms.",
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              LanguageService.isKhmer ? "ពេលក្រោយ" : "Later",
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
+      builder: (ctx) => AppCleanDialog(
+        title: LanguageService.isKhmer ? "ដល់ដែនកំណត់បន្ទប់" : "Room Limit Reached",
+        subtitle: LanguageService.isKhmer
+            ? "គម្រោងបច្ចុប្បន្នរបស់អ្នក ($planName) អនុញ្ញាតអតិបរមាត្រឹម $maxRooms បន្ទប់ប៉ុណ្ណោះ"
+            : "Your current plan ($planName) allows a maximum of $maxRooms rooms",
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            LanguageService.isKhmer
+                ? "សូមដំឡើងទៅកាន់ កញ្ចប់ស្តង់ដារ (Standard) ឬ កញ្ចប់ពិសេស (Premium) ដើម្បីអាចបង្កើត និងគ្រប់គ្រងបន្ទប់បន្ថែមបាន។"
+                : "Please upgrade to Standard (up to 20 rooms) or Premium (unlimited rooms) to create and manage more rooms.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Get.to(() => const OwnerMembershipView());
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text(
-              LanguageService.isKhmer ? "ដំឡើងគម្រោង" : "Upgrade Plan",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
+        ),
+        confirmText: LanguageService.isKhmer ? "ដំឡើងគម្រោង" : "Upgrade Plan",
+        cancelText: LanguageService.isKhmer ? "ពេលក្រោយ" : "Later",
+        onConfirm: () {
+          Navigator.pop(ctx);
+          Get.to(() => const OwnerMembershipView());
+        },
       ),
     );
   }

@@ -74,71 +74,79 @@ class LanguageService {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: SafeArea(
+                top: false,
+                bottom: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.language, color: AppColors.primary, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'select_language'.tr,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.public_rounded, color: AppColors.primary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'select_language'.tr,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildLanguageOption(
+                      ctx: ctx,
+                      code: 'km',
+                      title: 'ភាសាខ្មែរ',
+                      subtitle: 'ប្រើប្រាស់ជាភាសាខ្មែរ',
+                      flag: '🇰🇭',
+                      isSelected: isKhmer,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildLanguageOption(
+                      ctx: ctx,
+                      code: 'en',
+                      title: 'English',
+                      subtitle: 'Use English language',
+                      flag: '🇺🇸',
+                      isSelected: !isKhmer,
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _buildLanguageOption(
-                  ctx: ctx,
-                  code: 'km',
-                  title: 'ភាសាខ្មែរ (Khmer)',
-                  subtitle: 'ប្រើប្រាស់ជាភាសាខ្មែរ',
-                  flag: '🇰🇭',
-                  isSelected: isKhmer,
-                ),
-                const SizedBox(height: 10),
-                _buildLanguageOption(
-                  ctx: ctx,
-                  code: 'en',
-                  title: 'English (US)',
-                  subtitle: 'Use English language',
-                  flag: '🇺🇸',
-                  isSelected: !isKhmer,
-                ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         );

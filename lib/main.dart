@@ -86,6 +86,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       initialRoute: AppRouteName.splash,
+      unknownRoute: AppRoute.getAllRoutes().first,
       initialBinding: InitialBinding(),
       getPages: AppRoute.getAllRoutes(),
     );

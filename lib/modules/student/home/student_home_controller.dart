@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/language_service.dart';
 import '../../../models/rental/property_model.dart';
 import '../../../models/rental/favorite_model.dart';
 import '../../../widgets/app_colors.dart';
@@ -11,6 +13,7 @@ import '../favorites/favorites_controller.dart';
 
 class StudentHomeController extends GetxController {
   final ApiService apiService;
+  final _storage = GetStorage();
   StudentHomeController({required this.apiService});
 
   final properties = <PropertyModel>[].obs;
@@ -232,8 +235,65 @@ class StudentHomeController extends GetxController {
       }
     } catch (_) {}
 
+    // Load persistent tenant invoice alerts
+    try {
+      final customStored = _storage.read("STUDENT_NOTIFICATIONS_PERSIST");
+      if (customStored is List) {
+        for (var c in customStored) {
+          items.insert(0, {
+            "id": c['id'] ?? "custom_${DateTime.now().millisecondsSinceEpoch}",
+            "title": c['title'] ?? "Notification",
+            "message": c['message'] ?? "",
+            "time": c['time'] ?? "ទើបតែឥឡូវ",
+            "icon": Icons.receipt_long_rounded,
+            "color": AppColors.accentOrange,
+            "isUnread": c['isUnread'] ?? true,
+          });
+        }
+      }
+    } catch (_) {}
+
     notificationsList.assignAll(items);
     unreadNotificationsCount.value = items.where((n) => n['isUnread'] == true).length;
+  }
+
+  static void addInvoiceAlertNotification({
+    required String invoiceNo,
+    required String tenantName,
+    required String roomNumber,
+    required double totalAmount,
+    String? dueDate,
+  }) {
+    final storage = GetStorage();
+    final stored = storage.read("STUDENT_NOTIFICATIONS_PERSIST");
+    List<Map<String, dynamic>> list = [];
+    if (stored is List) {
+      list = stored.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    final notifId = "invoice_alert_$invoiceNo";
+    list.removeWhere((n) => n['id'] == notifId);
+    final isKh = LanguageService.isKhmer;
+    final title = isKh
+        ? "ការរំលឹកបង់ថ្លៃបន្ទប់ $roomNumber • $invoiceNo"
+        : "Rent Reminder - Room $roomNumber • $invoiceNo";
+    final message = isKh
+        ? "វិក្កយបត្រ $invoiceNo ចំនួន \$${totalAmount.toStringAsFixed(2)} ដល់កាលកំណត់បង់ហើយ${dueDate != null && dueDate.isNotEmpty ? ' នៅ $dueDate' : ''}។ សូមពិនិត្យមើល និងទូទាត់ប្រាក់។"
+        : "Invoice $invoiceNo for \$${totalAmount.toStringAsFixed(2)} is due${dueDate != null && dueDate.isNotEmpty ? ' on $dueDate' : ''}. Please review and settle payment.";
+    final timeStr = isKh ? "ទើបតែឥឡូវ" : "Just now";
+
+    list.insert(0, {
+      'id': notifId,
+      'title': title,
+      'message': message,
+      'time': timeStr,
+      'isUnread': true,
+      'isInvoice': true,
+    });
+    storage.write("STUDENT_NOTIFICATIONS_PERSIST", list);
+
+    if (Get.isRegistered<StudentHomeController>()) {
+      Get.find<StudentHomeController>().loadNotifications();
+    }
   }
 
   void markAllNotificationsAsRead() {
@@ -242,6 +302,18 @@ class StudentHomeController extends GetxController {
       n['isUnread'] = false;
     }
     notificationsList.refresh();
+
+    try {
+      final customStored = _storage.read("STUDENT_NOTIFICATIONS_PERSIST");
+      if (customStored is List) {
+        final updated = customStored.map((e) {
+          final m = Map<String, dynamic>.from(e);
+          m['isUnread'] = false;
+          return m;
+        }).toList();
+        _storage.write("STUDENT_NOTIFICATIONS_PERSIST", updated);
+      }
+    } catch (_) {}
   }
 
   void markNotificationAsRead(String id) {
@@ -251,5 +323,17 @@ class StudentHomeController extends GetxController {
       notificationsList.refresh();
       unreadNotificationsCount.value = notificationsList.where((n) => n['isUnread'] == true).length;
     }
+
+    try {
+      final customStored = _storage.read("STUDENT_NOTIFICATIONS_PERSIST");
+      if (customStored is List) {
+        final updated = customStored.map((e) {
+          final m = Map<String, dynamic>.from(e);
+          if (m['id'] == id) m['isUnread'] = false;
+          return m;
+        }).toList();
+        _storage.write("STUDENT_NOTIFICATIONS_PERSIST", updated);
+      }
+    } catch (_) {}
   }
 }

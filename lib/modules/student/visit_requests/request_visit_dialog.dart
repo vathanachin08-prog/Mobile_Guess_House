@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/firebase_service.dart';
+import '../../../widgets/app_clean_dialog.dart';
 import '../../../widgets/app_colors.dart';
 import '../home/student_home_controller.dart';
 import 'visit_requests_controller.dart';
@@ -122,41 +123,21 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      backgroundColor: AppColors.surface,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'book_visit'.tr,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
-                  onPressed: () => Get.back(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "${widget.propertyName}${widget.roomNumber != null ? ' • Room ${widget.roomNumber}' : ''}",
-              style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: 16),
-
-            // Date picker field
-            Text('date_label'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+    return AppCleanDialog(
+      title: 'book_visit'.tr,
+      subtitle: "${widget.propertyName}${widget.roomNumber != null ? ' • Room ${widget.roomNumber}' : ''}",
+      maxWidth: 420,
+      isConfirmLoading: isLoading,
+      confirmText: 'confirm'.tr,
+      cancelText: 'cancel'.tr,
+      onConfirm: _submit,
+      onCancel: () => Get.back(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Date picker field
+          Text('date_label'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             InkWell(
               onTap: () async {
@@ -249,33 +230,7 @@ class _RequestVisitDialogState extends State<RequestVisitDialog> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                        'confirm'.tr,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../../core/services/chat_service.dart';
 import '../../core/services/language_service.dart';
 import '../../data/local/token_store_local.dart';
 import '../../models/chat/chat_model.dart';
+import '../../widgets/app_clean_dialog.dart';
 import '../../widgets/app_colors.dart';
 import '../../widgets/chat_avatar_widget.dart';
 import '../student/visit_requests/request_visit_dialog.dart';
@@ -128,81 +129,53 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   void _showCallDialog(String name, String phone) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.phone_rounded, color: Colors.green, size: 22),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                LanguageService.isKhmer ? "ទូរស័ព្ទទៅកាន់" : "Call",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.phone_iphone_rounded, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    phone,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(LanguageService.isKhmer ? "បិទ" : "Close"),
+      builder: (ctx) => AppCleanDialog(
+        title: LanguageService.isKhmer ? "ទូរស័ព្ទទៅកាន់" : "Call",
+        subtitle: name,
+        maxWidth: 380,
+        icon: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            shape: BoxShape.circle,
           ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Get.snackbar(
-                LanguageService.isKhmer ? "កំពុងតេស្តខល..." : "Calling...",
-                "$name ($phone)",
-                backgroundColor: Colors.green.shade50,
-                colorText: Colors.green.shade900,
-                icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.green),
-              );
-            },
-            icon: const Icon(Icons.call, size: 16),
-            label: Text(LanguageService.isKhmer ? "ខលឥឡូវនេះ" : "Call Now"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
+          child: const Center(
+            child: Icon(Icons.phone_rounded, color: Colors.green, size: 26),
           ),
-        ],
+        ),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.phone_iphone_rounded, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                phone,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+        confirmText: LanguageService.isKhmer ? "ហៅទូរស័ព្ទ" : "Call Now",
+        confirmColor: AppColors.primary,
+        cancelText: LanguageService.isKhmer ? "បិទ" : "Close",
+        onConfirm: () {
+          Navigator.pop(ctx);
+          Get.snackbar(
+            LanguageService.isKhmer ? "កំពុងតេស្តខល..." : "Calling...",
+            "$name ($phone)",
+            backgroundColor: Colors.green.shade50,
+            colorText: Colors.green.shade900,
+            icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.green),
+          );
+        },
       ),
     );
   }

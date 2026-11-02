@@ -11,6 +11,7 @@ import '../../../routes/app_route_name.dart';
 import '../../../widgets/animated_widgets.dart';
 import '../../../widgets/app_colors.dart';
 import '../../../widgets/custom_app_bar.dart';
+import '../../../widgets/logout_confirmation_dialog.dart';
 import '../../../widgets/owner_app_bar_helper.dart';
 import '../membership/owner_membership_view.dart';
 import '../pricing/owner_pricing_view.dart';
@@ -364,10 +365,24 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
                 title: 'settings'.tr,
                 children: [
                   _buildListTile(
-                    icon: Icons.translate_rounded,
+                    icon: Icons.public_rounded,
                     title: 'language'.tr,
-                    trailing: const AnimatedLanguageToggle(compact: false),
-                    onTap: () => LanguageService.toggleLanguage(),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          LanguageService.isKhmer ? "ភាសាខ្មែរ" : "English",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+                      ],
+                    ),
+                    onTap: () => LanguageService.showLanguageSelector(context),
                   ),
                   _buildListTile(
                     icon: Icons.support_agent_rounded,
@@ -381,30 +396,24 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
 
               // Sign Out Button
               OutlinedButton.icon(
-                onPressed: () {
-                  Get.defaultDialog(
-                    title: 'sign_out'.tr,
-                    middleText: 'confirm_sign_out'.tr,
-                    textConfirm: 'confirm'.tr,
-                    textCancel: 'cancel'.tr,
-                    confirmTextColor: Colors.white,
-                    buttonColor: AppColors.danger,
-                    onConfirm: () {
-                      Get.back();
-                      controller.logout();
-                    },
-                  );
-                },
-                icon: const Icon(Icons.logout, color: AppColors.danger, size: 20),
+                onPressed: () => LogoutConfirmationDialog.show(
+                  context,
+                  onConfirm: controller.logout,
+                ),
+                icon: const Icon(Icons.logout_rounded, color: AppColors.danger, size: 20),
                 label: Text(
                   'sign_out'.tr,
-                  style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.dangerSoft),
-                  backgroundColor: AppColors.dangerSoft.withValues(alpha: 0.3),
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  side: const BorderSide(color: AppColors.dangerSoft, width: 1.2),
+                  backgroundColor: AppColors.dangerSoft.withValues(alpha: 0.35),
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
               const SizedBox(height: 20),
