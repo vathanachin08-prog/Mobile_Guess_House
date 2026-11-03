@@ -24,6 +24,8 @@ class ConstantUri {
   static String roomDetail(dynamic id) => "$baseUri/api/app/rooms/$id";
   static String propertyFloors(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/floors";
   static String deleteFloor(dynamic id) => "$baseUri/api/app/floors/$id";
+  static String propertyTenants(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/tenants";
+  static String tenantDetail(dynamic id) => "$baseUri/api/app/tenants/$id";
 
   // Student Favorites
   static String get favorites => "$baseUri/api/app/favorites";

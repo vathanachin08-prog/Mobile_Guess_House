@@ -131,7 +131,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 2. Alert Banner (Orange Gradient Banner like ABA)
+                  // 2. Alert Banner (Green Gradient Banner)
                   _buildAlertBanner(context),
 
                   // 3. Featured Account / Revenue Card (ABA Account/Savings Card style in clean white)
@@ -139,7 +139,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
 
                   const SizedBox(height: 18),
 
-                  // 4. Quick Services 3x2 Grid (6 Rounded White Surface Tiles like ABA)
+                  // 4. Quick Services 3x2 Grid (6 Rounded White Surface Tiles)
                   _buildServicesGrid(context),
 
                   const SizedBox(height: 14),
@@ -432,7 +432,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   }
 
   // ==========================================
-  // 2. ALERT BANNER (Orange Gradient like ABA)
+  // 2. ALERT BANNER (Green Gradient)
   // ==========================================
   Widget _buildAlertBanner(BuildContext context) {
     final hasUnpaid = controller.unpaidInvoices.value > 0;
@@ -481,14 +481,14 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFF9500), Color(0xFFFF5E00)],
+                        colors: [Color(0xFF00A86B), Color(0xFF059669)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF5E00).withValues(alpha: 0.28),
+                          color: const Color(0xFF00A86B).withValues(alpha: 0.28),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -1045,23 +1045,19 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
   // 4. SERVICES 3x2 GRID (6 Rounded Tiles)
   // ==========================================
   Widget _buildServicesGrid(BuildContext context) {
-    final unpaid = controller.unpaidInvoices.value;
-    final pending = controller.pendingVisitRequestsCount.value;
-
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 1.08,
+      childAspectRatio: 1.05,
       children: [
         // 1. Floors
         _buildServiceTile(
           icon: Icons.layers_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "ជាន់" : "Floors",
-          subtitle: "${controller.totalFloors.value}",
           onTap: () => Get.find<OwnerMainController>().changeTab(1),
         ),
 
@@ -1070,7 +1066,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.meeting_room_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "បន្ទប់" : "Rooms",
-          subtitle: "${controller.totalRooms.value}",
           onTap: () => Get.find<OwnerMainController>().changeTab(2),
         ),
 
@@ -1079,7 +1074,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.receipt_long_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "វិក្កយបត្រ" : "Invoices",
-          subtitle: LanguageService.isKhmer ? "ទូទាត់" : "Payments",
           onTap: () => Get.find<OwnerMainController>().changeTab(4),
         ),
 
@@ -1088,7 +1082,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.people_alt_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "អ្នកជួល" : "Tenants",
-          subtitle: "${controller.totalTenants.value}",
           onTap: () => Get.find<OwnerMainController>().changeTab(3),
         ),
 
@@ -1097,9 +1090,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.calendar_month_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "ការណាត់ជួប" : "Appointments",
-          subtitle: pending > 0 ? "$pending រង់ចាំ" : "កាលវិភាគ",
-          badgeCount: pending > 0 ? pending : null,
-          badgeColor: AppColors.danger,
           onTap: () => Get.toNamed(AppRouteName.ownerVisitRequests),
         ),
 
@@ -1108,7 +1098,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
           icon: Icons.star_rounded,
           iconColor: AppColors.primary,
           label: LanguageService.isKhmer ? "ការវាយតម្លៃ" : "Reviews",
-          subtitle: LanguageService.isKhmer ? "មតិយោបល់" : "Feedback",
           onTap: () => Get.to(() => const OwnerReviewsView()),
         ),
       ],
@@ -1119,7 +1108,6 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
     required IconData icon,
     required Color iconColor,
     required String label,
-    required String subtitle,
     required VoidCallback onTap,
     int? badgeCount,
     Color badgeColor = AppColors.danger,
@@ -1147,21 +1135,14 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: iconColor, size: 22),
-                    ),
-                    const SizedBox(height: 6),
+                    Icon(icon, color: iconColor, size: 28),
+                    const SizedBox(height: 10),
                     Text(
                       label,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1222,7 +1203,7 @@ class _OwnerDashboardViewState extends State<OwnerDashboardView> {
         Expanded(
           child: _buildSmallPillButton(
             icon: Icons.tune_rounded,
-            label: LanguageService.isKhmer ? "មីនុយច្រើនទៀត" : "More",
+            label: LanguageService.isKhmer ? "ជម្រើសច្រើនទៀត" : "More",
             hasBadge: true,
             onTap: () => _showMoreActionsBottomSheet(context),
           ),

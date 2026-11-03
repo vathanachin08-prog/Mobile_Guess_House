@@ -84,6 +84,7 @@ class LoginView extends GetView<LoginController> {
                   InputCustomWidget(
                     controller: controller.usernameController,
                     label: 'phone'.tr,
+                    hint: 'enter_phone'.tr,
                     keyboardType: TextInputType.phone,
                     prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
                   ),
@@ -91,6 +92,7 @@ class LoginView extends GetView<LoginController> {
                   InputCustomWidget(
                     controller: controller.passwordController,
                     label: 'password'.tr,
+                    hint: 'enter_password'.tr,
                     obscureText: controller.obscurePassword.value,
                     prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                     suffixIcon: IconButton(

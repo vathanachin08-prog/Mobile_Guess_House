@@ -657,28 +657,6 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                 ),
               ),
 
-              if (!inv.isPaid) ...[
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _showAlertTenantDialog(inv);
-                    },
-                    icon: const Icon(Icons.notifications_active_rounded, size: 18, color: Colors.white),
-                    label: Text('alert_tenant'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-
               const SizedBox(height: 12),
 
               // Action buttons
@@ -1320,10 +1298,6 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
               // Auto-Generate Monthly Invoices Banner
               _buildAutoGenerateBanner(),
 
-              // Batch Alert Banner when unpaid invoices exist
-              if (controller.unpaidCount > 0)
-                _buildBatchAlertBanner(),
-
               // 2x2 Dynamic Metric Cards Grid
               GridView.count(
                 crossAxisCount: 2,
@@ -1490,32 +1464,6 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                           ),
                                         ),
                                       ),
-                                      if (!isPaid) ...[
-                                        const SizedBox(height: 4),
-                                        InkWell(
-                                          onTap: () => _showAlertTenantDialog(inv),
-                                          borderRadius: BorderRadius.circular(6),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primarySoft,
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.notifications_active_rounded, size: 10.5, color: AppColors.primary),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  'alert_tenant'.tr,
-                                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
                                     ],
                                   ),
                                   const SizedBox(width: 4),
@@ -1526,8 +1474,6 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                     onSelected: (val) {
                                       if (val == 'details') {
                                         _showInvoiceDetailModal(inv);
-                                      } else if (val == 'alert') {
-                                        _showAlertTenantDialog(inv);
                                       } else if (val == 'toggle_status') {
                                         if (isPaid) {
                                           controller.markAsUnpaid(inv.id);
@@ -1549,20 +1495,6 @@ class _OwnerInvoicesViewState extends State<OwnerInvoicesView> {
                                           ],
                                         ),
                                       ),
-                                      if (!isPaid)
-                                        PopupMenuItem(
-                                          value: 'alert',
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.notifications_active_rounded, size: 18, color: AppColors.accentOrange),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'alert_tenant'.tr,
-                                                style: const TextStyle(color: AppColors.accentOrange, fontWeight: FontWeight.bold),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
                                       PopupMenuItem(
                                         value: 'toggle_status',
                                         child: Row(

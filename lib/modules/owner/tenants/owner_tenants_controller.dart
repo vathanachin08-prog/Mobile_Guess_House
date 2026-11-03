@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import '../../../constants/constant_uri.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/language_service.dart';
@@ -12,6 +14,9 @@ import '../rooms/owner_rooms_controller.dart';
 class OwnerTenantsController extends GetxController {
   final ApiService? apiService;
   final _storage = GetStorage();
+
+  ApiService? get effectiveApiService =>
+      apiService ?? (Get.isRegistered<ApiService>() ? Get.find<ApiService>() : null);
 
   int? get activePropertyId {
     if (Get.isRegistered<OwnerMainController>()) {
@@ -65,35 +70,30 @@ class OwnerTenantsController extends GetxController {
     }
   }
 
-  void loadTenants() {
-    isLoading.value = true;
-    try {
-      final propId = activePropertyId;
-      dynamic stored;
+  void _loadFromCache() {
+    final propId = activePropertyId;
+    dynamic stored;
 
-      // Check all possible persistent storage keys in cascade
-      final candidateKeys = [
-        _storageKey,
-        TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_${propId ?? ''}"),
-        "OWNER_TENANTS_${propId ?? 'none'}",
-        "OWNER_TENANTS_${propId ?? ''}",
-        "GLOBAL_ALL_TENANTS",
-        _legacyStorageKey,
-        TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_PERSIST_KEY"),
-        "OWNER_TENANTS_PERSIST_KEY",
-        "OWNER_TENANTS_none",
-        "OWNER_TENANTS_PERSIST_KEY_default",
-      ];
+    final candidateKeys = [
+      _storageKey,
+      if (propId != null) "OWNER_TENANTS_$propId",
+      TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_${propId ?? ''}"),
+      "PERMANENT_TENANTS_BACKUP",
+      "GLOBAL_ALL_TENANTS",
+      _legacyStorageKey,
+      TokenStoreLocal.getUserScopedKey("OWNER_TENANTS_PERSIST_KEY"),
+    ];
 
-      for (final key in candidateKeys) {
-        final val = _storage.read(key);
-        if (val is List && val.isNotEmpty) {
-          stored = val;
-          break;
-        }
+    for (final key in candidateKeys) {
+      final val = _storage.read(key);
+      if (val is List && val.isNotEmpty) {
+        stored = val;
+        break;
       }
+    }
 
-      if (stored is List && stored.isNotEmpty) {
+    if (stored is List && stored.isNotEmpty) {
+      try {
         final loaded = stored
             .map((item) => TenantModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
@@ -103,13 +103,42 @@ class OwnerTenantsController extends GetxController {
         } else {
           tenants.value = loaded;
         }
-      } else {
-        // Purely dynamic: empty if owner has not added tenants yet
-        tenants.clear();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> loadTenants() async {
+    final propId = activePropertyId;
+    _loadFromCache();
+    _syncToDashboard();
+
+    final api = effectiveApiService;
+    if (api != null && propId != null) {
+      isLoading.value = true;
+      try {
+        final res = await api.getApi(ConstantUri.propertyTenants(propId));
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
+          final data = decoded['data'];
+          List items = [];
+          if (data is List) {
+            items = data;
+          } else if (data is Map && data['content'] is List) {
+            items = data['content'];
+          }
+
+          tenants.value = items
+              .map((item) => TenantModel.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+          _save();
+        }
+      } catch (_) {
+        // Retain cached data on network error
+      } finally {
+        isLoading.value = false;
+        _syncToDashboard();
       }
-    } catch (_) {
-      tenants.clear();
-    } finally {
+    } else {
       isLoading.value = false;
       _syncToDashboard();
     }
@@ -127,11 +156,12 @@ class OwnerTenantsController extends GetxController {
   void _save() {
     final list = tenants.map((t) => t.toJson()).toList();
     _storage.write(_storageKey, list);
+    _storage.write("PERMANENT_TENANTS_BACKUP", list);
+    _storage.write("GLOBAL_ALL_TENANTS", list);
     final propId = activePropertyId;
     if (propId != null) {
       _storage.write("OWNER_TENANTS_$propId", list);
     }
-    _storage.write("GLOBAL_ALL_TENANTS", list);
     _syncToDashboard();
   }
 
@@ -141,8 +171,19 @@ class OwnerTenantsController extends GetxController {
     if (rawFloor == null || rawFloor.trim().isEmpty) return "";
     final lower = rawFloor.trim().toLowerCase();
 
-    // Check Ground floor
-    if (lower.contains("ផ្ទាល់ដី") || lower.contains("ground")) {
+    // Check Ground floor variations (FLOOR_G, floor_g, ground, ផ្ទាល់ដី, floor 0, 0, g)
+    if (lower.contains("ផ្ទាល់ដី") ||
+        lower.contains("ground") ||
+        lower == "floor_g" ||
+        lower == "g" ||
+        lower == "floor g" ||
+        lower == "ជាន់ g" ||
+        lower == "ជាន់g" ||
+        lower == "0" ||
+        lower == "floor 0" ||
+        lower == "ជាន់ 0" ||
+        lower == "ជាន់ ០" ||
+        lower.startsWith("floor_g")) {
       return "FLOOR_G";
     }
 
@@ -196,20 +237,42 @@ class OwnerTenantsController extends GetxController {
 
     // 1. Direct canonical match from tenant.floor
     final tenantKey = getCanonicalFloorKey(t.floor);
-    if (tenantKey.isNotEmpty) {
-      return tenantKey == filterKey;
+    if (tenantKey.isNotEmpty && tenantKey == filterKey) {
+      return true;
     }
 
-    // 2. Room lookup fallback if tenant.floor was not set or empty
+    // 2. Direct string equality check (ignoring case & trimming)
+    final cleanTFloor = (t.floor ?? '').trim().toLowerCase();
+    final cleanFilter = filter.trim().toLowerCase();
+    if (cleanTFloor.isNotEmpty && (cleanTFloor == cleanFilter || cleanTFloor.contains(cleanFilter) || cleanFilter.contains(cleanTFloor))) {
+      return true;
+    }
+
+    // 3. Fallback: Lookup via tenant's roomNumber in OwnerRoomsController
     if (Get.isRegistered<OwnerRoomsController>()) {
       final roomsCtrl = Get.find<OwnerRoomsController>();
       final cleanRoom = (t.roomNumber ?? '').trim().toLowerCase();
-      final room = roomsCtrl.rooms.firstWhereOrNull(
-        (r) => (r.roomNumber ?? '').trim().toLowerCase() == cleanRoom,
-      );
-      if (room != null && room.floor != null) {
-        final roomKey = getRoomFloorCanonicalKey(room.floor);
-        return roomKey == filterKey;
+      if (cleanRoom.isNotEmpty) {
+        final room = roomsCtrl.rooms.firstWhereOrNull(
+          (r) => (r.roomNumber ?? '').trim().toLowerCase() == cleanRoom,
+        );
+        if (room != null && room.floor != null) {
+          final roomKey = getRoomFloorCanonicalKey(room.floor);
+          if (roomKey == filterKey) return true;
+
+          // Also check room's floorDisplayName
+          final roomFloorNameKey = getCanonicalFloorKey(room.floorDisplayName);
+          if (roomFloorNameKey == filterKey) return true;
+        }
+      }
+    }
+
+    // 4. Fallback: If tenant.floor was stored as a raw digit string
+    if (t.floor != null) {
+      final fInt = int.tryParse(t.floor!.trim());
+      if (fInt != null) {
+        final derivedKey = getRoomFloorCanonicalKey(fInt);
+        if (derivedKey == filterKey) return true;
       }
     }
 
@@ -230,8 +293,8 @@ class OwnerTenantsController extends GetxController {
       }
     }
 
-    // 2. If no registered floors exist in controller, derive from registered rooms
-    if (canonicalKeys.isEmpty && Get.isRegistered<OwnerRoomsController>()) {
+    // 2. Also collect floors from registered rooms in OwnerRoomsController
+    if (Get.isRegistered<OwnerRoomsController>()) {
       final rCtrl = Get.find<OwnerRoomsController>();
       for (final r in rCtrl.rooms) {
         if (r.floor != null) {
@@ -243,12 +306,18 @@ class OwnerTenantsController extends GetxController {
       }
     }
 
-    // 3. If still empty, derive from current tenants
-    if (canonicalKeys.isEmpty) {
-      for (final t in tenants) {
-        final key = getCanonicalFloorKey(t.floor);
-        if (key.isNotEmpty) {
-          canonicalKeys.add(key);
+    // 3. Also collect floors from currently active tenants
+    for (final t in tenants) {
+      final key = getCanonicalFloorKey(t.floor);
+      if (key.isNotEmpty) {
+        canonicalKeys.add(key);
+      } else if (t.roomNumber != null && Get.isRegistered<OwnerRoomsController>()) {
+        final r = Get.find<OwnerRoomsController>().rooms.firstWhereOrNull(
+          (rm) => (rm.roomNumber ?? '').trim().toLowerCase() == (t.roomNumber ?? '').trim().toLowerCase(),
+        );
+        if (r != null && r.floor != null) {
+          final key = getRoomFloorCanonicalKey(r.floor);
+          if (key.isNotEmpty) canonicalKeys.add(key);
         }
       }
     }
@@ -323,17 +392,51 @@ class OwnerTenantsController extends GetxController {
     return map;
   }
 
-  void addTenant({
+  Future<TenantModel?> addTenant({
     required String name,
     required String roomNumber,
     required String floor,
     required String phone,
     String? email,
-  }) {
-    final newId = tenants.isEmpty ? 1 : (tenants.map((t) => t.id ?? 0).reduce((a, b) => a > b ? a : b) + 1);
+  }) async {
+    final api = effectiveApiService;
+    final propId = activePropertyId;
+
+    final body = {
+      "name": name.trim(),
+      "roomNumber": roomNumber.trim(),
+      "floor": floor.trim(),
+      "phoneNumber": phone.trim(),
+      "email": email?.trim() ?? "",
+      "status": "ACTIVE",
+    };
+
+    if (api != null && propId != null) {
+      try {
+        final res = await api.postApi(ConstantUri.propertyTenants(propId), body: body);
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
+          final data = decoded['data'];
+          if (data != null) {
+            final created = TenantModel.fromJson(Map<String, dynamic>.from(data));
+            tenants.removeWhere((t) => t.id == created.id);
+            tenants.insert(0, created);
+            _save();
+            if (Get.isRegistered<OwnerRoomsController>()) {
+              Get.find<OwnerRoomsController>().loadRooms();
+            }
+            return created;
+          }
+        }
+      } catch (_) {
+        // Fallback to local save below if API fails
+      }
+    }
+
+    final newId = DateTime.now().millisecondsSinceEpoch % 100000;
     final newTenant = TenantModel(
       id: newId,
-      propertyId: activePropertyId,
+      propertyId: propId,
       name: name,
       roomNumber: roomNumber,
       floor: floor,
@@ -343,16 +446,56 @@ class OwnerTenantsController extends GetxController {
     );
     tenants.insert(0, newTenant);
     _save();
+    if (Get.isRegistered<OwnerRoomsController>()) {
+      Get.find<OwnerRoomsController>().loadRooms();
+    }
+    return newTenant;
   }
 
-  void updateTenant({
+  Future<void> updateTenant({
     required int id,
     required String name,
     required String roomNumber,
     required String floor,
     required String phone,
     String? email,
-  }) {
+  }) async {
+    final api = effectiveApiService;
+    final body = {
+      "name": name.trim(),
+      "roomNumber": roomNumber.trim(),
+      "floor": floor.trim(),
+      "phoneNumber": phone.trim(),
+      "email": email?.trim() ?? "",
+      "status": "ACTIVE",
+    };
+
+    if (api != null) {
+      try {
+        final res = await api.putApi(ConstantUri.tenantDetail(id), body: body);
+        if (res != null) {
+          final decoded = res is Map ? res : jsonDecode(res.toString());
+          final data = decoded['data'];
+          if (data != null) {
+            final updated = TenantModel.fromJson(Map<String, dynamic>.from(data));
+            final idx = tenants.indexWhere((t) => t.id == id);
+            if (idx != -1) {
+              tenants[idx] = updated;
+            } else {
+              tenants.insert(0, updated);
+            }
+            _save();
+            if (Get.isRegistered<OwnerRoomsController>()) {
+              Get.find<OwnerRoomsController>().loadRooms();
+            }
+            return;
+          }
+        }
+      } catch (_) {
+        // Fallback local update
+      }
+    }
+
     final idx = tenants.indexWhere((t) => t.id == id);
     if (idx != -1) {
       tenants[idx] = TenantModel(
@@ -367,6 +510,9 @@ class OwnerTenantsController extends GetxController {
         joinedDate: tenants[idx].joinedDate,
       );
       _save();
+      if (Get.isRegistered<OwnerRoomsController>()) {
+        Get.find<OwnerRoomsController>().loadRooms();
+      }
     }
   }
 
@@ -393,9 +539,22 @@ class OwnerTenantsController extends GetxController {
     return false;
   }
 
-  void removeTenant(int? id) {
+  Future<void> removeTenant(int? id) async {
     if (id == null) return;
+    final api = effectiveApiService;
+
+    if (api != null) {
+      try {
+        await api.deleteApi(ConstantUri.tenantDetail(id));
+      } catch (_) {
+        // Continue with local removal
+      }
+    }
+
     tenants.removeWhere((t) => t.id == id);
     _save();
+    if (Get.isRegistered<OwnerRoomsController>()) {
+      Get.find<OwnerRoomsController>().loadRooms();
+    }
   }
 }

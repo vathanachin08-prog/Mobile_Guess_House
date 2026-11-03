@@ -50,7 +50,7 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
     super.initState();
     controller = Get.isRegistered<OwnerTenantsController>()
         ? Get.find<OwnerTenantsController>()
-        : Get.put(OwnerTenantsController());
+        : Get.put(OwnerTenantsController(apiService: Get.isRegistered<ApiService>() ? Get.find<ApiService>() : null));
     controller.loadTenants();
     searchController.addListener(() {
       controller.searchQuery.value = searchController.text;
@@ -728,25 +728,27 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(
-                        labelText: 'full_name'.tr,
-                        prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                    labelText: 'full_name'.tr,
+                    hintText: 'full_name'.tr,
+                    prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-                    // Phone Number
-                    TextField(
-                      controller: phoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'phone'.tr,
-                        prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
+                // Phone Number
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'phone'.tr,
+                    hintText: 'phone'.tr,
+                    prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.primary, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
                     const SizedBox(height: 14),
 
                     // Floor Selector Dropdown
@@ -884,6 +886,7 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                         controller: customRoomCtrl,
                         decoration: InputDecoration(
                           labelText: 'room_number'.tr,
+                          hintText: 'room_number'.tr,
                           prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1172,104 +1175,104 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
                     }
 
                     return Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: currentValue,
-                          isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
-                          dropdownColor: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          items: [
-                            DropdownMenuItem<String>(
-                              value: "ALL",
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.apartment_rounded, size: 18, color: AppColors.primary),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'all'.tr,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: currentValue == "ALL" ? FontWeight.bold : FontWeight.w500,
-                                          color: currentValue == "ALL" ? AppColors.primary : AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primarySoft,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      "$totalCount",
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
                             ),
-                            ...floors.map((floor) {
-                              final count = controller.getTenantCountForFloor(floor);
-                              final isCurrent = currentValue == floor;
-                              return DropdownMenuItem<String>(
-                                value: floor,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: currentValue,
+                                isExpanded: true,
+                                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                                dropdownColor: AppColors.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                items: [
+                                  DropdownMenuItem<String>(
+                                    value: "ALL",
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Icon(Icons.layers_outlined, size: 16, color: AppColors.primary),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          floor,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                                            color: isCurrent ? AppColors.primary : AppColors.textPrimary,
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.apartment_rounded, size: 18, color: AppColors.primary),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'all'.tr,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: currentValue == "ALL" ? FontWeight.bold : FontWeight.w500,
+                                                color: currentValue == "ALL" ? AppColors.primary : AppColors.textPrimary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primarySoft,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            "$totalCount",
+                                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: count > 0 ? AppColors.primarySoft : AppColors.border.withValues(alpha: 0.35),
-                                        borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  ...floors.map((floor) {
+                                    final count = controller.getTenantCountForFloor(floor);
+                                    final isCurrent = currentValue == floor;
+                                    return DropdownMenuItem<String>(
+                                      value: floor,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.layers_outlined, size: 16, color: AppColors.primary),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                floor,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                                  color: isCurrent ? AppColors.primary : AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: count > 0 ? AppColors.primarySoft : AppColors.border.withValues(alpha: 0.35),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              "$count",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: count > 0 ? AppColors.primary : AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      child: Text(
-                                        "$count",
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: count > 0 ? AppColors.primary : AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              controller.selectedFloorFilter.value = val;
-                              controller.resetPagination();
-                            }
-                          },
-                        ),
-                      ),
+                                    );
+                                  }),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    controller.selectedFloorFilter.value = val;
+                                    controller.resetPagination();
+                                  }
+                                },
+                              ),
+                            ),
                     );
                   }),
                 ],

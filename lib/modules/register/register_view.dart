@@ -95,6 +95,7 @@ class RegisterView extends GetView<RegisterController> {
                       child: InputCustomWidget(
                         controller: controller.firstNameController,
                         label: 'first_name'.tr,
+                        hint: 'enter_first_name'.tr,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -102,6 +103,7 @@ class RegisterView extends GetView<RegisterController> {
                       child: InputCustomWidget(
                         controller: controller.lastNameController,
                         label: 'last_name'.tr,
+                        hint: 'enter_last_name'.tr,
                       ),
                     ),
                   ],
@@ -109,18 +111,21 @@ class RegisterView extends GetView<RegisterController> {
                 InputCustomWidget(
                   controller: controller.phoneController,
                   label: 'phone'.tr,
+                  hint: 'enter_phone'.tr,
                   keyboardType: TextInputType.phone,
                   prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
                 ),
                 InputCustomWidget(
                   controller: controller.emailController,
                   label: LanguageService.isKhmer ? "អ៊ីមែល" : "Email Address",
+                  hint: LanguageService.isKhmer ? "បញ្ចូលអ៊ីមែល..." : "Enter email address...",
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
                 ),
                 InputCustomWidget(
                   controller: controller.passwordController,
                   label: 'password'.tr,
+                  hint: 'enter_password'.tr,
                   obscureText: controller.obscurePassword.value,
                   prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                   suffixIcon: IconButton(
@@ -134,6 +139,7 @@ class RegisterView extends GetView<RegisterController> {
                 InputCustomWidget(
                   controller: controller.confirmPasswordController,
                   label: 'confirm_password'.tr,
+                  hint: 'enter_confirm_password'.tr,
                   obscureText: controller.obscurePassword.value,
                   prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                 ),

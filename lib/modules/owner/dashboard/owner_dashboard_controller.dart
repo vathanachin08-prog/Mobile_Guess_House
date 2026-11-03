@@ -44,6 +44,17 @@ class OwnerDashboardController extends GetxController {
   final profileImagePath = "".obs;
   final isBalanceHidden = false.obs;
 
+  // Dashboard card style: false = classic white cards, true = 3x3 green cards
+  final isGreenCardStyle = false.obs;
+
+  void toggleCardStyle() {
+    isGreenCardStyle.value = !isGreenCardStyle.value;
+    try {
+      final box = GetStorage();
+      box.write("OWNER_DASHBOARD_GREEN_CARD_STYLE", isGreenCardStyle.value);
+    } catch (_) {}
+  }
+
   void toggleBalanceVisibility() {
     isBalanceHidden.toggle();
   }
@@ -51,6 +62,13 @@ class OwnerDashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    try {
+      final box = GetStorage();
+      final saved = box.read("OWNER_DASHBOARD_GREEN_CARD_STYLE");
+      if (saved != null && saved is bool) {
+        isGreenCardStyle.value = saved;
+      }
+    } catch (_) {}
     _loadUserInfo();
     loadDashboard();
   }

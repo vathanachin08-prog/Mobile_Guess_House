@@ -5,6 +5,8 @@ import '../../../constants/constant_uri.dart';
 import '../../../core/services/api_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../owner_main_controller.dart';
+import '../rooms/owner_rooms_controller.dart';
+import '../tenants/owner_tenants_controller.dart';
 import '../dashboard/owner_dashboard_controller.dart';
 
 class FloorItem {
@@ -142,6 +144,62 @@ class OwnerFloorsController extends GetxController {
 
   void _saveFloors() {
     _storage.write(_storageKey, floors.map((f) => f.toJson()).toList());
+  }
+
+  int getRoomCountForFloor(FloorItem floor) {
+    if (Get.isRegistered<OwnerRoomsController>()) {
+      final rCtrl = Get.find<OwnerRoomsController>();
+      if (rCtrl.rooms.isNotEmpty) {
+        final fNum = floor.floorNumber;
+        final fCanonical = OwnerTenantsController.getCanonicalFloorKey(floor.name);
+
+        return rCtrl.rooms.where((r) {
+          // 1. Direct floor integer match
+          if (r.floor != null && r.floor == fNum) return true;
+
+          // 2. Canonical floor key match
+          if (fCanonical.isNotEmpty) {
+            final rCanonical = r.floor != null
+                ? OwnerTenantsController.getRoomFloorCanonicalKey(r.floor)
+                : OwnerTenantsController.getCanonicalFloorKey(r.floorDisplayName);
+            if (rCanonical == fCanonical) return true;
+          }
+
+          return false;
+        }).length;
+      }
+    }
+
+    return floor.totalRooms;
+  }
+
+  int getOccupiedCountForFloor(FloorItem floor) {
+    if (Get.isRegistered<OwnerRoomsController>()) {
+      final rCtrl = Get.find<OwnerRoomsController>();
+      if (rCtrl.rooms.isNotEmpty) {
+        final fNum = floor.floorNumber;
+        final fCanonical = OwnerTenantsController.getCanonicalFloorKey(floor.name);
+
+        return rCtrl.rooms.where((r) {
+          if (r.available == true) return false;
+
+          // 1. Direct floor integer match
+          if (r.floor != null && r.floor == fNum) return true;
+
+          // 2. Canonical floor key match
+          if (fCanonical.isNotEmpty) {
+            final rCanonical = r.floor != null
+                ? OwnerTenantsController.getRoomFloorCanonicalKey(r.floor)
+                : OwnerTenantsController.getCanonicalFloorKey(r.floorDisplayName);
+            if (rCanonical == fCanonical) return true;
+          }
+
+          return false;
+        }).length;
+      }
+    }
+
+    return floor.occupiedRooms;
   }
 
   List<FloorItem> get filteredFloors {

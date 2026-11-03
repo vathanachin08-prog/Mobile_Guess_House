@@ -45,17 +45,13 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'floor_name'.tr,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 6),
             TextField(
               controller: floorNameCtrl,
               autofocus: true,
               decoration: InputDecoration(
+                labelText: 'floor_name'.tr,
                 hintText: LanguageService.isKhmer ? 'ឧ. ជាន់ទី១, ជាន់ផ្ទាល់ដី' : 'e.g. Floor 1, Ground Floor',
-                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                prefixIcon: const Icon(Icons.layers_outlined, color: AppColors.primary, size: 20),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
@@ -121,6 +117,8 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                 controller: searchController,
                 onChanged: (val) => controller.searchQuery.value = val.trim(),
                 decoration: InputDecoration(
+                  hintText: LanguageService.isKhmer ? "ស្វែងរកជាន់..." : "Search floor...",
+                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                   filled: true,
                   fillColor: AppColors.background,
@@ -185,24 +183,27 @@ class _OwnerFloorsViewState extends State<OwnerFloorsView> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  "${floor.totalRooms} ${'total_rooms'.tr}",
+                                  "${controller.getRoomCountForFloor(floor)} ${'total_rooms'.tr}",
                                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                 ),
                               ],
                             ),
                           ),
-                          if (floor.occupiedRooms > 0)
-                            Container(
+                          Builder(builder: (context) {
+                            final occupied = controller.getOccupiedCountForFloor(floor);
+                            if (occupied <= 0) return const SizedBox.shrink();
+                            return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.primarySoft,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                "${floor.occupiedRooms} ${'occupied'.tr}",
+                                "$occupied ${'occupied'.tr}",
                                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                               ),
-                            ),
+                            );
+                          }),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
                             onSelected: (val) {

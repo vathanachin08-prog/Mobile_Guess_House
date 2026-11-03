@@ -492,39 +492,43 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                   const SizedBox(height: 14),
 
                   // 1. Room Number
-                  Text('room_number'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
                   TextField(
                     controller: nameCtrl,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      labelText: 'room_number'.tr,
+                      hintText: LanguageService.isKhmer ? "ឧ. 101, 102" : "e.g. 101, 102",
+                      prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.primary, size: 20),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
                   ),
                   const SizedBox(height: 14),
 
                   // 2. Floor Selection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('floor_number'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      if (availableFloors.isNotEmpty && !isEdit)
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              isCreatingNewFloor = !isCreatingNewFloor;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-                            child: Text(
-                              isCreatingNewFloor ? 'select_from_floor_list'.tr : 'add_new_floor_option'.tr,
-                              style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
-                            ),
+                  if (availableFloors.isNotEmpty && !isEdit) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            isCreatingNewFloor = !isCreatingNewFloor;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            isCreatingNewFloor ? 'select_from_floor_list'.tr : 'add_new_floor_option'.tr,
+                            style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
                           ),
-                        )
-                      else if (!isEdit)
-                        Container(
+                        ),
+                      ),
+                    ),
+                  ] else if (!isEdit) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.amber.shade50,
@@ -536,13 +540,14 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                             style: const TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.bold),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
+                      ),
+                    ),
+                  ],
                   if (!isCreatingNewFloor) ...[
                     DropdownButtonFormField<int>(
                       initialValue: selectedFloor,
                       decoration: InputDecoration(
+                        labelText: 'floor_number'.tr,
                         prefixIcon: const Icon(Icons.layers_outlined, size: 20, color: AppColors.primary),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -554,6 +559,8 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                     TextField(
                       controller: floorNameCtrl,
                       decoration: InputDecoration(
+                        labelText: 'floor_name'.tr,
+                        hintText: LanguageService.isKhmer ? 'ឈ្មោះជាន់ថ្មី' : 'New floor name',
                         prefixIcon: const Icon(Icons.layers_outlined, size: 20, color: AppColors.primary),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -572,41 +579,32 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                     children: [
                       // Rent Price
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('rent_price_label'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: priceCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                prefixText: "\$ ",
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            ),
-                          ],
+                        child: TextField(
+                          controller: priceCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'rent_price_label'.tr,
+                            hintText: 'rent_price_label'.tr,
+                            prefixIcon: const Icon(Icons.attach_money_rounded, color: AppColors.primary, size: 20),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       // Room Area (m²)
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('room_size_m2'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: areaCtrl,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(
-                                suffixText: "m²",
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            ),
-                          ],
+                        child: TextField(
+                          controller: areaCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'room_size_m2'.tr,
+                            hintText: 'room_size_m2'.tr,
+                            prefixIcon: const Icon(Icons.square_foot_rounded, color: AppColors.primary, size: 20),
+                            suffixText: "m²",
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ),
                     ],
@@ -751,12 +749,13 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                   const SizedBox(height: 16),
 
                   // 6. Description (Optional)
-                  Text('description_optional'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
                   TextField(
                     controller: descCtrl,
                     maxLines: 2,
                     decoration: InputDecoration(
+                      labelText: 'description_optional'.tr,
+                      hintText: LanguageService.isKhmer ? 'ព័ត៌មានបន្ថែមអំពីបន្ទប់...' : 'Additional room details...',
+                      prefixIcon: const Icon(Icons.description_outlined, color: AppColors.primary, size: 20),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -936,6 +935,8 @@ class OwnerRoomsView extends GetView<OwnerRoomsController> {
                       controller.resetPagination();
                     },
                     decoration: InputDecoration(
+                      hintText: LanguageService.isKhmer ? "ស្វែងរកលេខបន្ទប់..." : "Search room number...",
+                      hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                       prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                       filled: true,
                       fillColor: AppColors.background,
