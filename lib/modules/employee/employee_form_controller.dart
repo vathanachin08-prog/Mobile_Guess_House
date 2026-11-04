@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/employee/employee_model.dart';
 import '../../repositories/employee_repository.dart';
+import '../../routes/app_route_name.dart';
+import '../../widgets/app_colors.dart';
 import 'employee_controller.dart';
 
 class EmployeeFormController extends GetxController {
@@ -143,31 +145,17 @@ class EmployeeFormController extends GetxController {
     try {
       if (isEditing.value) {
         await repository.updateEmployee(editingId, employeeData);
-        Get.snackbar(
-          'Updated',
-          '${employeeData.name} updated successfully',
-          backgroundColor: Colors.green.shade50,
-          colorText: Colors.green.shade900,
-          icon: Icon(Icons.check_circle_rounded, color: Colors.green.shade600),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
+        await _showSuccessDialog(
+          isUpdate: true,
+          employee: employeeData,
         );
       } else {
         await repository.createEmployee(employeeData);
-        Get.snackbar(
-          'Created',
-          '${employeeData.name} added successfully',
-          backgroundColor: Colors.green.shade50,
-          colorText: Colors.green.shade900,
-          icon: Icon(Icons.check_circle_rounded, color: Colors.green.shade600),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
+        await _showSuccessDialog(
+          isUpdate: false,
+          employee: employeeData,
         );
       }
-
-      Get.back(result: true);
     } catch (e) {
       errorMessage.value = 'Failed to save employee: $e';
       Get.snackbar(
@@ -181,5 +169,179 @@ class EmployeeFormController extends GetxController {
       isSaving.value = false;
     }
   }
-}
 
+  /// Displays a clear modal dialog when save/update succeeds,
+  /// then redirects the user to the employee view upon confirmation.
+  Future<void> _showSuccessDialog({
+    required bool isUpdate,
+    required EmployeeModel employee,
+  }) async {
+    await Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 8,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check_circle_rounded, color: Colors.green.shade600, size: 36),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isUpdate ? 'Update Successful' : 'Employee Added',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4),
+                  children: [
+                    TextSpan(
+                      text: isUpdate
+                          ? 'The information for '
+                          : 'New record for ',
+                    ),
+                    TextSpan(
+                      text: employee.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    TextSpan(
+                      text: isUpdate
+                          ? ' was updated successfully in the database.'
+                          : ' was saved successfully to the database.',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Summary Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.primarySoft,
+                      radius: 20,
+                      child: Text(
+                        employee.initials,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            employee.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${employee.position} • ${employee.department}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            employee.formattedSalary,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  if (isUpdate)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Get.back(), // Closes dialog, stays on form
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          'Keep Editing',
+                          style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  if (isUpdate) const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back(); // close dialog
+                        _redirectToEmployeeList();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void _redirectToEmployeeList() {
+    if (Get.isRegistered<EmployeeController>()) {
+      Get.find<EmployeeController>().fetchEmployees();
+    }
+    if (Navigator.canPop(Get.context!)) {
+      Get.back(result: true);
+    } else {
+      Get.offAllNamed(AppRouteName.portal);
+    }
+  }
+}
