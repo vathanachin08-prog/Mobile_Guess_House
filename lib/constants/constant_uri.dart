@@ -49,4 +49,13 @@ class ConstantUri {
 
   // Support & Social
   static const String telegramSupportUrl = "https://t.me/OuknhaTK";
+
+  // Products
+  static String get products => "$baseUri/api/app/product/list";
+  static String get productBase => "$baseUri/api/app/product";
+  static String productDetail(dynamic id) => "$baseUri/api/app/product/$id";
+
+  // Employees
+  static String get employees => "$baseUri/api/app/employees";
+  static String employeeDetail(dynamic id) => "$baseUri/api/app/employees/$id";
 }

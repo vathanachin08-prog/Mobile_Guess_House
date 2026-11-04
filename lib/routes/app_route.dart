@@ -44,6 +44,16 @@ import '../modules/post/post_form_binding.dart';
 import '../modules/post/post_form_view.dart';
 import '../modules/post/post_view.dart';
 
+// Management Portal (Products & Employees)
+import '../modules/portal/portal_binding.dart';
+import '../modules/portal/portal_view.dart';
+import '../modules/employee/employee_binding.dart';
+import '../modules/employee/employee_list_view.dart';
+import '../modules/employee/employee_form_binding.dart';
+import '../modules/employee/employee_form_view.dart';
+import '../modules/product/product_binding.dart';
+import '../modules/product/product_list_view.dart';
+
 class AppRoute {
   AppRoute._();
 
@@ -186,6 +196,32 @@ class AppRoute {
         page: () => PostFormView(),
         binding: PostFormBinding(),
         middlewares: [OwnerGuard()],
+      ),
+
+      // Management Portal (Products, Employees & Profile)
+      GetPage(
+        name: AppRouteName.portal,
+        page: () => const PortalView(),
+        binding: PortalBinding(),
+        middlewares: [AuthGuard()],
+      ),
+      GetPage(
+        name: AppRouteName.employeeList,
+        page: () => const EmployeeListView(),
+        binding: EmployeeBinding(),
+        middlewares: [AuthGuard()],
+      ),
+      GetPage(
+        name: AppRouteName.employeeForm,
+        page: () => const EmployeeFormView(),
+        binding: EmployeeFormBinding(),
+        middlewares: [AuthGuard()],
+      ),
+      GetPage(
+        name: AppRouteName.productList,
+        page: () => const ProductListView(),
+        binding: ProductBinding(),
+        middlewares: [AuthGuard()],
       ),
     ];
   }

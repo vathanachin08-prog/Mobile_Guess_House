@@ -73,7 +73,10 @@ class LoginController extends GetxController {
 
         Get.snackbar("Success", "Login Successfully", backgroundColor: Colors.green.shade50);
 
-        if (TokenStoreLocal.isOwner()) {
+        final roleUpper = (role ?? '').toUpperCase();
+        if (roleUpper.contains("ADMIN")) {
+          Get.offAllNamed(AppRouteName.portal);
+        } else if (TokenStoreLocal.isOwner()) {
           Get.offAllNamed(AppRouteName.ownerMain);
         } else {
           Get.offAllNamed(AppRouteName.studentMain);

@@ -141,55 +141,83 @@ class LoginView extends GetView<LoginController> {
                   ),
                   const SizedBox(height: 24),
 
-                // Helper card for test credentials
-                // Container(
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //     color: AppColors.primarySoft,
-                //     borderRadius: BorderRadius.circular(12),
-                //     border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                //   ),
-                //   child: Column(
-                //     children: [
-                //       Row(
-                //         children: [
-                //           const Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-                //           const SizedBox(width: 6),
-                //           Text(
-                //             'test_credentials'.tr,
-                //             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                //           ),
-                //         ],
-                //       ),
-                //       const SizedBox(height: 6),
-                //       Row(
-                //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                //         children: [
-                //           TextButton(
-                //             onPressed: () {
-                //               controller.usernameController.text = "012345678";
-                //               controller.passwordController.text = "password123";
-                //             },
-                //             child: Text("${'student_test'.tr} (012345678)", style: const TextStyle(fontSize: 11)),
-                //           ),
-                //           TextButton(
-                //             onPressed: () {
-                //               controller.usernameController.text = "098765432";
-                //               controller.passwordController.text = "password123";
-                //             },
-                //             child: Text("${'owner_test'.tr} (098765432)", style: const TextStyle(fontSize: 11)),
-                //           ),
-                //         ],
-                //       ),
-                //     ],
-                //   ),
-                // ),
-              ],
+                  // Quick test credentials & Portal direct entry
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                            SizedBox(width: 6),
+                            Text(
+                              'Test Credentials & Portal',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                controller.usernameController.text = "admin";
+                                controller.passwordController.text = "Admin@1234";
+                              },
+                              child: const Text("Admin", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                controller.usernameController.text = "012345678";
+                                controller.passwordController.text = "password123";
+                              },
+                              child: const Text("Student", style: TextStyle(fontSize: 12)),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                controller.usernameController.text = "098765432";
+                                controller.passwordController.text = "password123";
+                              },
+                              child: const Text("Owner", style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 16),
+                        InkWell(
+                          onTap: () => Get.toNamed(AppRouteName.portal),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.dashboard_rounded, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Open Employee & Product Portal',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-  });
-}
+      );
+    });
+  }
 }

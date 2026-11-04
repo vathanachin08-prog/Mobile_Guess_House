@@ -30,6 +30,12 @@ class AppRouteName {
   static const String ownerProfile = "/owner/profile";
   static const String ownerVisitRequests = "/owner/visit-requests";
 
+  // Employee & Product Management Portal
+  static const String portal = "/portal";
+  static const String employeeList = "/employees";
+  static const String employeeForm = "/employees/form";
+  static const String productList = "/products";
+
   // Legacy demo
   static const String adminPost = "/admin/posts";
   static const String adminPostForm = "/admin/posts/form";

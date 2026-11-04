@@ -249,6 +249,11 @@ class StudentProfileView extends GetView<StudentProfileController> {
                 title: 'my_activity'.tr,
                 children: [
                   _buildListTile(
+                    icon: Icons.dashboard_customize_rounded,
+                    title: 'Employee & Product Portal',
+                    onTap: () => Get.toNamed(AppRouteName.portal),
+                  ),
+                  _buildListTile(
                     icon: Icons.favorite_outline,
                     title: 'saved_favorites'.tr,
                     onTap: () {

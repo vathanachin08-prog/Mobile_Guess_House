@@ -305,6 +305,11 @@ class OwnerProfileView extends GetView<OwnerProfileController> {
                 title: 'business_management'.tr,
                 children: [
                   _buildListTile(
+                    icon: Icons.dashboard_customize_rounded,
+                    title: 'Employee & Product Portal',
+                    onTap: () => Get.toNamed(AppRouteName.portal),
+                  ),
+                  _buildListTile(
                     icon: Icons.calendar_month_rounded,
                     title: 'visit_requests'.tr,
                     onTap: () => Get.toNamed(AppRouteName.ownerVisitRequests),
