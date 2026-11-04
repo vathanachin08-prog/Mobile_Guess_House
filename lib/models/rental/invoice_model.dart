@@ -37,6 +37,46 @@ class InvoiceModel {
     this.khqrImageUrl,
   });
 
+  InvoiceModel copyWith({
+    int? id,
+    String? invoiceNo,
+    String? propertyName,
+    String? tenantName,
+    String? roomNumber,
+    String? floor,
+    String? issueDate,
+    String? dueDate,
+    double? rentAmount,
+    double? electricityUnits,
+    double? electricityRate,
+    double? waterUnits,
+    double? waterRate,
+    double? garbageFee,
+    double? totalAmount,
+    String? status,
+    String? khqrImageUrl,
+  }) {
+    return InvoiceModel(
+      id: id ?? this.id,
+      invoiceNo: invoiceNo ?? this.invoiceNo,
+      propertyName: propertyName ?? this.propertyName,
+      tenantName: tenantName ?? this.tenantName,
+      roomNumber: roomNumber ?? this.roomNumber,
+      floor: floor ?? this.floor,
+      issueDate: issueDate ?? this.issueDate,
+      dueDate: dueDate ?? this.dueDate,
+      rentAmount: rentAmount ?? this.rentAmount,
+      electricityUnits: electricityUnits ?? this.electricityUnits,
+      electricityRate: electricityRate ?? this.electricityRate,
+      waterUnits: waterUnits ?? this.waterUnits,
+      waterRate: waterRate ?? this.waterRate,
+      garbageFee: garbageFee ?? this.garbageFee,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      khqrImageUrl: khqrImageUrl ?? this.khqrImageUrl,
+    );
+  }
+
   bool get isPaid => status == 'PAID';
   bool get isOverdue => status == 'OVERDUE';
   bool get isUnpaid => status == 'UNPAID';

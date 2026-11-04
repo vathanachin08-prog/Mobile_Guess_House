@@ -31,7 +31,17 @@ class StudentHomeView extends GetView<StudentHomeController> {
                 color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.home_work_rounded, color: AppColors.primary, size: 20),
+              child: Image.asset(
+                'assets/images/app_logo_icon.png',
+                width: 20,
+                height: 20,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.home_work_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             const Column(

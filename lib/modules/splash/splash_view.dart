@@ -17,7 +17,9 @@ class SplashView extends GetView<SplashController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(24),
+                width: 120,
+                height: 120,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -29,10 +31,14 @@ class SplashView extends GetView<SplashController> {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.home_work_rounded,
-                  size: 64,
-                  color: AppColors.primary,
+                child: Image.asset(
+                  'assets/images/app_logo_icon.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.home_work_rounded,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

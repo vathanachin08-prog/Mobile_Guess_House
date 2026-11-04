@@ -199,19 +199,28 @@ class RegisterView extends GetView<RegisterController> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primarySoft : AppColors.surface,
+          color: isSelected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
               size: 26,
             ),
             const SizedBox(height: 10),
@@ -220,13 +229,16 @@ class RegisterView extends GetView<RegisterController> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 11,
+                color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.textSecondary,
+              ),
             ),
           ],
         ),

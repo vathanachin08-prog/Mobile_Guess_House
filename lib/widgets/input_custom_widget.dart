@@ -80,7 +80,7 @@ class InputCustomWidget extends StatelessWidget {
               hintText: effectiveHint,
               hintStyle: const TextStyle(
                 fontSize: 14,
-                color: AppColors.textLight,
+                color: AppColors.textMuted,
                 fontWeight: FontWeight.normal,
               ),
               prefixIcon: prefixIcon,

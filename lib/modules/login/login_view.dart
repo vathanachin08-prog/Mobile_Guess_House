@@ -50,35 +50,44 @@ class LoginView extends GetView<LoginController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo & Header
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primarySoft,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.home_work_rounded,
-                      size: 48,
-                      color: AppColors.primary,
+                  // Official Brand Logo
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    height: 120,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primarySoft,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.home_work_rounded,
+                            size: 48,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "RoomFinder KH",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "RoomFinder KH",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 12),
                   Text(
                     'signin_to_account'.tr,
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
                   // Form
                   InputCustomWidget(

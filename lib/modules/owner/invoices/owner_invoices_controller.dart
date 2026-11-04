@@ -83,7 +83,11 @@ class OwnerInvoicesController extends GetxController {
         final loaded = stored
             .map((item) => InvoiceModel.fromJson(Map<String, dynamic>.from(item)))
             .toList();
-        invoices.value = loaded;
+        final deduped = deduplicateInvoiceList(loaded);
+        invoices.value = deduped;
+        if (deduped.length != loaded.length) {
+          _save();
+        }
       } else {
         // Purely dynamic: empty if no invoices generated yet
         invoices.clear();
@@ -345,6 +349,125 @@ class OwnerInvoicesController extends GetxController {
     return "${months[d.month - 1]} ${d.day}, ${d.year}";
   }
 
+  static String normalizeRoomNumber(String? r) {
+    if (r == null) return '';
+    final cleaned = r
+        .toLowerCase()
+        .replaceAll('room', '')
+        .replaceAll('បន្ទប់', '')
+        .replaceAll(RegExp(r'[^a-z0-9]'), '')
+        .replaceFirst(RegExp(r'^0+'), '');
+    return cleaned.isEmpty ? r.trim().toLowerCase() : cleaned;
+  }
+
+  static bool _normalizeTenantMatch(String? t1, String? t2) {
+    if (t1 == null || t2 == null) return false;
+    final clean1 = t1.trim().toLowerCase();
+    final clean2 = t2.trim().toLowerCase();
+    if (clean1.isEmpty || clean2.isEmpty) return false;
+    return clean1 == clean2;
+  }
+
+  static bool _isSameMonthAndYear(InvoiceModel inv, DateTime targetDate) {
+    final invDate = inv.parsedIssueDate;
+    if (invDate != null) {
+      if (invDate.year == targetDate.year && invDate.month == targetDate.month) {
+        return true;
+      }
+    }
+    final yearStr = targetDate.year.toString();
+    final monthStr = targetDate.month.toString().padLeft(2, '0');
+    final invNo = inv.invoiceNo ?? '';
+    if (invNo.contains("INV-$yearStr$monthStr")) {
+      return true;
+    }
+    return false;
+  }
+
+  static bool _isSameTenantOrRoomAndMonth(
+    InvoiceModel inv, {
+    required String roomNumber,
+    String? tenantName,
+    required DateTime targetDate,
+  }) {
+    if (!_isSameMonthAndYear(inv, targetDate)) {
+      return false;
+    }
+
+    final rNorm1 = normalizeRoomNumber(inv.roomNumber);
+    final rNorm2 = normalizeRoomNumber(roomNumber);
+    final sameRoom = rNorm1.isNotEmpty && rNorm2.isNotEmpty && rNorm1 == rNorm2;
+
+    final sameTenant = tenantName != null && _normalizeTenantMatch(inv.tenantName, tenantName);
+
+    return sameRoom || sameTenant;
+  }
+
+  bool hasInvoiceForTenantInMonth({
+    required String roomNumber,
+    String? tenantName,
+    DateTime? date,
+    int? excludeInvoiceId,
+  }) {
+    final targetDate = date ?? DateTime.now();
+    return invoices.any((inv) {
+      if (excludeInvoiceId != null && inv.id == excludeInvoiceId) return false;
+      return _isSameTenantOrRoomAndMonth(
+        inv,
+        roomNumber: roomNumber,
+        tenantName: tenantName,
+        targetDate: targetDate,
+      );
+    });
+  }
+
+  InvoiceModel? getExistingInvoiceForMonth({
+    required String roomNumber,
+    String? tenantName,
+    DateTime? date,
+    int? excludeInvoiceId,
+  }) {
+    final targetDate = date ?? DateTime.now();
+    return invoices.firstWhereOrNull((inv) {
+      if (excludeInvoiceId != null && inv.id == excludeInvoiceId) return false;
+      return _isSameTenantOrRoomAndMonth(
+        inv,
+        roomNumber: roomNumber,
+        tenantName: tenantName,
+        targetDate: targetDate,
+      );
+    });
+  }
+
+  List<InvoiceModel> deduplicateInvoiceList(List<InvoiceModel> list) {
+    final Map<String, InvoiceModel> uniqueMap = {};
+    for (final inv in list) {
+      final date = inv.parsedIssueDate ?? DateTime.now();
+      final rNorm = normalizeRoomNumber(inv.roomNumber);
+      final tNorm = (inv.tenantName ?? '').trim().toLowerCase();
+      final entityKey = rNorm.isNotEmpty ? "room_$rNorm" : "tenant_$tNorm";
+      final key = "${date.year}_${date.month}_$entityKey";
+
+      if (!uniqueMap.containsKey(key)) {
+        uniqueMap[key] = inv;
+      } else {
+        final existing = uniqueMap[key]!;
+        // Keep PAID invoice over UNPAID
+        if (inv.isPaid && !existing.isPaid) {
+          uniqueMap[key] = inv;
+        } else if (!inv.isPaid && existing.isPaid) {
+          // Keep existing paid
+        } else {
+          // Both same status: keep highest/latest id
+          if ((inv.id ?? 0) > (existing.id ?? 0)) {
+            uniqueMap[key] = inv;
+          }
+        }
+      }
+    }
+    return uniqueMap.values.toList();
+  }
+
   InvoiceModel generateMoveInInvoice({
     required TenantModel tenant,
     required double rentAmount,
@@ -352,6 +475,19 @@ class OwnerInvoicesController extends GetxController {
   }) {
     final now = DateTime.now();
     final cleanRoom = (tenant.roomNumber ?? 'Room').replaceAll(' ', '');
+    final rNum = tenant.roomNumber ?? '';
+    final tName = tenant.name ?? 'Tenant';
+
+    // Prevent duplicate: return existing invoice if already issued for this tenant/room this month
+    final existing = getExistingInvoiceForMonth(
+      roomNumber: rNum,
+      tenantName: tName,
+      date: now,
+    );
+    if (existing != null) {
+      return existing;
+    }
+
     final invNo = "INV-${now.year}${now.month.toString().padLeft(2, '0')}-$cleanRoom";
     final effectivePropName = propertyName ??
         (Get.isRegistered<OwnerMainController>()
@@ -362,8 +498,8 @@ class OwnerInvoicesController extends GetxController {
       id: DateTime.now().millisecondsSinceEpoch,
       invoiceNo: invNo,
       propertyName: effectivePropName,
-      tenantName: tenant.name ?? "Tenant",
-      roomNumber: tenant.roomNumber ?? "",
+      tenantName: tName,
+      roomNumber: rNum,
       floor: tenant.floor ?? "Ground Floor",
       issueDate: formatIssueDate(now),
       dueDate: formatDueDate(now, 7),
@@ -377,7 +513,7 @@ class OwnerInvoicesController extends GetxController {
       status: "UNPAID",
     );
 
-    createInvoice(newInv);
+    createInvoice(newInv, overwriteExisting: false);
     return newInv;
   }
 
@@ -403,19 +539,13 @@ class OwnerInvoicesController extends GetxController {
       final rNum = (tenant.roomNumber ?? '').trim();
       if (tName.isEmpty || rNum.isEmpty) continue;
 
-      // Check if already invoiced in this month for this room
-      final alreadyInvoiced = invoices.any((inv) {
-        final sameRoom = (inv.roomNumber ?? '').trim().toLowerCase() == rNum.toLowerCase();
-        final sameTenant = (inv.tenantName ?? '').trim().toLowerCase() == tName.toLowerCase();
-        final invNo = inv.invoiceNo ?? '';
-        final sameMonthYear = invNo.contains("INV-$yearStr$monthStr");
-        return sameRoom && sameTenant && sameMonthYear;
-      });
-
-      if (alreadyInvoiced) continue;
+      // Check if already invoiced in this month for this room/tenant
+      if (hasInvoiceForTenantInMonth(roomNumber: rNum, tenantName: tName, date: now)) {
+        continue;
+      }
 
       final matchingRoom = allRooms.firstWhereOrNull(
-          (r) => (r.roomNumber ?? '').trim().toLowerCase() == rNum.toLowerCase());
+          (r) => normalizeRoomNumber(r.roomNumber) == normalizeRoomNumber(rNum));
       final rent = matchingRoom?.price ?? 50.0;
       final garbage = 2.0;
       final total = rent + garbage;
@@ -450,8 +580,31 @@ class OwnerInvoicesController extends GetxController {
     return createdCount;
   }
 
-  void createInvoice(InvoiceModel inv) {
-    invoices.insert(0, inv);
+  void createInvoice(InvoiceModel inv, {bool overwriteExisting = true}) {
+    final invDate = inv.parsedIssueDate ?? DateTime.now();
+    final existingIdx = invoices.indexWhere((existing) {
+      if (existing.id == inv.id) return false;
+      return _isSameTenantOrRoomAndMonth(
+        existing,
+        roomNumber: inv.roomNumber ?? '',
+        tenantName: inv.tenantName,
+        targetDate: invDate,
+      );
+    });
+
+    if (existingIdx != -1) {
+      if (overwriteExisting) {
+        final existing = invoices[existingIdx];
+        invoices[existingIdx] = inv.copyWith(
+          id: existing.id,
+          invoiceNo: existing.invoiceNo ?? inv.invoiceNo,
+        );
+      } else {
+        return;
+      }
+    } else {
+      invoices.insert(0, inv);
+    }
     _save();
   }
 
