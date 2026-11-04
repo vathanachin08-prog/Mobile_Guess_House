@@ -16,7 +16,7 @@ class EmployeeController extends GetxController {
   final isDeleting = false.obs;
   final searchQuery = ''.obs;
   final selectedDepartment = 'All'.obs;
-  final departments = <String>['All', 'Engineering', 'Design', 'Product', 'Quality Assurance', 'Infrastructure', 'HR', 'Marketing'].obs;
+  final departments = <String>['All'].obs;
   final errorMessage = ''.obs;
 
   final searchController = TextEditingController();
@@ -39,9 +39,19 @@ class EmployeeController extends GetxController {
     try {
       final result = await repository.getEmployees();
       employees.assignAll(result);
+
+      // Extract unique departments dynamically from API records
+      final deptSet = <String>{'All'};
+      for (final emp in result) {
+        if (emp.department.trim().isNotEmpty) {
+          deptSet.add(emp.department.trim());
+        }
+      }
+      departments.assignAll(deptSet.toList());
+
       applyFilter();
     } catch (e) {
-      errorMessage.value = 'Failed to load employees: $e';
+      errorMessage.value = 'Failed to load employees from API: $e';
     } finally {
       isLoading.value = false;
     }

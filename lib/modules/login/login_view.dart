@@ -8,6 +8,7 @@ import '../../widgets/animated_widgets.dart';
 import '../../widgets/app_colors.dart';
 import '../../widgets/button_custom_widget.dart';
 import '../../widgets/input_custom_widget.dart';
+import '../../widgets/server_config_dialog.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -34,6 +35,11 @@ class LoginView extends GetView<LoginController> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.dns_rounded, color: AppColors.primary),
+            tooltip: 'Server Settings',
+            onPressed: () => ServerConfigDialog.show(context),
+          ),
           actions: const [
             Center(
               child: Padding(

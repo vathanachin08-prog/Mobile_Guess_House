@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/employee/employee_model.dart';
 import '../../repositories/employee_repository.dart';
+import 'employee_controller.dart';
 
 class EmployeeFormController extends GetxController {
   final EmployeeRepository repository;
@@ -15,19 +16,10 @@ class EmployeeFormController extends GetxController {
   final phoneController = TextEditingController();
   final positionController = TextEditingController();
   final salaryController = TextEditingController();
+  final departmentController = TextEditingController();
 
-  final selectedDepartment = 'Engineering'.obs;
-  final departments = [
-    'Engineering',
-    'Design',
-    'Product',
-    'Quality Assurance',
-    'Infrastructure',
-    'HR',
-    'Marketing',
-    'Finance',
-    'Operations',
-  ];
+  final selectedDepartment = ''.obs;
+  final departments = <String>[].obs;
 
   final isEditing = false.obs;
   dynamic editingId;
@@ -37,6 +29,14 @@ class EmployeeFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Pull existing departments dynamically from live employee database
+    if (Get.isRegistered<EmployeeController>()) {
+      final empCtrl = Get.find<EmployeeController>();
+      final depts = empCtrl.departments.where((d) => d != 'All').toList();
+      departments.assignAll(depts);
+    }
+
     final args = Get.arguments;
     if (args is EmployeeModel) {
       isEditing.value = true;
@@ -46,11 +46,11 @@ class EmployeeFormController extends GetxController {
       phoneController.text = args.phone;
       positionController.text = args.position;
       salaryController.text = args.salary.toString();
-      if (departments.contains(args.department)) {
-        selectedDepartment.value = args.department;
-      } else {
-        selectedDepartment.value = departments.first;
+      departmentController.text = args.department;
+      if (!departments.contains(args.department) && args.department.isNotEmpty) {
+        departments.add(args.department);
       }
+      selectedDepartment.value = args.department;
     }
   }
 
@@ -61,6 +61,7 @@ class EmployeeFormController extends GetxController {
     phoneController.dispose();
     positionController.dispose();
     salaryController.dispose();
+    departmentController.dispose();
     super.onClose();
   }
 
@@ -132,7 +133,9 @@ class EmployeeFormController extends GetxController {
       email: emailController.text.trim(),
       phone: phoneController.text.trim(),
       position: positionController.text.trim(),
-      department: selectedDepartment.value,
+      department: departmentController.text.trim().isNotEmpty
+          ? departmentController.text.trim()
+          : selectedDepartment.value,
       salary: double.tryParse(salaryController.text.trim()) ?? 0.0,
       status: 'ACT',
     );

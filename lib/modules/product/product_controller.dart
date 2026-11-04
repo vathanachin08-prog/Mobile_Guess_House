@@ -14,7 +14,7 @@ class ProductListController extends GetxController {
   final isLoading = false.obs;
   final searchQuery = ''.obs;
   final selectedCategory = 'All'.obs;
-  final categories = <String>['All', 'Electronics', 'Accessories', 'Office'].obs;
+  final categories = <String>['All'].obs;
   final errorMessage = ''.obs;
 
   final searchController = TextEditingController();
@@ -38,8 +38,13 @@ class ProductListController extends GetxController {
       final list = await repository.getProducts();
       products.assignAll(list);
 
-      // Extract unique categories dynamically
+      // Extract unique categories dynamically from server API and product records
       final catSet = <String>{'All'};
+      try {
+        final serverCats = await repository.getCategories();
+        catSet.addAll(serverCats);
+      } catch (_) {}
+
       for (final p in list) {
         if (p.categoryName != null && p.categoryName!.isNotEmpty) {
           catSet.add(p.categoryName!);

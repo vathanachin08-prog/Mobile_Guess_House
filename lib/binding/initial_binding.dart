@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import '../core/services/api_service.dart';
 import '../core/services/api_service_impl.dart';
 import '../core/services/chat_service.dart';
@@ -9,6 +10,9 @@ import '../repositories/product_repository.dart';
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
+    // Purge any legacy mock cache so app only uses dynamic database data
+    GetStorage().remove("CACHE_LOCAL_EMPLOYEES");
+
     if (!Get.isRegistered<ApiService>()) {
       Get.put<ApiService>(ApiServiceImpl(), permanent: true);
     }

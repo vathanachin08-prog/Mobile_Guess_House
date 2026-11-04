@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../constants/constant_uri.dart';
 import '../../widgets/app_colors.dart';
+import '../../widgets/server_config_dialog.dart';
 import 'portal_controller.dart';
 
 class PortalProfileView extends GetView<PortalController> {
@@ -206,6 +208,69 @@ class PortalProfileView extends GetView<PortalController> {
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                     ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Dynamic Server Configuration Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.dns_rounded, color: AppColors.primary, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'API Server Host',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
+                        tooltip: 'Configure Server',
+                        onPressed: () => ServerConfigDialog.show(context, onSaved: () => controller.loadUserData()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      ConstantUri.baseUri,
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    ),
                   ),
                 ],
               ),

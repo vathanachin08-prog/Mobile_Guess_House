@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/product/product_model.dart';
 import '../../widgets/app_colors.dart';
+import '../../widgets/server_config_dialog.dart';
 import 'product_controller.dart';
 
 class ProductListView extends GetView<ProductListController> {
@@ -21,6 +22,11 @@ class ProductListView extends GetView<ProductListController> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0.5,
         actions: [
+          IconButton(
+            tooltip: 'Server Settings',
+            icon: const Icon(Icons.dns_outlined),
+            onPressed: () => ServerConfigDialog.show(context, onSaved: controller.fetchProducts),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
@@ -158,7 +164,9 @@ class ProductListView extends GetView<ProductListController> {
                             Text(
                               controller.searchQuery.isNotEmpty
                                   ? 'No products match "${controller.searchQuery.value}"'
-                                  : 'No products in ${controller.selectedCategory.value}',
+                                  : (controller.selectedCategory.value == 'All'
+                                      ? 'No products found in database'
+                                      : 'No products in ${controller.selectedCategory.value}'),
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
                             ),
                           ],

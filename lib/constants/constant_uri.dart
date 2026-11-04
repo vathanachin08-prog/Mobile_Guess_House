@@ -1,14 +1,65 @@
-class ConstantUri {
-  // Use localhost for Windows/Web, 10.0.2.2 for Android emulator, or LAN IP for physical device
-  static String baseUri = "http://44.210.204.147:30033";
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:get_storage/get_storage.dart';
 
-  // Auth
+class ConstantUri {
+  static final GetStorage _storage = GetStorage();
+  static const String serverStorageKey = "CUSTOM_SERVER_BASE_URI";
+
+  /// Returns the dynamically configured or smart default base URI
+  static String get baseUri {
+    final custom = _storage.read(serverStorageKey);
+    if (custom != null && custom.toString().trim().isNotEmpty) {
+      return custom.toString().trim();
+    }
+    return defaultBaseUri;
+  }
+
+  /// Platform-aware default server base URI
+  static String get defaultBaseUri {
+    if (kIsWeb) {
+      return "http://localhost:30033";
+    }
+    try {
+      if (Platform.isAndroid) {
+        // Standard Android emulator loopback to host computer
+        return "http://10.0.2.2:30033";
+      }
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        return "http://localhost:30033";
+      }
+    } catch (_) {}
+    return "http://localhost:30033";
+  }
+
+  /// Sets and persists a new server base URI at runtime
+  static void setBaseUri(String uri) {
+    var clean = uri.trim();
+    if (clean.endsWith("/")) {
+      clean = clean.substring(0, clean.length - 1);
+    }
+    _storage.write(serverStorageKey, clean);
+  }
+
+  /// Resets back to platform default
+  static void resetToDefault() {
+    _storage.remove(serverStorageKey);
+  }
+
+  // Auth Endpoints
   static String get login => "$baseUri/api/oauth/token";
   static String get register => "$baseUri/api/oauth/register";
   static String get refreshToken => "$baseUri/api/oauth/refresh";
 
-  // Legacy demo
-  static String get getAllPostPath => "$baseUri/api/app/post";
+  // Products & Categories
+  static String get products => "$baseUri/api/app/product/list";
+  static String get productBase => "$baseUri/api/app/product";
+  static String get productCategories => "$baseUri/api/app/product/category/list";
+  static String productDetail(dynamic id) => "$baseUri/api/app/product/$id";
+
+  // Employees
+  static String get employees => "$baseUri/api/app/employees";
+  static String employeeDetail(dynamic id) => "$baseUri/api/app/employees/$id";
 
   // Public Rental Endpoints
   static String get publicProperties => "$baseUri/api/public/properties";
@@ -16,7 +67,7 @@ class ConstantUri {
   static String publicRoomDetail(dynamic id) => "$baseUri/api/public/rooms/$id";
   static String publicReviews(dynamic propertyId) => "$baseUri/api/public/properties/$propertyId/reviews";
 
-  // Owner & Authenticated Property/Room Endpoints
+  // Owner & Authenticated Endpoints
   static String get properties => "$baseUri/api/app/properties";
   static String get myProperties => "$baseUri/api/app/properties/my";
   static String propertyDetail(dynamic id) => "$baseUri/api/app/properties/$id";
@@ -45,17 +96,9 @@ class ConstantUri {
   static String propertyReviews(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/reviews";
   static String propertyReports(dynamic propertyId) => "$baseUri/api/app/properties/$propertyId/reports";
 
-
+  // Legacy demo
+  static String get getAllPostPath => "$baseUri/api/app/post";
 
   // Support & Social
   static const String telegramSupportUrl = "https://t.me/OuknhaTK";
-
-  // Products
-  static String get products => "$baseUri/api/app/product/list";
-  static String get productBase => "$baseUri/api/app/product";
-  static String productDetail(dynamic id) => "$baseUri/api/app/product/$id";
-
-  // Employees
-  static String get employees => "$baseUri/api/app/employees";
-  static String employeeDetail(dynamic id) => "$baseUri/api/app/employees/$id";
 }

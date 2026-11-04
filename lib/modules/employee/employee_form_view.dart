@@ -137,33 +137,34 @@ class EmployeeFormView extends GetView<EmployeeFormController> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Department Dropdown
+                    // Department (Dynamic Selection & Custom Input)
                     _buildFieldLabel('Department *'),
                     const SizedBox(height: 6),
+                    TextFormField(
+                      controller: controller.departmentController,
+                      validator: (val) => (val == null || val.trim().isEmpty) ? 'Department is required' : null,
+                      textInputAction: TextInputAction.next,
+                      decoration: _buildInputDecoration(
+                        hintText: 'e.g. Engineering, Marketing, Finance...',
+                        prefixIcon: Icons.apartment_rounded,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Obx(
-                      () => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: controller.selectedDepartment.value,
-                            isExpanded: true,
-                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
-                            items: controller.departments.map((dept) {
-                              return DropdownMenuItem<String>(
-                                value: dept,
-                                child: Text(dept, style: const TextStyle(fontSize: 14)),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) controller.selectedDepartment.value = val;
+                      () => Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: controller.departments.map((dept) {
+                          return ActionChip(
+                            label: Text(dept, style: const TextStyle(fontSize: 11)),
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            onPressed: () {
+                              controller.departmentController.text = dept;
+                              controller.selectedDepartment.value = dept;
                             },
-                          ),
-                        ),
+                          );
+                        }).toList(),
                       ),
                     ),
                     const SizedBox(height: 18),

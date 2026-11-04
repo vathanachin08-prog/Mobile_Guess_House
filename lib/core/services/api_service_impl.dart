@@ -104,7 +104,9 @@ class ApiServiceImpl implements ApiService {
     try {
       final encoded = body is String ? body : jsonEncode(body ?? {});
       final response = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body;
+      } else if (response.statusCode == 400 || response.statusCode == 404 || response.statusCode == 409 || response.statusCode == 422) {
         return response.body;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         final refreshTok = TokenStoreLocal.getRefreshToken();
@@ -114,7 +116,7 @@ class ApiServiceImpl implements ApiService {
           return null;
         } else {
           final retryRes = await http.post(Uri.parse(url), body: encoded, headers: authHeaders);
-          return (retryRes.statusCode == 200 || retryRes.statusCode == 201) ? retryRes.body : null;
+          return retryRes.body;
         }
       }
     } catch (_) {}
@@ -126,7 +128,9 @@ class ApiServiceImpl implements ApiService {
     try {
       final encoded = body is String ? body : jsonEncode(body ?? {});
       final response = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body;
+      } else if (response.statusCode == 400 || response.statusCode == 404 || response.statusCode == 409 || response.statusCode == 422) {
         return response.body;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         final refreshTok = TokenStoreLocal.getRefreshToken();
@@ -136,7 +140,7 @@ class ApiServiceImpl implements ApiService {
           return null;
         } else {
           final retryRes = await http.put(Uri.parse(url), body: encoded, headers: authHeaders);
-          return retryRes.statusCode == 200 ? retryRes.body : null;
+          return retryRes.body;
         }
       }
     } catch (_) {}
@@ -147,7 +151,9 @@ class ApiServiceImpl implements ApiService {
   Future<dynamic> deleteApi(String url) async {
     try {
       final response = await http.delete(Uri.parse(url), headers: authHeaders);
-      if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body;
+      } else if (response.statusCode == 400 || response.statusCode == 404 || response.statusCode == 409 || response.statusCode == 422) {
         return response.body;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         final refreshTok = TokenStoreLocal.getRefreshToken();
@@ -157,7 +163,7 @@ class ApiServiceImpl implements ApiService {
           return null;
         } else {
           final retryRes = await http.delete(Uri.parse(url), headers: authHeaders);
-          return (retryRes.statusCode == 200 || retryRes.statusCode == 204) ? retryRes.body : null;
+          return retryRes.body;
         }
       }
     } catch (_) {}

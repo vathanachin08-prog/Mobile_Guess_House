@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../models/employee/employee_model.dart';
 import '../../widgets/app_colors.dart';
+import '../../widgets/server_config_dialog.dart';
 import 'employee_controller.dart';
 
 class EmployeeListView extends GetView<EmployeeController> {
@@ -21,6 +22,11 @@ class EmployeeListView extends GetView<EmployeeController> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0.5,
         actions: [
+          IconButton(
+            tooltip: 'Server Settings',
+            icon: const Icon(Icons.dns_outlined),
+            onPressed: () => ServerConfigDialog.show(context, onSaved: controller.fetchEmployees),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
@@ -164,7 +170,9 @@ class EmployeeListView extends GetView<EmployeeController> {
                             Text(
                               controller.searchQuery.isNotEmpty
                                   ? 'No employees match "${controller.searchQuery.value}"'
-                                  : 'No employees found in ${controller.selectedDepartment.value}',
+                                  : (controller.selectedDepartment.value == 'All'
+                                      ? 'No employees found in database'
+                                      : 'No employees found in ${controller.selectedDepartment.value}'),
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
                             ),
                           ],
