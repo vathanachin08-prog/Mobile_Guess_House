@@ -1,3 +1,6 @@
+import 'package:device_preview/device_preview.dart';
+import 'package:device_preview/presets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -12,9 +15,15 @@ import 'firebase_options.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/language_service.dart';
 import 'data/local/token_store_local.dart';
+import 'widgets/ios_device_preview_toolbar.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize DevicePreview simulation (Web and Debug/Profile)
+  DevicePreview.enable(
+    enabled: kIsWeb || !kReleaseMode,
+    padding: const EdgeInsets.all(16),
+  );
+
   await GetStorage.init();
   TokenStoreLocal.initTokenListener();
 
@@ -25,6 +34,11 @@ Future<void> main() async {
 
   // Initialize Remote Config
   await AppFirebaseService.initRemoteConfig();
+
+  // On Web, start with iPhone 16 Pro simulation by default
+  if (kIsWeb) {
+    DevicePreview.maybeController?.applyPreset(DevicePresets.iPhone16Pro);
+  }
 
   runApp(const MyApp());
 }
@@ -45,6 +59,17 @@ class MyApp extends StatelessWidget {
       fallbackLocale: LanguageService.englishLocale,
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 320),
+      builder: (context, child) {
+        if (kIsWeb) {
+          return Stack(
+            children: [
+              ?child,
+              const IosDevicePreviewToolbar(),
+            ],
+          );
+        }
+        return child ?? const SizedBox.shrink();
+      },
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: AppColors.primary,

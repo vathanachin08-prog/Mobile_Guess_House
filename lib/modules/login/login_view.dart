@@ -56,35 +56,41 @@ class LoginView extends GetView<LoginController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Official Brand Logo
-                  Image.asset(
-                    'assets/images/app_logo.png',
-                    height: 120,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primarySoft,
-                            shape: BoxShape.circle,
+                  // Official Brand Logo (Long press secretly fills admin for convenient dev testing)
+                  GestureDetector(
+                    onLongPress: () {
+                      controller.usernameController.text = "admin";
+                      controller.passwordController.text = "Admin@1234";
+                    },
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primarySoft,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.home_work_rounded,
+                              size: 48,
+                              color: AppColors.primary,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.home_work_rounded,
-                            size: 48,
-                            color: AppColors.primary,
+                          const SizedBox(height: 16),
+                          const Text(
+                            "RoomFinder KH",
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "RoomFinder KH",
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -145,79 +151,7 @@ class LoginView extends GetView<LoginController> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Quick test credentials & Portal direct entry
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
-                            SizedBox(width: 6),
-                            Text(
-                              'Test Credentials & Portal',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                controller.usernameController.text = "admin";
-                                controller.passwordController.text = "Admin@1234";
-                              },
-                              child: const Text("Admin", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                controller.usernameController.text = "012345678";
-                                controller.passwordController.text = "password123";
-                              },
-                              child: const Text("Student", style: TextStyle(fontSize: 12)),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                controller.usernameController.text = "098765432";
-                                controller.passwordController.text = "password123";
-                              },
-                              child: const Text("Owner", style: TextStyle(fontSize: 12)),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 16),
-                        InkWell(
-                          onTap: () => Get.toNamed(AppRouteName.portal),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.dashboard_rounded, size: 16, color: AppColors.primary),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Open Employee & Product Portal',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
