@@ -1398,130 +1398,162 @@ class _OwnerTenantsViewState extends State<OwnerTenantsView> {
   }
 
   Widget _buildTenantCard(TenantModel t) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showTenantInvoicesSheet(t),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 19,
-                backgroundColor: AppColors.primarySoft,
-                child: Text(
-                  (t.name != null && t.name!.isNotEmpty) ? t.name!.substring(0, 1).toUpperCase() : "T",
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t.name ?? "Tenant",
-                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 19,
+                    backgroundColor: AppColors.primarySoft,
+                    child: Text(
+                      (t.name != null && t.name!.isNotEmpty) ? t.name!.substring(0, 1).toUpperCase() : "T",
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.meeting_room_outlined, size: 12, color: AppColors.primary),
-                              const SizedBox(width: 4),
-                              Text(
-                                "${'room_label_prefix'.tr} ${t.roomNumber ?? ''}",
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                              ),
-                            ],
-                          ),
+                        Text(
+                          t.name ?? "Tenant",
+                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                         ),
-                        if (t.floor != null && t.floor!.trim().isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: AppColors.border),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.meeting_room_outlined, size: 12, color: AppColors.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${'room_label_prefix'.tr} ${t.roomNumber ?? ''}",
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.layers_outlined, size: 12, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text(
-                                  OwnerTenantsController.formatFloorDisplayName(t.floor!),
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                            if (t.floor != null && t.floor!.trim().isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppColors.border),
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.layers_outlined, size: 12, color: AppColors.textSecondary),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      OwnerTenantsController.formatFloorDisplayName(t.floor!),
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
+                    onPressed: () => _showActionSheet(t),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 1, color: AppColors.border),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (t.phoneNumber != null && t.phoneNumber!.isNotEmpty) ...[
+                    const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      t.phoneNumber!,
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                    ),
                   ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 20),
-                onPressed: () => _showActionSheet(t),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(height: 1, color: AppColors.border),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              if (t.phoneNumber != null && t.phoneNumber!.isNotEmpty) ...[
-                const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 6),
-                Text(
-                  t.phoneNumber!,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
-                ),
-              ],
-              const Spacer(),
-              // Quick Invoice Action Button
-              InkWell(
-                onTap: () => _showCreateInvoiceForTenant(t),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
+                  const Spacer(),
+                  // View Invoices Button
+                  InkWell(
+                    onTap: () => _showTenantInvoicesSheet(t),
                     borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.receipt_long_rounded, size: 13, color: AppColors.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        LanguageService.isKhmer ? "ចេញវិក្កយបត្រ" : "Invoice",
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.border),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.receipt_outlined, size: 13, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Text(
+                            LanguageService.isKhmer ? "វិក្កយបត្រ" : "Invoices",
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  // Quick Invoice Action Button
+                  InkWell(
+                    onTap: () => _showCreateInvoiceForTenant(t),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_rounded, size: 14, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            LanguageService.isKhmer ? "ចេញវិក្កយបត្រ" : "Invoice",
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

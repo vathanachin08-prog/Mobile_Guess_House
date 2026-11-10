@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/api_service_impl.dart';
 import '../../core/services/language_service.dart';
-import '../../widgets/animated_widgets.dart';
 import '../../widgets/app_colors.dart';
 import '../../widgets/button_custom_widget.dart';
 import '../../widgets/input_custom_widget.dart';
@@ -42,13 +41,17 @@ class RegisterView extends GetView<RegisterController> {
             icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: AppColors.textPrimary),
             onPressed: () => Get.back(),
           ),
-          actions: const [
-            Center(
-              child: Padding(
-                padding: EdgeInsets.only(right: 12),
-                child: AnimatedLanguageToggle(),
+          actions: [
+            IconButton(
+              tooltip: LanguageService.isKhmer ? "ជ្រើសរើសភាសា" : "Select Language",
+              icon: const Icon(
+                Icons.public_rounded,
+                color: AppColors.textPrimary,
+                size: 22,
               ),
+              onPressed: () => LanguageService.showLanguageSelector(context),
             ),
+            const SizedBox(width: 8),
           ],
         ),
         body: SafeArea(
@@ -143,12 +146,92 @@ class RegisterView extends GetView<RegisterController> {
                   obscureText: controller.obscurePassword.value,
                   prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                 ),
+
+                // If OWNER is selected, show owner & property information fields
+                if (controller.selectedRole.value == "OWNER") ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.apartment_rounded, color: Color(0xFF00A86B), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              LanguageService.isKhmer ? "ព័ត៌មានអគារ ឬផ្ទះជួល (Owner Details)" : "Property & Owner Information",
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF065F46),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          LanguageService.isKhmer
+                              ? "សូមបំពេញព័ត៌មានអគាររបស់អ្នក ដើម្បីបញ្ជូនទៅកាន់ Web Admin ត្រួតពិនិត្យ និងអនុម័ត។"
+                              : "Please complete your property details for Web Admin verification and approval.",
+                          style: const TextStyle(fontSize: 11.5, color: Color(0xFF047857), height: 1.3),
+                        ),
+                        const SizedBox(height: 14),
+                        InputCustomWidget(
+                          controller: controller.propertyNameController,
+                          label: LanguageService.isKhmer ? "ឈ្មោះអគារ ឬបន្ទប់ជួល *" : "Property / Dorm Name *",
+                          hint: LanguageService.isKhmer ? "ឧ. BBU Student Residence" : "e.g. BBU Student Residence",
+                          prefixIcon: const Icon(Icons.home_work_outlined, color: AppColors.textSecondary),
+                        ),
+                        InputCustomWidget(
+                          controller: controller.addressController,
+                          label: LanguageService.isKhmer ? "ទីតាំង ឬអាសយដ្ឋាន *" : "Address / Location *",
+                          hint: LanguageService.isKhmer ? "ឧ. ក្រុងសៀមរាប ជិតសាកលវិទ្យាល័យ BBU" : "e.g. Krong Siem Reap, Near BBU",
+                          prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: InputCustomWidget(
+                                controller: controller.idCardController,
+                                label: LanguageService.isKhmer ? "លេខអត្តសញ្ញាណប័ណ្ណ" : "National ID / License",
+                                hint: "012345678",
+                                keyboardType: TextInputType.number,
+                                prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textSecondary),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: InputCustomWidget(
+                                controller: controller.totalRoomsController,
+                                label: LanguageService.isKhmer ? "ចំនួនបន្ទប់" : "Total Rooms",
+                                hint: "8",
+                                keyboardType: TextInputType.number,
+                                prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 28),
 
                 // Submit Button
                 ButtonCustomWidget(
                   isLoading: controller.isLoading.value,
-                  title: 'create_account'.tr,
+                  title: controller.selectedRole.value == "OWNER"
+                      ? (LanguageService.isKhmer ? "បញ្ជូនព័ត៌មានទៅកាន់ Admin" : "Submit to Web Admin")
+                      : (LanguageService.isKhmer ? "បង្កើតគណនី និងចូលប្រើ" : "Register & Start Exploring"),
                   onTap: controller.onRegister,
                 ),
                 const SizedBox(height: 18),

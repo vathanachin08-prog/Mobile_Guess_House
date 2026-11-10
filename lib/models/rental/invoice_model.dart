@@ -16,6 +16,10 @@ class InvoiceModel {
   final double? totalAmount;
   final String? status; // PAID, UNPAID, OVERDUE
   final String? khqrImageUrl;
+  final double? oldElectricityReading;
+  final double? newElectricityReading;
+  final double? oldWaterReading;
+  final double? newWaterReading;
 
   InvoiceModel({
     this.id,
@@ -35,6 +39,10 @@ class InvoiceModel {
     this.totalAmount,
     this.status = 'UNPAID',
     this.khqrImageUrl,
+    this.oldElectricityReading,
+    this.newElectricityReading,
+    this.oldWaterReading,
+    this.newWaterReading,
   });
 
   InvoiceModel copyWith({
@@ -55,6 +63,10 @@ class InvoiceModel {
     double? totalAmount,
     String? status,
     String? khqrImageUrl,
+    double? oldElectricityReading,
+    double? newElectricityReading,
+    double? oldWaterReading,
+    double? newWaterReading,
   }) {
     return InvoiceModel(
       id: id ?? this.id,
@@ -74,6 +86,10 @@ class InvoiceModel {
       totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,
       khqrImageUrl: khqrImageUrl ?? this.khqrImageUrl,
+      oldElectricityReading: oldElectricityReading ?? this.oldElectricityReading,
+      newElectricityReading: newElectricityReading ?? this.newElectricityReading,
+      oldWaterReading: oldWaterReading ?? this.oldWaterReading,
+      newWaterReading: newWaterReading ?? this.newWaterReading,
     );
   }
 
@@ -169,6 +185,10 @@ class InvoiceModel {
       totalAmount: json['totalAmount'] != null ? (json['totalAmount'] as num).toDouble() : 51.62,
       status: json['status'] ?? 'UNPAID',
       khqrImageUrl: json['khqrImageUrl'],
+      oldElectricityReading: json['oldElectricityReading'] != null ? (json['oldElectricityReading'] as num).toDouble() : null,
+      newElectricityReading: json['newElectricityReading'] != null ? (json['newElectricityReading'] as num).toDouble() : null,
+      oldWaterReading: json['oldWaterReading'] != null ? (json['oldWaterReading'] as num).toDouble() : null,
+      newWaterReading: json['newWaterReading'] != null ? (json['newWaterReading'] as num).toDouble() : null,
     );
   }
 
@@ -191,6 +211,10 @@ class InvoiceModel {
       'totalAmount': totalAmount,
       'status': status,
       'khqrImageUrl': khqrImageUrl,
+      'oldElectricityReading': oldElectricityReading,
+      'newElectricityReading': newElectricityReading,
+      'oldWaterReading': oldWaterReading,
+      'newWaterReading': newWaterReading,
     };
   }
 }

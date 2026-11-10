@@ -95,7 +95,21 @@ class LoginController extends GetxController {
         success: false,
         errorMessage: e.toString(),
       );
-      Get.snackbar("Error", "Connection failed: $e", backgroundColor: Colors.red.shade50);
+      final errStr = e.toString();
+      if (errStr.contains("403") || errStr.toLowerCase().contains("pending") || errStr.toLowerCase().contains("approval") || errStr.contains("ត្រួតពិនិត្យ")) {
+        Get.defaultDialog(
+          title: "រង់ចាំការអនុម័តពី Admin",
+          titleStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          middleText: "គណនីម្ចាស់ផ្ទះរបស់អ្នកកំពុងស្ថិតក្នុងការត្រួតពិនិត្យ និងរង់ចាំការអនុម័តពី Web Admin (Web Admin Approval)។ សូមរង់ចាំការផ្ទៀងផ្ទាត់!",
+          middleTextStyle: const TextStyle(fontSize: 13, height: 1.4),
+          textConfirm: "យល់ព្រម",
+          confirmTextColor: Colors.white,
+          buttonColor: const Color(0xFF00A86B),
+          onConfirm: () => Get.back(),
+        );
+      } else {
+        Get.snackbar("Error", "Connection failed: $e", backgroundColor: Colors.red.shade50);
+      }
     } finally {
       isLoading.value = false;
     }

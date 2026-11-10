@@ -4,7 +4,6 @@ import '../../core/services/api_service.dart';
 import '../../core/services/api_service_impl.dart';
 import '../../core/services/language_service.dart';
 import '../../routes/app_route_name.dart';
-import '../../widgets/animated_widgets.dart';
 import '../../widgets/app_colors.dart';
 import '../../widgets/button_custom_widget.dart';
 import '../../widgets/input_custom_widget.dart';
@@ -34,13 +33,17 @@ class LoginView extends GetView<LoginController> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          actions: const [
-            Center(
-              child: Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: AnimatedLanguageToggle(),
+          actions: [
+            IconButton(
+              tooltip: LanguageService.isKhmer ? "ជ្រើសរើសភាសា" : "Select Language",
+              icon: const Icon(
+                Icons.public_rounded,
+                color: AppColors.textPrimary,
+                size: 22,
               ),
+              onPressed: () => LanguageService.showLanguageSelector(context),
             ),
+            const SizedBox(width: 8),
           ],
         ),
         body: SafeArea(

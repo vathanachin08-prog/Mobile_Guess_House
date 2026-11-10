@@ -5,10 +5,12 @@ import '../../../models/rental/invoice_model.dart';
 import '../../../models/rental/tenant_model.dart';
 import '../../../models/rental/room_model.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/firebase_service.dart';
 import '../../../core/services/language_service.dart';
 import '../../../data/local/token_store_local.dart';
 import '../owner_main_controller.dart';
 import '../dashboard/owner_dashboard_controller.dart';
+import '../tenants/owner_tenants_controller.dart';
 import '../../student/home/student_home_controller.dart';
 
 class OwnerInvoicesController extends GetxController {
@@ -36,6 +38,8 @@ class OwnerInvoicesController extends GetxController {
   final selectedDateFilterType = "ALL".obs; // ALL, TODAY, THIS_MONTH, LAST_MONTH, CUSTOM_DATE, CUSTOM_RANGE
   final selectedCustomDate = Rxn<DateTime>();
   final selectedCustomRange = Rxn<DateTimeRange>();
+  final searchQuery = "".obs;
+  final selectedTenantFilter = Rxn<String>();
   final isLoading = false.obs;
 
   @override
@@ -243,14 +247,114 @@ class OwnerInvoicesController extends GetxController {
     return invoices.where(matchesDate).toList();
   }
 
+  void setSearchQuery(String query) {
+    searchQuery.value = query;
+  }
+
+  void setTenantFilter(String? tenantName) {
+    selectedTenantFilter.value = tenantName;
+  }
+
+  void clearSearch() {
+    searchQuery.value = "";
+    selectedTenantFilter.value = null;
+  }
+
+  bool get isSearchActive =>
+      searchQuery.value.trim().isNotEmpty || selectedTenantFilter.value != null;
+
+  List<TenantModel> get availableTenants {
+    final List<TenantModel> list = [];
+    final Set<String> seen = {};
+
+    if (Get.isRegistered<OwnerTenantsController>()) {
+      for (final t in Get.find<OwnerTenantsController>().tenants) {
+        final name = (t.name ?? '').trim();
+        if (name.isNotEmpty && !seen.contains(name.toLowerCase())) {
+          seen.add(name.toLowerCase());
+          list.add(t);
+        }
+      }
+    }
+
+    for (final inv in invoices) {
+      final name = (inv.tenantName ?? '').trim();
+      if (name.isNotEmpty && !seen.contains(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        list.add(TenantModel(
+          name: name,
+          roomNumber: inv.roomNumber,
+          floor: inv.floor,
+        ));
+      }
+    }
+    return list;
+  }
+
+  int getInvoiceCountForTenant(String tenantName) {
+    final lower = tenantName.trim().toLowerCase();
+    return invoices.where((i) {
+      final tName = (i.tenantName ?? '').trim().toLowerCase();
+      final rNum = (i.roomNumber ?? '').trim().toLowerCase();
+      return tName == lower || rNum == lower;
+    }).length;
+  }
+
+  double getUnpaidAmountForTenant(String tenantName) {
+    final lower = tenantName.trim().toLowerCase();
+    return invoices
+        .where((i) {
+          final tName = (i.tenantName ?? '').trim().toLowerCase();
+          final rNum = (i.roomNumber ?? '').trim().toLowerCase();
+          final isMatch = tName == lower || rNum == lower;
+          final isUnpaid = (i.status ?? '').toUpperCase() != "PAID";
+          return isMatch && isUnpaid;
+        })
+        .fold(0.0, (sum, i) => sum + (i.totalAmount ?? 0.0));
+  }
+
   List<InvoiceModel> get filteredInvoices {
     return invoices.where((i) {
+      // 1. Status Filter
       if (selectedFilter.value != "ALL") {
         if ((i.status ?? '').toUpperCase() != selectedFilter.value) {
           return false;
         }
       }
-      return matchesDate(i);
+
+      // 2. Date Filter
+      if (!matchesDate(i)) {
+        return false;
+      }
+
+      // 3. Selected Tenant Filter
+      if (selectedTenantFilter.value != null && selectedTenantFilter.value!.trim().isNotEmpty) {
+        final target = selectedTenantFilter.value!.trim().toLowerCase();
+        final invTenant = (i.tenantName ?? '').trim().toLowerCase();
+        final invRoom = (i.roomNumber ?? '').trim().toLowerCase();
+        if (invTenant != target && invRoom != target) {
+          return false;
+        }
+      }
+
+      // 4. Free-text Search Query Filter
+      final query = searchQuery.value.trim().toLowerCase();
+      if (query.isNotEmpty) {
+        final tenantName = (i.tenantName ?? '').toLowerCase();
+        final roomNumber = (i.roomNumber ?? '').toLowerCase();
+        final invoiceNo = (i.invoiceNo ?? '').toLowerCase();
+        final propertyName = (i.propertyName ?? '').toLowerCase();
+
+        final matches = tenantName.contains(query) ||
+            roomNumber.contains(query) ||
+            invoiceNo.contains(query) ||
+            propertyName.contains(query);
+        if (!matches) {
+          return false;
+        }
+      }
+
+      return true;
     }).toList();
   }
 
@@ -437,6 +541,52 @@ class OwnerInvoicesController extends GetxController {
         targetDate: targetDate,
       );
     });
+  }
+
+  /// Returns the most recent invoice for a given room to auto-fill previous meter readings
+  InvoiceModel? getLastInvoiceForRoom(String roomNumber) {
+    final clean = normalizeRoomNumber(roomNumber);
+    if (clean.isEmpty) return null;
+    final matched = invoices
+        .where((inv) => normalizeRoomNumber(inv.roomNumber) == clean)
+        .toList();
+    if (matched.isEmpty) return null;
+    matched.sort((a, b) {
+      final da = a.parsedIssueDate ?? (a.id != null ? DateTime.fromMillisecondsSinceEpoch(a.id!) : DateTime(2000));
+      final db = b.parsedIssueDate ?? (b.id != null ? DateTime.fromMillisecondsSinceEpoch(b.id!) : DateTime(2000));
+      return db.compareTo(da);
+    });
+    return matched.first;
+  }
+
+  /// Returns effective utility rates and garbage fee from Settings or fallback
+  Map<String, double> getEffectiveRates() {
+    final elecRaw = _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_ELEC")) ??
+        _storage.read("PRICING_ELEC") ?? "1000";
+    final waterRaw = _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_WATER")) ??
+        _storage.read("PRICING_WATER") ?? "1500";
+    final garbageRaw = _storage.read(TokenStoreLocal.getUserScopedKey("PRICING_GARBAGE")) ??
+        _storage.read("PRICING_GARBAGE") ?? "2.00";
+
+    final double exRate = (AppFirebaseService.exchangeRate > 0 ? AppFirebaseService.exchangeRate : 4100.0).toDouble();
+
+    final elecVal = double.tryParse(elecRaw.toString()) ?? 1000.0;
+    // If entered in KHR (e.g. >= 50), convert to USD. If entered in USD (e.g. 0.25), keep it.
+    final elecRateUsd = elecVal >= 50.0 ? (elecVal / exRate) : elecVal;
+
+    final waterVal = double.tryParse(waterRaw.toString()) ?? 1500.0;
+    final waterRateUsd = waterVal >= 50.0 ? (waterVal / exRate) : waterVal;
+
+    final garbageUsd = double.tryParse(garbageRaw.toString()) ?? 2.0;
+
+    return {
+      'electricityRate': elecRateUsd,
+      'waterRate': waterRateUsd,
+      'garbageFee': garbageUsd,
+      'electricityRaw': elecVal,
+      'waterRaw': waterVal,
+      'exchangeRate': exRate,
+    };
   }
 
   List<InvoiceModel> deduplicateInvoiceList(List<InvoiceModel> list) {
