@@ -211,13 +211,42 @@ class RegisterView extends GetView<RegisterController> {
                               flex: 2,
                               child: InputCustomWidget(
                                 controller: controller.totalRoomsController,
-                                label: LanguageService.isKhmer ? "ចំនួនបន្ទប់" : "Total Rooms",
-                                hint: "8",
+                                label: LanguageService.isKhmer ? "ចំនួនបន្ទប់ (អតិបរមា ៥) *" : "Total Rooms (Max 5) *",
+                                hint: "1 - 5",
                                 keyboardType: TextInputType.number,
                                 prefixIcon: const Icon(Icons.meeting_room_outlined, color: AppColors.textSecondary),
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFD97706)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  LanguageService.isKhmer
+                                      ? "ការចុះឈ្មោះដំបូងអនុញ្ញាតត្រឹមតែ ៥ បន្ទប់ ឬក្រោម ៥ បន្ទប់ប៉ុណ្ណោះ (១ - ៥) មុនពេល Web Admin អនុម័ត។"
+                                      : "First-time registration is limited to 1 - 5 rooms before Web Admin approval.",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF92400E),
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

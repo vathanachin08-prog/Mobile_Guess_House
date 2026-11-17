@@ -78,25 +78,14 @@ class LoginController extends GetxController {
         } else {
           Get.offAllNamed(AppRouteName.studentMain);
         }
-      } else {
-        AppFirebaseService.logLoginForm(
-          success: false,
-          errorMessage: "Invalid phone number or password",
-        );
-        Get.snackbar(
-          "Error",
-          "Invalid phone number or password",
-          backgroundColor: Colors.red.shade50,
-          colorText: Colors.red.shade800,
-        );
       }
     } catch (e) {
+      final rawErr = e.toString().replaceAll("Exception:", "").trim();
       AppFirebaseService.logLoginForm(
         success: false,
-        errorMessage: e.toString(),
+        errorMessage: rawErr,
       );
-      final errStr = e.toString();
-      if (errStr.contains("403") || errStr.toLowerCase().contains("pending") || errStr.toLowerCase().contains("approval") || errStr.contains("ត្រួតពិនិត្យ")) {
+      if (rawErr.contains("403") || rawErr.toLowerCase().contains("pending") || rawErr.toLowerCase().contains("approval") || rawErr.contains("ត្រួតពិនិត្យ")) {
         Get.defaultDialog(
           title: "រង់ចាំការអនុម័តពី Admin",
           titleStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -108,7 +97,13 @@ class LoginController extends GetxController {
           onConfirm: () => Get.back(),
         );
       } else {
-        Get.snackbar("Error", "Connection failed: $e", backgroundColor: Colors.red.shade50);
+        Get.snackbar(
+          "Error",
+          rawErr.isNotEmpty ? rawErr : "Invalid phone number or password",
+          backgroundColor: Colors.red.shade50,
+          colorText: Colors.red.shade800,
+          duration: const Duration(seconds: 4),
+        );
       }
     } finally {
       isLoading.value = false;

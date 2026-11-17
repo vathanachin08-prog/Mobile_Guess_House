@@ -25,11 +25,47 @@ class RegisterController extends GetxController {
   TextEditingController propertyNameController = TextEditingController();
   TextEditingController addressController = TextEditingController();
   TextEditingController idCardController = TextEditingController();
-  TextEditingController totalRoomsController = TextEditingController(text: "8");
+  TextEditingController totalRoomsController = TextEditingController(text: "5");
 
   final selectedRole = "STUDENT".obs; // STUDENT or OWNER
   final isLoading = false.obs;
   final obscurePassword = true.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    totalRoomsController.addListener(_handleRoomCountLimit);
+  }
+
+  void _handleRoomCountLimit() {
+    final text = totalRoomsController.text.trim();
+    if (text.isEmpty) return;
+    final num = int.tryParse(text);
+    if (num != null && num > 5) {
+      totalRoomsController.text = "5";
+      totalRoomsController.selection = TextSelection.fromPosition(
+        TextPosition(offset: totalRoomsController.text.length),
+      );
+      Get.snackbar(
+        LanguageService.isKhmer ? "កម្រិតចំនួនបន្ទប់" : "Room Limit Exceeded",
+        LanguageService.isKhmer
+            ? "ការចុះឈ្មោះដំបូង ម្ចាស់ផ្ទះអាចដាក់បានត្រឹមតែ ៥ បន្ទប់ ឬក្រោម ៥ បន្ទប់ប៉ុណ្ណោះ មុនពេល Web Admin អនុម័ត!"
+            : "First-time registration is limited to 5 rooms or fewer before Web Admin approval!",
+        backgroundColor: const Color(0xFFFEF3C7),
+        colorText: const Color(0xFF92400E),
+        icon: const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706)),
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
+  @override
+  void onClose() {
+    totalRoomsController.removeListener(_handleRoomCountLimit);
+    super.onClose();
+  }
 
   void ensureControllers() {
     // Kept safe: do not replace active controllers to prevent wiping user input
@@ -46,7 +82,7 @@ class RegisterController extends GetxController {
     propertyNameController.clear();
     addressController.clear();
     idCardController.clear();
-    totalRoomsController.text = "8";
+    totalRoomsController.text = "5";
     isLoading.value = false;
     obscurePassword.value = true;
   }
@@ -104,6 +140,23 @@ class RegisterController extends GetxController {
       }
       if (address.isEmpty) {
         Get.snackbar("Error", LanguageService.isKhmer ? "សូមបញ្ចូលទីតាំងអគារបន្ទប់ជួល!" : "Please enter property address/location", backgroundColor: Colors.red.shade50);
+        return;
+      }
+
+      final roomCount = int.tryParse(totalRooms) ?? 0;
+      if (roomCount <= 0 || roomCount > 5) {
+        Get.snackbar(
+          LanguageService.isKhmer ? "ចំនួនបន្ទប់លើសកំណត់" : "Room Limit Exceeded",
+          LanguageService.isKhmer
+              ? "ការចុះឈ្មោះដំបូង ម្ចាស់ផ្ទះអាចដាក់បានត្រឹមតែ ៥ បន្ទប់ ឬក្រោម ៥ បន្ទប់ប៉ុណ្ណោះ (១ - ៥) មុនពេល Web Admin អនុម័ត!"
+              : "First-time registration is limited to 1 - 5 rooms before Web Admin approval!",
+          backgroundColor: const Color(0xFFFEF2F2),
+          colorText: const Color(0xFF991B1B),
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+          snackPosition: SnackPosition.TOP,
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        );
         return;
       }
     }

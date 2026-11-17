@@ -1,6 +1,13 @@
+import 'package:flutter/foundation.dart';
+
 class ConstantUri {
-  // Use localhost for Windows/Web, 10.0.2.2 for Android emulator, or LAN IP for physical device
-  static String baseUri = "http://44.210.204.147:30033";
+  // Use localhost for Web/Windows, or LAN IP for physical device
+  static String get baseUri {
+    if (kIsWeb) {
+      return "http://localhost:30033";
+    }
+    return "http://192.168.110.65:30033";
+  }
 
   // Auth
   static String get login => "$baseUri/api/oauth/token";

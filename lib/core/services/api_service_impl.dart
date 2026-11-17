@@ -41,8 +41,23 @@ class ApiServiceImpl implements ApiService {
         TokenStoreLocal.setUser(loginResponse.user!.toJson());
       }
       return loginResponse;
+    } else {
+      String msg = "Invalid phone number or password";
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          if (decoded['message'] != null && decoded['message'].toString().isNotEmpty) {
+            msg = decoded['message'].toString();
+          } else if (decoded['error'] != null) {
+            msg = decoded['error'].toString();
+          }
+        }
+      } catch (_) {}
+      if (response.statusCode == 403) {
+        throw "403: $msg";
+      }
+      throw msg;
     }
-    return LoginResponse();
   }
 
   @override
